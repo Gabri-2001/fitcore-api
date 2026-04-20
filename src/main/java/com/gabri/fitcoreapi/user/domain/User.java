@@ -4,6 +4,7 @@ package com.gabri.fitcoreapi.user.domain;
 import com.gabri.fitcoreapi.common.model.BaseEntity;
 import com.gabri.fitcoreapi.goal.domain.GoalProfile;
 import com.gabri.fitcoreapi.workout.domain.WorkoutPlan;
+import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -87,4 +88,17 @@ public class User extends BaseEntity {
         workoutPlans.add(workoutPlan);
         workoutPlan.setUser(this);
     }
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WorkoutSession> workoutSessions = new ArrayList<>();
+
+    public List<WorkoutSession> getWorkoutSessions() {
+        return workoutSessions;
+    }
+
+    public void addWorkoutSession(WorkoutSession workoutSession) {
+        workoutSessions.add(workoutSession);
+        workoutSession.setUser(this);
+    }
+
 }
