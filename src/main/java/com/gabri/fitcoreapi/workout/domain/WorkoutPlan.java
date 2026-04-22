@@ -125,4 +125,9 @@ public class WorkoutPlan extends BaseEntity {
     public List<WorkoutDay> getWorkoutDays() {
         return workoutDays;
     }
+
+    public void deactivate(LocalDate endDate) {
+        this.active = false;
+        this.endDate = endDate;
+    }
 }
