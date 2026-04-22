@@ -139,4 +139,9 @@ public class GoalProfile extends BaseEntity {
     public GoalProfile getPreviousGoalProfile() {
         return previousGoalProfile;
     }
+
+    public void deactivate(LocalDate endDate) {
+        this.active = false;
+        this.endDate = endDate;
+    }
 }
