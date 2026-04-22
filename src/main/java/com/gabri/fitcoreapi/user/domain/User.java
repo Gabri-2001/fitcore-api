@@ -5,6 +5,9 @@ import com.gabri.fitcoreapi.common.model.BaseEntity;
 import com.gabri.fitcoreapi.goal.domain.GoalProfile;
 import com.gabri.fitcoreapi.nutrition.domain.DietPlan;
 import com.gabri.fitcoreapi.nutrition.domain.NutritionLog;
+import com.gabri.fitcoreapi.progress.domain.DailyEvaluation;
+import com.gabri.fitcoreapi.progress.domain.ProgressRecord;
+import com.gabri.fitcoreapi.recommendation.domain.PlanAdjustmentRecommendation;
 import com.gabri.fitcoreapi.workout.domain.WorkoutPlan;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
 import jakarta.persistence.CascadeType;
@@ -125,5 +128,41 @@ public class User extends BaseEntity {
     public void addNutritionLog(NutritionLog nutritionLog) {
         nutritionLogs.add(nutritionLog);
         nutritionLog.setUser(this);
+    }
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProgressRecord> progressRecords = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DailyEvaluation> dailyEvaluations = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PlanAdjustmentRecommendation> planAdjustmentRecommendations = new ArrayList<>();
+
+    public List<ProgressRecord> getProgressRecords() {
+        return progressRecords;
+    }
+
+    public void addProgressRecord(ProgressRecord progressRecord) {
+        progressRecords.add(progressRecord);
+        progressRecord.setUser(this);
+    }
+
+    public List<DailyEvaluation> getDailyEvaluations() {
+        return dailyEvaluations;
+    }
+
+    public void addDailyEvaluation(DailyEvaluation dailyEvaluation) {
+        dailyEvaluations.add(dailyEvaluation);
+        dailyEvaluation.setUser(this);
+    }
+
+    public List<PlanAdjustmentRecommendation> getPlanAdjustmentRecommendations() {
+        return planAdjustmentRecommendations;
+    }
+
+    public void addPlanAdjustmentRecommendation(PlanAdjustmentRecommendation recommendation) {
+        planAdjustmentRecommendations.add(recommendation);
+        recommendation.setUser(this);
     }
 }
