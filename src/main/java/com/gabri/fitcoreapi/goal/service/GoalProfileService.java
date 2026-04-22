@@ -58,10 +58,6 @@ public class GoalProfileService {
         newGoalProfile.setUser(user);
 
         if (previousActiveProfile != null) {
-            previousActiveProfile.setPreviousGoalProfile(previousActiveProfile.getPreviousGoalProfile());
-        }
-
-        if (previousActiveProfile != null) {
             previousActiveProfile.deactivate(startDate.minusDays(1));
             newGoalProfile.setPreviousGoalProfile(previousActiveProfile);
         }
