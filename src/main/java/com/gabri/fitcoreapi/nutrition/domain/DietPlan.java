@@ -125,4 +125,9 @@ public class DietPlan extends BaseEntity {
     public List<DietDay> getDietDays() {
         return dietDays;
     }
+
+    public void deactivate(LocalDate endDate) {
+        this.active = false;
+        this.endDate = endDate;
+    }
 }
