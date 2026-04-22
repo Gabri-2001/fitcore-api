@@ -1,4 +1,4 @@
-package com.gabri.fitcoreapi.exercise;
+package com.gabri.fitcoreapi.exercise.domain;
 
 public enum CaloriesEstimationType {
     NONE,

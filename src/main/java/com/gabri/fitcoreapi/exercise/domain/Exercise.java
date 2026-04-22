@@ -1,7 +1,6 @@
 package com.gabri.fitcoreapi.exercise.domain;
 
 import com.gabri.fitcoreapi.common.model.BaseEntity;
-import com.gabri.fitcoreapi.exercise.CaloriesEstimationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
