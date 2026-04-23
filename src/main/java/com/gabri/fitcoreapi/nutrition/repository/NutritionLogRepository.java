@@ -17,4 +17,5 @@ public interface NutritionLogRepository extends JpaRepository<NutritionLog, Long
             LocalDate startDate,
             LocalDate endDate
     );
+    List<NutritionLog> findByUserOrderByLogDateDesc(User user);
 }
