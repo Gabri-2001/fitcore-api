@@ -4,6 +4,7 @@ import com.gabri.fitcoreapi.goal.domain.GoalProfile;
 import com.gabri.fitcoreapi.goal.dto.CreateGoalProfileRequest;
 import com.gabri.fitcoreapi.goal.dto.GoalProfileResponse;
 import com.gabri.fitcoreapi.goal.service.GoalProfileService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class GoalProfileController {
     @ResponseStatus(HttpStatus.CREATED)
     public GoalProfileResponse createGoalProfile(
             @PathVariable Long userId,
-            @RequestBody CreateGoalProfileRequest request
+            @Valid @RequestBody CreateGoalProfileRequest request
     ) {
         GoalProfile goalProfile = goalProfileService.createGoalProfile(
                 userId,

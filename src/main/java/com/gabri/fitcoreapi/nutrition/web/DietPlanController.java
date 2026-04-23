@@ -4,6 +4,7 @@ import com.gabri.fitcoreapi.nutrition.domain.DietPlan;
 import com.gabri.fitcoreapi.nutrition.dto.CreateDietPlanRequest;
 import com.gabri.fitcoreapi.nutrition.dto.DietPlanResponse;
 import com.gabri.fitcoreapi.nutrition.service.DietPlanService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class DietPlanController {
     @ResponseStatus(HttpStatus.CREATED)
     public DietPlanResponse createDietPlan(
             @PathVariable Long userId,
-            @RequestBody CreateDietPlanRequest request
+            @Valid @RequestBody CreateDietPlanRequest request
     ) {
         DietPlan dietPlan = dietPlanService.createDietPlan(
                 userId,

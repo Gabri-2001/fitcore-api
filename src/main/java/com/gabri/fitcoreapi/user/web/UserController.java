@@ -4,6 +4,7 @@ import com.gabri.fitcoreapi.user.domain.User;
 import com.gabri.fitcoreapi.user.dto.CreateUserRequest;
 import com.gabri.fitcoreapi.user.dto.UserResponse;
 import com.gabri.fitcoreapi.user.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +22,7 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse createUser(@RequestBody CreateUserRequest request) {
+    public UserResponse createUser(@Valid @RequestBody CreateUserRequest request) {
         User user = userService.createUser(
                 request.getName(),
                 request.getEmail(),
@@ -45,4 +46,6 @@ public class UserController {
                 .map(UserResponse::from)
                 .toList();
     }
+
+
 }

@@ -4,6 +4,7 @@ import com.gabri.fitcoreapi.workout.domain.WorkoutPlan;
 import com.gabri.fitcoreapi.workout.dto.CreateWorkoutPlanRequest;
 import com.gabri.fitcoreapi.workout.dto.WorkoutPlanResponse;
 import com.gabri.fitcoreapi.workout.service.WorkoutPlanService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class WorkoutPlanController {
     @ResponseStatus(HttpStatus.CREATED)
     public WorkoutPlanResponse createWorkoutPlan(
             @PathVariable Long userId,
-            @RequestBody CreateWorkoutPlanRequest request
+            @Valid @RequestBody CreateWorkoutPlanRequest request
     ) {
         WorkoutPlan workoutPlan = workoutPlanService.createWorkoutPlan(
                 userId,
