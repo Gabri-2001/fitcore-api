@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 public class CreateWorkoutSessionExerciseRequest {
 
-    @NotNull(message = "{error.workoutExercise.notFound}")
+    @NotNull(message = "{validation.workoutSessionExercise.workoutExerciseId.required}")
     private Long workoutExerciseId;
 
     private boolean completed;
