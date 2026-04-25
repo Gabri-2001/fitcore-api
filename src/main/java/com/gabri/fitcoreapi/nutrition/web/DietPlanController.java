@@ -7,9 +7,13 @@ import com.gabri.fitcoreapi.nutrition.service.DietPlanService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 
+@Tag(name = "Diet Plans", description = "Operations related to diet planning")
 @RestController
 @RequestMapping("/api/users/{userId}/diet-plans")
 public class DietPlanController {
@@ -20,10 +24,11 @@ public class DietPlanController {
         this.dietPlanService = dietPlanService;
     }
 
+    @Operation(summary = "Create a new diet plan for a user")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public DietPlanResponse createDietPlan(
-            @PathVariable Long userId,
+            @Parameter(description = "User id") @PathVariable Long userId,
             @Valid @RequestBody CreateDietPlanRequest request
     ) {
         DietPlan dietPlan = dietPlanService.createDietPlan(
@@ -35,14 +40,15 @@ public class DietPlanController {
 
         return DietPlanResponse.from(dietPlan);
     }
-
+    @Operation(summary = "Get the active diet plan of a user")
     @GetMapping("/active")
-    public DietPlanResponse getActiveDietPlan(@PathVariable Long userId) {
+    public DietPlanResponse getActiveDietPlan(@Parameter(description = "User id") @PathVariable Long userId) {
         return DietPlanResponse.from(dietPlanService.getActiveDietPlan(userId));
     }
 
+    @Operation(summary = "Get diet plan history of a user")
     @GetMapping
-    public List<DietPlanResponse> getDietPlanHistory(@PathVariable Long userId) {
+    public List<DietPlanResponse> getDietPlanHistory(@Parameter(description = "User id") @PathVariable Long userId) {
         return dietPlanService.getDietPlanHistory(userId)
                 .stream()
                 .map(DietPlanResponse::from)
