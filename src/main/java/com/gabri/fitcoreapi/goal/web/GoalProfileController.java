@@ -4,12 +4,16 @@ import com.gabri.fitcoreapi.goal.domain.GoalProfile;
 import com.gabri.fitcoreapi.goal.dto.CreateGoalProfileRequest;
 import com.gabri.fitcoreapi.goal.dto.GoalProfileResponse;
 import com.gabri.fitcoreapi.goal.service.GoalProfileService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Goal Profiles", description = "Operations related to user goal profiles")
 @RestController
 @RequestMapping("/api/users/{userId}/goal-profiles")
 public class GoalProfileController {
@@ -20,10 +24,11 @@ public class GoalProfileController {
         this.goalProfileService = goalProfileService;
     }
 
+    @Operation(summary = "Create a new goal profile for a user")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public GoalProfileResponse createGoalProfile(
-            @PathVariable Long userId,
+            @Parameter(description = "User id") @PathVariable Long userId,
             @Valid @RequestBody CreateGoalProfileRequest request
     ) {
         GoalProfile goalProfile = goalProfileService.createGoalProfile(
@@ -40,13 +45,15 @@ public class GoalProfileController {
         return GoalProfileResponse.from(goalProfile);
     }
 
+    @Operation(summary = "Get the active goal profile of a user")
     @GetMapping("/active")
-    public GoalProfileResponse getActiveGoalProfile(@PathVariable Long userId) {
+    public GoalProfileResponse getActiveGoalProfile(@Parameter(description = "User id") @PathVariable Long userId) {
         return GoalProfileResponse.from(goalProfileService.getActiveGoalProfile(userId));
     }
 
+    @Operation(summary = "Get goal profile history of a user")
     @GetMapping
-    public List<GoalProfileResponse> getGoalProfileHistory(@PathVariable Long userId) {
+    public List<GoalProfileResponse> getGoalProfileHistory(@Parameter(description = "User id") @PathVariable Long userId) {
         return goalProfileService.getGoalProfileHistory(userId)
                 .stream()
                 .map(GoalProfileResponse::from)
