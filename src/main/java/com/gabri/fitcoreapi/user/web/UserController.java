@@ -4,12 +4,16 @@ import com.gabri.fitcoreapi.user.domain.User;
 import com.gabri.fitcoreapi.user.dto.CreateUserRequest;
 import com.gabri.fitcoreapi.user.dto.UserResponse;
 import com.gabri.fitcoreapi.user.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Users", description = "Operations related to system users")
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -20,6 +24,7 @@ public class UserController {
         this.userService = userService;
     }
 
+    @Operation(summary = "Create a new user")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse createUser(@Valid @RequestBody CreateUserRequest request) {
@@ -34,11 +39,13 @@ public class UserController {
         return UserResponse.from(user);
     }
 
+    @Operation(summary = "Get a user by id")
     @GetMapping("/{userId}")
-    public UserResponse getUserById(@PathVariable Long userId) {
+    public UserResponse getUserById(@Parameter(description = "User id") @PathVariable Long userId) {
         return UserResponse.from(userService.getUserById(userId));
     }
 
+    @Operation(summary = "Get all users")
     @GetMapping
     public List<UserResponse> getAllUsers() {
         return userService.getAllUsers()
