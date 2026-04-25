@@ -7,9 +7,13 @@ import com.gabri.fitcoreapi.workout.service.WorkoutPlanService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 
+@Tag(name = "Workout Plans", description = "Operations related to workout planning")
 @RestController
 @RequestMapping("/api/users/{userId}/workout-plans")
 public class WorkoutPlanController {
@@ -20,10 +24,11 @@ public class WorkoutPlanController {
         this.workoutPlanService = workoutPlanService;
     }
 
+    @Operation(summary = "Create a new workout plan for a user")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public WorkoutPlanResponse createWorkoutPlan(
-            @PathVariable Long userId,
+            @Parameter(description = "User id") @PathVariable Long userId,
             @Valid @RequestBody CreateWorkoutPlanRequest request
     ) {
         WorkoutPlan workoutPlan = workoutPlanService.createWorkoutPlan(
@@ -36,13 +41,15 @@ public class WorkoutPlanController {
         return WorkoutPlanResponse.from(workoutPlan);
     }
 
+    @Operation(summary = "Get the active workout plan of a user")
     @GetMapping("/active")
-    public WorkoutPlanResponse getActiveWorkoutPlan(@PathVariable Long userId) {
+    public WorkoutPlanResponse getActiveWorkoutPlan(@Parameter(description = "User id") @PathVariable Long userId) {
         return WorkoutPlanResponse.from(workoutPlanService.getActiveWorkoutPlan(userId));
     }
 
+    @Operation(summary = "Get workout plan history of a user")
     @GetMapping
-    public List<WorkoutPlanResponse> getWorkoutPlanHistory(@PathVariable Long userId) {
+    public List<WorkoutPlanResponse> getWorkoutPlanHistory(@Parameter(description = "User id") @PathVariable Long userId) {
         return workoutPlanService.getWorkoutPlanHistory(userId)
                 .stream()
                 .map(WorkoutPlanResponse::from)
