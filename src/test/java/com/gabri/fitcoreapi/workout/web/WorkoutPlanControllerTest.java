@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -54,6 +55,8 @@ class WorkoutPlanControllerTest {
                 null
         );
 
+        ReflectionTestUtils.setField(workoutPlan, "id", 20L);
+
         when(workoutPlanService.createWorkoutPlan(any(), any(), any(), any())).thenReturn(workoutPlan);
 
         String requestBody = """
@@ -68,6 +71,8 @@ class WorkoutPlanControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "/api/users/1/workout-plans/20"))
+                .andExpect(jsonPath("$.id").value(20))
                 .andExpect(jsonPath("$.name").value("Push Pull Legs"))
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.active").value(true));

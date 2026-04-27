@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -56,22 +57,26 @@ class UserControllerTest {
                 new BigDecimal("88.00")
         );
 
+        ReflectionTestUtils.setField(user, "id", 1L);
+
         when(userService.createUser(any(), any(), any(), any(), any())).thenReturn(user);
 
         String requestBody = """
-                {
-                  "name": "Gabriel",
-                  "email": "gabriel@test.com",
-                  "age": 24,
-                  "heightCm": 188.00,
-                  "weightKg": 88.00
-                }
-                """;
+            {
+              "name": "Gabriel",
+              "email": "gabriel@test.com",
+              "age": 24,
+              "heightCm": 188.00,
+              "weightKg": 88.00
+            }
+            """;
 
         mockMvc.perform(post("/api/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "/api/users/1"))
+                .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("Gabriel"))
                 .andExpect(jsonPath("$.email").value("gabriel@test.com"));
     }

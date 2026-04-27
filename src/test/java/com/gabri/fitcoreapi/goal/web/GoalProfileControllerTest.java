@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -58,6 +59,8 @@ class GoalProfileControllerTest {
                 null
         );
 
+        ReflectionTestUtils.setField(goalProfile, "id", 10L);
+
         when(goalProfileService.createGoalProfile(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(goalProfile);
 
@@ -77,6 +80,8 @@ class GoalProfileControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Location", "/api/users/1/goal-profiles/10"))
+                .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.goalType").value("MUSCLE_GAIN"))
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.active").value(true));
