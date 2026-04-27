@@ -7,11 +7,13 @@ import com.gabri.fitcoreapi.workout.service.WorkoutSessionService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,8 +30,7 @@ public class WorkoutSessionController {
 
     @Operation(summary = "Create a real workout session for a user")
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public WorkoutSessionResponse createWorkoutSession(
+    public ResponseEntity<WorkoutSessionResponse> createWorkoutSession(
             @Parameter(description = "User id") @PathVariable Long userId,
             @Valid @RequestBody CreateWorkoutSessionRequest request
     ) {
@@ -44,7 +45,8 @@ public class WorkoutSessionController {
                 request.getEstimatedTotalCaloriesBurned()
         );
 
-        return WorkoutSessionResponse.from(workoutSession);
+        URI location = URI.create("/api/users/" + userId + "/workout-sessions/" + workoutSession.getId());
+        return ResponseEntity.created(location).body(WorkoutSessionResponse.from(workoutSession));
     }
 
     @Operation(summary = "Get workout sessions of a user, optionally filtered by date range")

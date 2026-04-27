@@ -6,11 +6,13 @@ import com.gabri.fitcoreapi.workout.dto.WorkoutPlanResponse;
 import com.gabri.fitcoreapi.workout.service.WorkoutPlanService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.net.URI;
 import java.util.List;
 
 @Tag(name = "Workout Plans", description = "Operations related to workout planning")
@@ -26,8 +28,7 @@ public class WorkoutPlanController {
 
     @Operation(summary = "Create a new workout plan for a user")
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public WorkoutPlanResponse createWorkoutPlan(
+    public ResponseEntity<WorkoutPlanResponse> createWorkoutPlan(
             @Parameter(description = "User id") @PathVariable Long userId,
             @Valid @RequestBody CreateWorkoutPlanRequest request
     ) {
@@ -38,7 +39,8 @@ public class WorkoutPlanController {
                 request.getStartDate()
         );
 
-        return WorkoutPlanResponse.from(workoutPlan);
+        URI location = URI.create("/api/users/" + userId + "/workout-plans/" + workoutPlan.getId());
+        return ResponseEntity.created(location).body(WorkoutPlanResponse.from(workoutPlan));
     }
 
     @Operation(summary = "Get the active workout plan of a user")

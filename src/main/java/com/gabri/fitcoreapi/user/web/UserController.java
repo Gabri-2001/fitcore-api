@@ -8,9 +8,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @Tag(name = "Users", description = "Operations related to system users")
@@ -26,8 +27,7 @@ public class UserController {
 
     @Operation(summary = "Create a new user")
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse createUser(@Valid @RequestBody CreateUserRequest request) {
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         User user = userService.createUser(
                 request.getName(),
                 request.getEmail(),
@@ -36,7 +36,8 @@ public class UserController {
                 request.getWeightKg()
         );
 
-        return UserResponse.from(user);
+        URI location = URI.create("/api/users/" + user.getId());
+        return ResponseEntity.created(location).body(UserResponse.from(user));
     }
 
     @Operation(summary = "Get a user by id")

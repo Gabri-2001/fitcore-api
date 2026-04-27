@@ -6,11 +6,13 @@ import com.gabri.fitcoreapi.nutrition.dto.DietPlanResponse;
 import com.gabri.fitcoreapi.nutrition.service.DietPlanService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.net.URI;
 import java.util.List;
 
 @Tag(name = "Diet Plans", description = "Operations related to diet planning")
@@ -26,8 +28,7 @@ public class DietPlanController {
 
     @Operation(summary = "Create a new diet plan for a user")
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public DietPlanResponse createDietPlan(
+    public ResponseEntity<DietPlanResponse> createDietPlan(
             @Parameter(description = "User id") @PathVariable Long userId,
             @Valid @RequestBody CreateDietPlanRequest request
     ) {
@@ -38,7 +39,8 @@ public class DietPlanController {
                 request.getStartDate()
         );
 
-        return DietPlanResponse.from(dietPlan);
+        URI location = URI.create("/api/users/" + userId + "/diet-plans/" + dietPlan.getId());
+        return ResponseEntity.created(location).body(DietPlanResponse.from(dietPlan));
     }
     @Operation(summary = "Get the active diet plan of a user")
     @GetMapping("/active")

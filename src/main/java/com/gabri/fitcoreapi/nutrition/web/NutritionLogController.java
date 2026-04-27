@@ -10,8 +10,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,8 +30,7 @@ public class NutritionLogController {
 
     @Operation(summary = "Create a nutrition log for a user")
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public NutritionLogResponse createNutritionLog(
+    public ResponseEntity<NutritionLogResponse> createNutritionLog(
             @Parameter(description = "User id")  @PathVariable Long userId,
             @Valid @RequestBody CreateNutritionLogRequest request
     ) {
@@ -40,7 +41,8 @@ public class NutritionLogController {
                 request.getMeals()
         );
 
-        return NutritionLogResponse.from(nutritionLog);
+        URI location = URI.create("/api/users/" + userId + "nutrition-logs" + nutritionLog.getId());
+        return ResponseEntity.created(location).body(NutritionLogResponse.from(nutritionLog));
     }
 
     @Operation(summary = "Get all nutrition logs of a user")

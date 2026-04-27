@@ -9,8 +9,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 @Tag(name = "Goal Profiles", description = "Operations related to user goal profiles")
@@ -26,8 +28,7 @@ public class GoalProfileController {
 
     @Operation(summary = "Create a new goal profile for a user")
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public GoalProfileResponse createGoalProfile(
+    public ResponseEntity<GoalProfileResponse> createGoalProfile(
             @Parameter(description = "User id") @PathVariable Long userId,
             @Valid @RequestBody CreateGoalProfileRequest request
     ) {
@@ -42,7 +43,8 @@ public class GoalProfileController {
                 request.getStartDate()
         );
 
-        return GoalProfileResponse.from(goalProfile);
+        URI location = URI.create("/api/users/" + userId + "/goal-profiles/" + goalProfile.getId());
+        return ResponseEntity.created(location).body(GoalProfileResponse.from(goalProfile));
     }
 
     @Operation(summary = "Get the active goal profile of a user")
