@@ -47,9 +47,18 @@ public class NutritionLogController {
 
     @Operation(summary = "Get all nutrition logs of a user")
     @GetMapping
-    public List<NutritionLogResponse> getNutritionLogs(@Parameter(description = "User id") @PathVariable Long userId) {
-        return nutritionLogService.getNutritionLogsByUser(userId)
-                .stream()
+    public List<NutritionLogResponse> getNutritionLogs(@Parameter(description = "User id") @PathVariable Long userId,
+                                                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+                                                       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        List<NutritionLog> logs;
+
+        if (startDate != null && endDate != null) {
+            logs = nutritionLogService.getNutritionLogsByUserAndDateRange(userId, startDate, endDate);
+        } else {
+            logs = nutritionLogService.getNutritionLogsByUser(userId);
+        }
+        return logs.stream()
                 .map(NutritionLogResponse::from)
                 .toList();
     }

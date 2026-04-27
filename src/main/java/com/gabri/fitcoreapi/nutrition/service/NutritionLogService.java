@@ -124,4 +124,22 @@ public class NutritionLogService {
                         messageResolver.get("error.nutritionLog.notFound", logDate)
                 ));
     }
+
+    @Transactional(readOnly = true)
+    public List<NutritionLog> getNutritionLogsByUserAndDateRange(
+            Long userId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageResolver.get("error.user.notFound", userId)
+                ));
+
+        return nutritionLogRepository.findByUserAndLogDateBetweenOrderByLogDateDesc(
+                user,
+                startDate,
+                endDate
+        );
+    }
 }
