@@ -68,4 +68,15 @@ public class WorkoutSessionController {
                 .map(WorkoutSessionResponse::from)
                 .toList();
     }
+
+    @Operation(summary = "Get a workout session by id")
+    @GetMapping("/{workoutSessionId}")
+    public WorkoutSessionResponse getWorkoutSessionById(
+            @Parameter(description = "User id") @PathVariable Long userId,
+            @Parameter(description = "Workout session id") @PathVariable Long workoutSessionId
+    ) {
+        return WorkoutSessionResponse.from(
+                workoutSessionService.getWorkoutSessionById(userId, workoutSessionId)
+        );
+    }
 }
