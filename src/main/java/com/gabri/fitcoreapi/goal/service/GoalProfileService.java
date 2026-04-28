@@ -81,4 +81,15 @@ public class GoalProfileService {
 
         return goalProfileRepository.findByUserOrderByStartDateDesc(user);
     }
+
+    @Transactional(readOnly = true)
+    public GoalProfile getGoalProfileById(Long userId, Long goalProfileId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        return goalProfileRepository.findByIdAndUser(goalProfileId, user)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Goal profile not found with id: " + goalProfileId + " for user id: " + userId
+                ));
+    }
 }
