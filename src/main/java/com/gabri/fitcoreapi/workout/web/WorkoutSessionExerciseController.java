@@ -4,12 +4,19 @@ import com.gabri.fitcoreapi.workout.domain.WorkoutSessionExercise;
 import com.gabri.fitcoreapi.workout.dto.CreateWorkoutSessionExerciseRequest;
 import com.gabri.fitcoreapi.workout.dto.WorkoutSessionExerciseResponse;
 import com.gabri.fitcoreapi.workout.service.WorkoutSessionExerciseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(
+        name = "Workout Session Exercises",
+        description = "Operations related to performed exercises inside a real workout session"
+)
 @RestController
 @RequestMapping("/api/users/{userId}/workout-sessions/{workoutSessionId}/exercises")
 public class WorkoutSessionExerciseController {
@@ -20,11 +27,12 @@ public class WorkoutSessionExerciseController {
         this.workoutSessionExerciseService = workoutSessionExerciseService;
     }
 
+    @Operation(summary = "Add a performed exercise to a workout session")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public WorkoutSessionExerciseResponse addWorkoutSessionExercise(
-            @PathVariable Long userId,
-            @PathVariable Long workoutSessionId,
+            @Parameter(description = "User id") @PathVariable Long userId,
+            @Parameter(description = "Workout session id") @PathVariable Long workoutSessionId,
             @Valid @RequestBody CreateWorkoutSessionExerciseRequest request
     ) {
         WorkoutSessionExercise sessionExercise = workoutSessionExerciseService.addWorkoutSessionExercise(
@@ -43,10 +51,11 @@ public class WorkoutSessionExerciseController {
         return WorkoutSessionExerciseResponse.from(sessionExercise);
     }
 
+    @Operation(summary = "Get all performed exercises of a workout session")
     @GetMapping
     public List<WorkoutSessionExerciseResponse> getWorkoutSessionExercises(
-            @PathVariable Long userId,
-            @PathVariable Long workoutSessionId
+            @Parameter(description = "User id") @PathVariable Long userId,
+            @Parameter(description = "Workout session id") @PathVariable Long workoutSessionId
     ) {
         return workoutSessionExerciseService.getWorkoutSessionExercises(userId, workoutSessionId)
                 .stream()
