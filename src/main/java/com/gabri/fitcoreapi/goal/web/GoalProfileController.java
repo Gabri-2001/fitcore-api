@@ -61,4 +61,15 @@ public class GoalProfileController {
                 .map(GoalProfileResponse::from)
                 .toList();
     }
+
+    @Operation(summary = "Get a goal profile by id")
+    @GetMapping("/{goalProfileId}")
+    public GoalProfileResponse getGoalProfileById(
+            @Parameter(description = "User id") @PathVariable Long userId,
+            @Parameter(description = "Goal profile id") @PathVariable Long goalProfileId
+    ) {
+        return GoalProfileResponse.from(
+                goalProfileService.getGoalProfileById(userId, goalProfileId)
+        );
+    }
 }
