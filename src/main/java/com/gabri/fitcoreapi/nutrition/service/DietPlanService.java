@@ -79,4 +79,15 @@ public class DietPlanService {
 
         return dietPlanRepository.findByUserOrderByStartDateDesc(user);
     }
+
+    @Transactional(readOnly = true)
+    public DietPlan getDietPlanById(Long userId, Long dietPlanId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        return dietPlanRepository.findByIdAndUser(dietPlanId, user)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Diet plan not found with id: " + dietPlanId + " for user id: " + userId
+                ));
+    }
 }
