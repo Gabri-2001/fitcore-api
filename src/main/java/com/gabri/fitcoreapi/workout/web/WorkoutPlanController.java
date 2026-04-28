@@ -57,4 +57,15 @@ public class WorkoutPlanController {
                 .map(WorkoutPlanResponse::from)
                 .toList();
     }
+
+    @Operation(summary = "Get a workout plan by id")
+    @GetMapping("/{workoutPlanId}")
+    public WorkoutPlanResponse getWorkoutPlanById(
+            @Parameter(description = "User id") @PathVariable Long userId,
+            @Parameter(description = "Workout plan id") @PathVariable Long workoutPlanId
+    ) {
+        return WorkoutPlanResponse.from(
+                workoutPlanService.getWorkoutPlanById(userId, workoutPlanId)
+        );
+    }
 }
