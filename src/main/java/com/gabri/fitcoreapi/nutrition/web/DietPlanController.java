@@ -56,4 +56,15 @@ public class DietPlanController {
                 .map(DietPlanResponse::from)
                 .toList();
     }
+
+    @Operation(summary = "Get a diet plan by id")
+    @GetMapping("/{dietPlanId}")
+    public DietPlanResponse getDietPlanById(
+            @Parameter(description = "User id") @PathVariable Long userId,
+            @Parameter(description = "Diet plan id") @PathVariable Long dietPlanId
+    ) {
+        return DietPlanResponse.from(
+                dietPlanService.getDietPlanById(userId, dietPlanId)
+        );
+    }
 }
