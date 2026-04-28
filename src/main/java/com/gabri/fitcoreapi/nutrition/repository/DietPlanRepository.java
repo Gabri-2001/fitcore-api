@@ -15,4 +15,6 @@ public interface DietPlanRepository extends JpaRepository<DietPlan, Long> {
     List<DietPlan> findByUserOrderByStartDateDesc(User user);
 
     List<DietPlan> findByPlanGroupIdOrderByVersionDesc(UUID planGroupId);
+
+    Optional<DietPlan> findByIdAndUser(Long id, User user);
 }
