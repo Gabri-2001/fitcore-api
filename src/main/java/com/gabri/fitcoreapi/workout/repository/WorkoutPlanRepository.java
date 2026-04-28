@@ -15,4 +15,6 @@ public interface WorkoutPlanRepository extends JpaRepository<WorkoutPlan, Long> 
     List<WorkoutPlan> findByUserOrderByStartDateDesc(User user);
 
     List<WorkoutPlan> findByPlanGroupIdOrderByVersionDesc(UUID planGroupId);
+
+    Optional<WorkoutPlan> findByIdAndUser(Long id, User user);
 }
