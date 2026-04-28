@@ -104,4 +104,17 @@ public class WorkoutSessionService {
                 user, startDate, endDate
         );
     }
+
+    @Transactional(readOnly = true)
+    public WorkoutSession getWorkoutSessionById(Long userId, Long workoutSessionId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageResolver.get("error.user.notFound", userId)
+                ));
+
+        return workoutSessionRepository.findByIdAndUser(workoutSessionId, user)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        messageResolver.get("error.workoutSession.notFound", workoutSessionId)
+                ));
+    }
 }
