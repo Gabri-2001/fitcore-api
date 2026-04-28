@@ -12,4 +12,6 @@ public interface GoalProfileRepository extends JpaRepository<GoalProfile, Long> 
     Optional<GoalProfile> findByUserAndActiveTrue(User user);
 
     List<GoalProfile> findByUserOrderByStartDateDesc(User user);
+
+    Optional<GoalProfile> findByIdAndUser(Long id, User user);
 }
