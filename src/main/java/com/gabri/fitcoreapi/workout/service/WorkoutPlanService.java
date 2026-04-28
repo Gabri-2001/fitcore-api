@@ -79,4 +79,15 @@ public class WorkoutPlanService {
 
         return workoutPlanRepository.findByUserOrderByStartDateDesc(user);
     }
+
+    @Transactional(readOnly = true)
+    public WorkoutPlan getWorkoutPlanById(Long userId, Long workoutPlanId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        return workoutPlanRepository.findByIdAndUser(workoutPlanId, user)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Workout plan not found with id: " + workoutPlanId + " for user id: " + userId
+                ));
+    }
 }
