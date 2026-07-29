@@ -1,6 +1,7 @@
 package com.gabri.fitcoreapi.exercise.domain;
 
 import com.gabri.fitcoreapi.common.model.BaseEntity;
+import com.gabri.fitcoreapi.muscle.domain.MuscleGroup;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,6 +14,9 @@ import java.math.BigDecimal;
 @Table(name = "exercises")
 public class Exercise extends BaseEntity {
 
+    @Column(nullable = false, unique = true, length = 120)
+    private String code;
+
     @Column(nullable = false, length = 120)
     private String name;
 
@@ -22,7 +26,11 @@ public class Exercise extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "muscle_group", nullable = false, length = 40)
-    private MuscleGroup muscleGroup;
+    private MuscleGroup mainMuscleGroup;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "movement_pattern", nullable = false, length = 60)
+    private MovementPattern movementPattern;
 
     @Column(length = 1000)
     private String description;
@@ -40,13 +48,16 @@ public class Exercise extends BaseEntity {
     @Column(name = "default_unit", length = 30)
     private String defaultUnit;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     protected Exercise() {
     }
 
     public Exercise(
             String name,
             ExerciseCategory exerciseCategory,
-            MuscleGroup muscleGroup,
+            MuscleGroup mainMuscleGroup,
             String description,
             String equipment,
             CaloriesEstimationType caloriesEstimationType,
@@ -55,7 +66,7 @@ public class Exercise extends BaseEntity {
     ) {
         this.name = name;
         this.exerciseCategory = exerciseCategory;
-        this.muscleGroup = muscleGroup;
+        this.mainMuscleGroup = mainMuscleGroup;
         this.description = description;
         this.equipment = equipment;
         this.caloriesEstimationType = caloriesEstimationType;
@@ -71,8 +82,8 @@ public class Exercise extends BaseEntity {
         return exerciseCategory;
     }
 
-    public MuscleGroup getMuscleGroup() {
-        return muscleGroup;
+    public MuscleGroup getMainMuscleGroup() {
+        return mainMuscleGroup;
     }
 
     public String getDescription() {

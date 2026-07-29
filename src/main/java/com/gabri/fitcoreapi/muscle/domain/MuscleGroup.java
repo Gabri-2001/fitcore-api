@@ -1,4 +1,4 @@
-package com.gabri.fitcoreapi.exercise.domain;
+package com.gabri.fitcoreapi.muscle.domain;
 
 public enum MuscleGroup {
     CHEST,

@@ -1,7 +1,7 @@
 package com.gabri.fitcoreapi.workout.domain;
 
 import com.gabri.fitcoreapi.common.model.BaseEntity;
-import com.gabri.fitcoreapi.exercise.domain.Exercise;
+import com.gabri.fitcoreapi.exercise.domain.ExerciseVariant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -18,8 +18,8 @@ public class WorkoutExercise extends BaseEntity {
     private WorkoutDay workoutDay;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "exercise_id", nullable = false)
-    private Exercise exercise;
+    @JoinColumn(name = "exercise_variant_id", nullable = false)
+    private ExerciseVariant exerciseVariant;
 
     @Column(nullable = false)
     private Integer sets;
@@ -36,8 +36,8 @@ public class WorkoutExercise extends BaseEntity {
     protected WorkoutExercise() {
     }
 
-    public WorkoutExercise(Exercise exercise, Integer sets, Integer reps, Integer restSeconds, Integer exerciseOrder) {
-        this.exercise = exercise;
+    public WorkoutExercise(ExerciseVariant exerciseVariant, Integer sets, Integer reps, Integer restSeconds, Integer exerciseOrder) {
+        this.exerciseVariant = exerciseVariant;
         this.sets = sets;
         this.reps = reps;
         this.restSeconds = restSeconds;
@@ -52,8 +52,8 @@ public class WorkoutExercise extends BaseEntity {
         return workoutDay;
     }
 
-    public Exercise getExercise() {
-        return exercise;
+    public ExerciseVariant getExerciseVariant() {
+        return exerciseVariant;
     }
 
     public Integer getSets() {
