@@ -25,7 +25,7 @@ public class Exercise extends BaseEntity {
     private ExerciseCategory exerciseCategory;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "muscle_group", nullable = false, length = 40)
+    @Column(name = "main_muscle_group", nullable = false, length = 40)
     private MuscleGroup mainMuscleGroup;
 
     @Enumerated(EnumType.STRING)
@@ -34,9 +34,6 @@ public class Exercise extends BaseEntity {
 
     @Column(length = 1000)
     private String description;
-
-    @Column(length = 120)
-    private String equipment;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "calories_estimation_type", nullable = false, length = 40)
@@ -58,8 +55,8 @@ public class Exercise extends BaseEntity {
             String name,
             ExerciseCategory exerciseCategory,
             MuscleGroup mainMuscleGroup,
+            MovementPattern movementPattern,
             String description,
-            String equipment,
             CaloriesEstimationType caloriesEstimationType,
             BigDecimal baseCaloriesPerUnit,
             String defaultUnit
@@ -67,8 +64,8 @@ public class Exercise extends BaseEntity {
         this.name = name;
         this.exerciseCategory = exerciseCategory;
         this.mainMuscleGroup = mainMuscleGroup;
+        this.movementPattern = movementPattern;
         this.description = description;
-        this.equipment = equipment;
         this.caloriesEstimationType = caloriesEstimationType;
         this.baseCaloriesPerUnit = baseCaloriesPerUnit;
         this.defaultUnit = defaultUnit;
@@ -86,13 +83,14 @@ public class Exercise extends BaseEntity {
         return mainMuscleGroup;
     }
 
+    public MovementPattern getMovementPattern() {
+        return movementPattern;
+    }
+
     public String getDescription() {
         return description;
     }
 
-    public String getEquipment() {
-        return equipment;
-    }
 
     public CaloriesEstimationType getCaloriesEstimationType() {
         return caloriesEstimationType;
