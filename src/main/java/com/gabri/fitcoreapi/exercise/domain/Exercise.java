@@ -52,6 +52,7 @@ public class Exercise extends BaseEntity {
     }
 
     public Exercise(
+            String code,
             String name,
             ExerciseCategory exerciseCategory,
             MuscleGroup mainMuscleGroup,
@@ -61,6 +62,7 @@ public class Exercise extends BaseEntity {
             BigDecimal baseCaloriesPerUnit,
             String defaultUnit
     ) {
+        this.code = code;
         this.name = name;
         this.exerciseCategory = exerciseCategory;
         this.mainMuscleGroup = mainMuscleGroup;
@@ -69,6 +71,10 @@ public class Exercise extends BaseEntity {
         this.caloriesEstimationType = caloriesEstimationType;
         this.baseCaloriesPerUnit = baseCaloriesPerUnit;
         this.defaultUnit = defaultUnit;
+    }
+
+    public String getCode() {
+        return code;
     }
 
     public String getName() {
@@ -102,5 +108,9 @@ public class Exercise extends BaseEntity {
 
     public String getDefaultUnit() {
         return defaultUnit;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 }

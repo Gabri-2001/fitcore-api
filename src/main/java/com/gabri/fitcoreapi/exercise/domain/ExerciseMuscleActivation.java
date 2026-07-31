@@ -3,6 +3,7 @@ package com.gabri.fitcoreapi.exercise.domain;
 import com.gabri.fitcoreapi.common.model.BaseEntity;
 import com.gabri.fitcoreapi.muscle.domain.Muscle;
 import com.gabri.fitcoreapi.muscle.domain.MuscleRole;
+import com.gabri.fitcoreapi.common.exception.BusinessRuleException;
 import jakarta.persistence.*;
 
 @Entity
@@ -38,4 +39,29 @@ public class ExerciseMuscleActivation extends BaseEntity {
 
     protected ExerciseMuscleActivation() {
     }
+
+    public ExerciseMuscleActivation(ExerciseVariant exerciseVariant, Muscle muscle, MuscleRole role, String notes) {
+        this.exerciseVariant = exerciseVariant;
+        this.muscle = muscle;
+        this.role = role;
+        this.activationLevel = levelFor(role);
+        this.notes = notes;
+    }
+
+    private static int levelFor(MuscleRole role) {
+        if (role == null) {
+            throw new BusinessRuleException("Muscle role is required");
+        }
+        return switch (role) {
+            case PRIMARY -> 3;
+            case SECONDARY -> 2;
+            case STABILIZER -> 1;
+        };
+    }
+
+    public ExerciseVariant getExerciseVariant() { return exerciseVariant; }
+    public Muscle getMuscle() { return muscle; }
+    public MuscleRole getRole() { return role; }
+    public Integer getActivationLevel() { return activationLevel; }
+    public String getNotes() { return notes; }
 }

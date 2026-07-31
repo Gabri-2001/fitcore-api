@@ -25,6 +25,24 @@ public class Muscle extends BaseEntity {
     @Column(name = "visual_only_region", nullable = false)
     private boolean visualOnlyRegion = false;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     protected Muscle() {
     }
+
+    public Muscle(String code, String name, MuscleGroup muscleGroup, String description, boolean visualOnlyRegion) {
+        this.code = code;
+        this.name = name;
+        this.muscleGroup = muscleGroup;
+        this.description = description;
+        this.visualOnlyRegion = visualOnlyRegion;
+    }
+
+    public String getCode() { return code; }
+    public String getName() { return name; }
+    public MuscleGroup getMuscleGroup() { return muscleGroup; }
+    public String getDescription() { return description; }
+    public boolean isVisualOnlyRegion() { return visualOnlyRegion; }
+    public boolean isActive() { return active; }
 }

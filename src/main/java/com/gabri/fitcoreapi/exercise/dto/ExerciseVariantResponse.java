@@ -1,0 +1,18 @@
+package com.gabri.fitcoreapi.exercise.dto;
+
+import com.gabri.fitcoreapi.exercise.domain.*;
+
+public record ExerciseVariantResponse(Long id, String code, String name, String exerciseCode,
+        Equipment equipment, GripType gripType, GripWidth gripWidth, BenchAngle benchAngle,
+        BodyPosition bodyPosition, Laterality laterality, Trajectory trajectory, SupportType supportType,
+        StanceType stanceType, AttachmentType attachmentType, ShoulderPosition shoulderPosition,
+        FootPlacement footPlacement, KneePosition kneePosition, ContractionType contractionType,
+        boolean requiresCaution, boolean active) {
+    public static ExerciseVariantResponse from(ExerciseVariant value) {
+        return new ExerciseVariantResponse(value.getId(), value.getCode(), value.getName(), value.getExercise().getCode(),
+                value.getEquipment(), value.getGripType(), value.getGripWidth(), value.getBenchAngle(),
+                value.getBodyPosition(), value.getLaterality(), value.getTrajectory(), value.getSupportType(),
+                value.getStanceType(), value.getAttachmentType(), value.getShoulderPosition(), value.getFootPlacement(),
+                value.getKneePosition(), value.getContractionType(), value.isRequiresCaution(), value.isActive());
+    }
+}

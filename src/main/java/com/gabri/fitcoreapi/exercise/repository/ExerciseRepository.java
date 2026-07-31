@@ -10,5 +10,9 @@ public interface ExerciseRepository extends JpaRepository<Exercise, Long> {
 
     Optional<Exercise> findByCode(String code);
 
+    Optional<Exercise> findByCodeAndActiveTrue(String code);
+
+    List<Exercise> findByActiveTrueOrderByNameAsc();
+
     boolean existsByCode(String code);
 }

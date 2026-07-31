@@ -83,4 +83,197 @@ public class ExerciseVariant extends BaseEntity {
 
     protected ExerciseVariant() {
     }
+
+    public ExerciseVariant(
+            String code,
+            String name,
+            Exercise exercise,
+            Equipment equipment,
+            GripType gripType,
+            GripWidth gripWidth,
+            BenchAngle benchAngle,
+            BodyPosition bodyPosition,
+            Laterality laterality,
+            Trajectory trajectory,
+            SupportType supportType,
+            StanceType stanceType,
+            AttachmentType attachmentType,
+            ShoulderPosition shoulderPosition,
+            FootPlacement footPlacement,
+            KneePosition kneePosition,
+            ContractionType contractionType,
+            boolean requiresCaution
+    ) {
+        this.code = code;
+        this.name = name;
+        this.exercise = exercise;
+        this.equipment = equipment;
+        this.gripType = gripType;
+        this.gripWidth = gripWidth;
+        this.benchAngle = benchAngle;
+        this.bodyPosition = bodyPosition;
+        this.laterality = laterality;
+        this.trajectory = trajectory;
+        this.supportType = supportType;
+        this.stanceType = stanceType;
+        this.attachmentType = attachmentType;
+        this.shoulderPosition = shoulderPosition;
+        this.footPlacement = footPlacement;
+        this.kneePosition = kneePosition;
+        this.contractionType = contractionType;
+        this.requiresCaution = requiresCaution;
+        this.active = true;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isRequiresCaution() {
+        return requiresCaution;
+    }
+
+    public void setRequiresCaution(boolean requiresCaution) {
+        this.requiresCaution = requiresCaution;
+    }
+
+    public ContractionType getContractionType() {
+        return contractionType;
+    }
+
+    public void setContractionType(ContractionType contractionType) {
+        this.contractionType = contractionType;
+    }
+
+    public KneePosition getKneePosition() {
+        return kneePosition;
+    }
+
+    public void setKneePosition(KneePosition kneePosition) {
+        this.kneePosition = kneePosition;
+    }
+
+    public FootPlacement getFootPlacement() {
+        return footPlacement;
+    }
+
+    public void setFootPlacement(FootPlacement footPlacement) {
+        this.footPlacement = footPlacement;
+    }
+
+    public ShoulderPosition getShoulderPosition() {
+        return shoulderPosition;
+    }
+
+    public void setShoulderPosition(ShoulderPosition shoulderPosition) {
+        this.shoulderPosition = shoulderPosition;
+    }
+
+    public AttachmentType getAttachmentType() {
+        return attachmentType;
+    }
+
+    public void setAttachmentType(AttachmentType attachmentType) {
+        this.attachmentType = attachmentType;
+    }
+
+    public StanceType getStanceType() {
+        return stanceType;
+    }
+
+    public void setStanceType(StanceType stanceType) {
+        this.stanceType = stanceType;
+    }
+
+    public SupportType getSupportType() {
+        return supportType;
+    }
+
+    public void setSupportType(SupportType supportType) {
+        this.supportType = supportType;
+    }
+
+    public Trajectory getTrajectory() {
+        return trajectory;
+    }
+
+    public void setTrajectory(Trajectory trajectory) {
+        this.trajectory = trajectory;
+    }
+
+    public Laterality getLaterality() {
+        return laterality;
+    }
+
+    public void setLaterality(Laterality laterality) {
+        this.laterality = laterality;
+    }
+
+    public BodyPosition getBodyPosition() {
+        return bodyPosition;
+    }
+
+    public void setBodyPosition(BodyPosition bodyPosition) {
+        this.bodyPosition = bodyPosition;
+    }
+
+    public BenchAngle getBenchAngle() {
+        return benchAngle;
+    }
+
+    public void setBenchAngle(BenchAngle benchAngle) {
+        this.benchAngle = benchAngle;
+    }
+
+    public GripWidth getGripWidth() {
+        return gripWidth;
+    }
+
+    public void setGripWidth(GripWidth gripWidth) {
+        this.gripWidth = gripWidth;
+    }
+
+    public GripType getGripType() {
+        return gripType;
+    }
+
+    public void setGripType(GripType gripType) {
+        this.gripType = gripType;
+    }
+
+    public Equipment getEquipment() {
+        return equipment;
+    }
+
+    public void setEquipment(Equipment equipment) {
+        this.equipment = equipment;
+    }
+
+    public Exercise getExercise() {
+        return exercise;
+    }
+
+    public void setExercise(Exercise exercise) {
+        this.exercise = exercise;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 }
