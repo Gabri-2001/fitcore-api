@@ -37,15 +37,60 @@ public class ExerciseMuscleActivation extends BaseEntity {
     @Column(length = 500)
     private String notes;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private EvidenceConfidence confidence = EvidenceConfidence.REVIEW;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type", nullable = false, length = 40)
+    private ActivationSourceType sourceType = ActivationSourceType.LEGACY_SEED;
+
+    @Column(name = "source_refs", length = 500)
+    private String sourceRefs;
+
+    @Column(name = "mapping_version", nullable = false)
+    private Integer mappingVersion = 1;
+
     protected ExerciseMuscleActivation() {
     }
 
     public ExerciseMuscleActivation(ExerciseVariant exerciseVariant, Muscle muscle, MuscleRole role, String notes) {
+        this(exerciseVariant, muscle, role, notes, EvidenceConfidence.REVIEW,
+                ActivationSourceType.LEGACY_SEED, null, 1);
+    }
+
+    public ExerciseMuscleActivation(
+            ExerciseVariant exerciseVariant,
+            Muscle muscle,
+            MuscleRole role,
+            String notes,
+            EvidenceConfidence confidence,
+            ActivationSourceType sourceType,
+            String sourceRefs,
+            int mappingVersion
+    ) {
         this.exerciseVariant = exerciseVariant;
         this.muscle = muscle;
         this.role = role;
         this.activationLevel = levelFor(role);
         this.notes = notes;
+        this.confidence = requireConfidence(confidence);
+        this.sourceType = requireSourceType(sourceType);
+        if (mappingVersion < 1) {
+            throw new BusinessRuleException("Mapping version must be greater than zero");
+        }
+        this.sourceRefs = sourceRefs;
+        this.mappingVersion = mappingVersion;
+    }
+
+    private static EvidenceConfidence requireConfidence(EvidenceConfidence confidence) {
+        if (confidence == null) throw new BusinessRuleException("Evidence confidence is required");
+        return confidence;
+    }
+
+    private static ActivationSourceType requireSourceType(ActivationSourceType sourceType) {
+        if (sourceType == null) throw new BusinessRuleException("Activation source type is required");
+        return sourceType;
     }
 
     private static int levelFor(MuscleRole role) {
@@ -64,4 +109,8 @@ public class ExerciseMuscleActivation extends BaseEntity {
     public MuscleRole getRole() { return role; }
     public Integer getActivationLevel() { return activationLevel; }
     public String getNotes() { return notes; }
+    public EvidenceConfidence getConfidence() { return confidence; }
+    public ActivationSourceType getSourceType() { return sourceType; }
+    public String getSourceRefs() { return sourceRefs; }
+    public Integer getMappingVersion() { return mappingVersion; }
 }

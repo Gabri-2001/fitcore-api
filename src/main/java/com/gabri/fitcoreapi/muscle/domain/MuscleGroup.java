@@ -6,10 +6,12 @@ public enum MuscleGroup {
     SHOULDERS,
     BICEPS,
     TRICEPS,
+    FOREARMS,
     QUADRICEPS,
     HAMSTRINGS,
     GLUTES,
     CALVES,
     CORE,
+    NECK,
     FULL_BODY
 }
