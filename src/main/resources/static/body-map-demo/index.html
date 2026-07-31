@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Laboratorio visual del mapa muscular de FitCore">
+    <title>FitCore · Body Map Lab</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="#" aria-label="FitCore Body Map Lab">
+        <span class="brand-mark">FC</span>
+        <span><strong>FitCore</strong><small>Body Map Lab</small></span>
+    </a>
+    <div class="api-status" id="api-status" data-state="idle">
+        <span class="status-dot"></span><span id="api-status-text">Conectando con la API</span>
+    </div>
+</header>
+
+<main class="workspace">
+    <aside class="control-panel" aria-label="Configuración de la prueba">
+        <section class="panel-section auth-section">
+            <div class="section-heading">
+                <span class="eyebrow">01 · Acceso</span>
+                <h1>Prueba el mapa con datos reales</h1>
+                <p>Inicia sesión o crea una cuenta temporal para consultar el catálogo protegido.</p>
+            </div>
+            <div class="auth-form" id="auth-form">
+                <label>Email<input id="email" type="email" value="svg-test@fitcore.local" autocomplete="email"></label>
+                <label>Contraseña<input id="password" type="password" value="TestPass123!" autocomplete="current-password"></label>
+                <div class="button-row">
+                    <button class="button button-primary" id="login-button" type="button">Iniciar sesión</button>
+                    <button class="button button-secondary" id="register-button" type="button">Crear cuenta de prueba</button>
+                </div>
+            </div>
+            <div class="signed-user" id="signed-user" hidden>
+                <span class="user-avatar" id="user-avatar">ST</span>
+                <span><strong id="user-email"></strong><small>Sesión JWT activa</small></span>
+                <button class="text-button" id="logout-button" type="button">Salir</button>
+            </div>
+        </section>
+
+        <section class="panel-section selection-section" id="selection-section" aria-disabled="true">
+            <div class="section-heading compact">
+                <span class="eyebrow">02 · Ejecución</span>
+                <h2>Configura el ejercicio</h2>
+            </div>
+            <div class="field-grid">
+                <label class="field-full">Ejercicio base
+                    <select id="exercise-select" disabled><option>Inicia sesión primero</option></select>
+                </label>
+                <label>Equipamiento
+                    <select id="equipment-select" disabled></select>
+                </label>
+                <label>Tipo de agarre
+                    <select id="grip-type-select" disabled></select>
+                </label>
+                <label>Ancho de agarre
+                    <select id="grip-width-select" disabled></select>
+                </label>
+                <label>Variante resultante
+                    <select id="variant-select" disabled></select>
+                </label>
+            </div>
+            <div class="variant-summary" id="variant-summary">
+                <span class="summary-icon">i</span>
+                <p>Selecciona un ejercicio para ver las opciones disponibles en el catálogo.</p>
+            </div>
+            <div class="button-row action-row">
+                <button class="button button-primary" id="preview-button" type="button" disabled>Previsualizar</button>
+                <button class="button button-accent" id="add-button" type="button" disabled>Añadir a sesión</button>
+            </div>
+        </section>
+
+        <section class="panel-section session-section">
+            <div class="section-heading compact session-heading">
+                <div><span class="eyebrow">03 · Sesión</span><h2>Ejercicios realizados</h2></div>
+                <button class="text-button" id="clear-button" type="button">Limpiar</button>
+            </div>
+            <div class="session-list" id="session-list">
+                <div class="empty-state"><span>0</span><p>Añade ejercicios para combinar sus activaciones.</p></div>
+            </div>
+        </section>
+    </aside>
+
+    <section class="map-panel" aria-label="Mapa muscular">
+        <div class="map-toolbar">
+            <div>
+                <span class="eyebrow">Visualización</span>
+                <h2 id="map-title">Mapa muscular</h2>
+                <p id="map-subtitle">Las regiones se iluminarán según su nivel de activación.</p>
+            </div>
+            <div class="legend" aria-label="Leyenda de activación">
+                <span><i class="legend-swatch stabilizer"></i>Estabilizador</span>
+                <span><i class="legend-swatch secondary"></i>Secundario</span>
+                <span><i class="legend-swatch primary"></i>Primario</span>
+            </div>
+        </div>
+
+        <div class="map-stage" id="body-map-stage" aria-live="polite">
+            <div class="map-loading" id="map-loading"><span class="loader"></span><p>Cargando anatomía…</p></div>
+        </div>
+
+        <footer class="map-footer">
+            <div class="activation-count"><strong id="active-count">0</strong><span>músculos activos</span></div>
+            <div class="diagnostic" id="diagnostic"><span class="status-dot"></span><span>Esperando selección</span></div>
+            <p>Los IDs del SVG permanecen en esta interfaz; la API solo entrega códigos musculares canónicos.</p>
+        </footer>
+    </section>
+</main>
+
+<div class="toast-region" id="toast-region" aria-live="polite"></div>
+<script src="./app.js" defer></script>
+</body>
+</html>
