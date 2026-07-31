@@ -3,6 +3,7 @@ package com.gabri.fitcoreapi.config;
 import com.gabri.fitcoreapi.auth.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -15,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableMethodSecurity
+@ConditionalOnBean(JwtAuthenticationFilter.class)
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;

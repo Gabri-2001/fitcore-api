@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -20,6 +21,7 @@ import java.util.List;
 @Tag(name = "Nutrition Logs", description = "Operations related to real nutrition logs")
 @RestController
 @RequestMapping("/api/users/{userId}/nutrition-logs")
+@PreAuthorize("@userAccess.isCurrentUser(#userId)")
 public class NutritionLogController {
 
     private final NutritionLogService nutritionLogService;

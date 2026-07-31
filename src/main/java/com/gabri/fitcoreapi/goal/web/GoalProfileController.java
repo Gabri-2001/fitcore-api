@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.net.URI;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 @Tag(name = "Goal Profiles", description = "Operations related to user goal profiles")
 @RestController
 @RequestMapping("/api/users/{userId}/goal-profiles")
+@PreAuthorize("@userAccess.isCurrentUser(#userId)")
 public class GoalProfileController {
 
     private final GoalProfileService goalProfileService;
