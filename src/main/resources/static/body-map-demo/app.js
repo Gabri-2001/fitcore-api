@@ -10,16 +10,16 @@ const muscleSvgMap = {
     PECTORAL_UPPER: ['pectoral-upper-right', 'pectoral-upper-left'],
     PECTORAL_MIDDLE: ['pectoral-middle-right', 'pectoral-middle-left'],
     PECTORAL_LOWER: ['pectoral-lower-right', 'pectoral-lower-left'],
-    LATISSIMUS_DORSI: ['latissium-dorsi-left-1', 'latissium-dorsi-right-1', 'latissium-dorsi-left-2', 'latissium-dorsi-right-2', 'latissium-dorsi-left-3', 'latissium-dorsi-right-3'],
+    LATISSIMUS_DORSI: ['latissimus-dorsi-left-1', 'latissimus-dorsi-right-1', 'latissimus-dorsi-left-2', 'latissimus-dorsi-right-2', 'latissimus-dorsi-left-3', 'latissimus-dorsi-right-3'],
     TRAPEZIUS_UPPER: ['trapezius-upper-left', 'trapezius-upper-right'],
-    TRAPEZIUS_MIDDLE: ['trapezius-medium-left-1', 'trapezius-medium-left-2', 'trapezius-medium-right-1', 'trapezius-medium-right-2'],
-    RHOMBOIDS_REGION: ['trapezius-medium-left-1', 'trapezius-medium-left-2', 'trapezius-medium-right-1', 'trapezius-medium-right-2'],
-    DELTOID_FRONT: ['deltoid-anterior-rigth', 'deltoid-anterior-left'],
+    TRAPEZIUS_MIDDLE: ['trapezius-middle-left-1', 'trapezius-middle-left-2', 'trapezius-middle-right-1', 'trapezius-middle-right-2'],
+    RHOMBOIDS_REGION: ['trapezius-middle-left-1', 'trapezius-middle-left-2', 'trapezius-middle-right-1', 'trapezius-middle-right-2'],
+    DELTOID_FRONT: ['deltoid-anterior-right', 'deltoid-anterior-left'],
     DELTOID_LATERAL: ['deltoid-lateral-right', 'deltoid-lateral-left', 'deltoid-lateral-left-2', 'deltoid-lateral-right-2'],
     DELTOID_REAR: ['deltoid-posterior-right', 'deltoid-posterior-left'],
     BICEPS_BRACHII: ['biceps-right', 'biceps-left'],
-    TRICEPS_BRACHII: ['tricepsLateralHead-back-left', 'tricepsLateralHead-back-right', 'tricepsLateralHead-front-left', 'tricepsLateralHead-front-right', 'tricepsLongHead-left-1', 'tricepsLongHead-right-1', 'tricepsLongHead-left-2', 'tricepsLongHead-right-2', 'tricepsMedialHead-left', 'tricepsMedialHead-right'],
-    QUADRICEPS: ['rectusFemoris-right', 'rectusFemoris-left', 'vastus-medialis-right', 'vastus-medialis-left', 'vastus-lateralis-right-front', 'vastus-lateralis-left-front', 'vastus-lateralis-left-back', 'vastus-lateralis-right-back'],
+    TRICEPS_BRACHII: ['triceps-lateral-head-back-left', 'triceps-lateral-head-back-right', 'triceps-lateral-head-front-left', 'triceps-lateral-head-front-right', 'triceps-long-head-left-1', 'triceps-long-head-right-1', 'triceps-long-head-left-2', 'triceps-long-head-right-2', 'triceps-medial-head-left', 'triceps-medial-head-right'],
+    QUADRICEPS: ['rectus-femoris-right', 'rectus-femoris-left', 'vastus-medialis-right', 'vastus-medialis-left', 'vastus-lateralis-right-front', 'vastus-lateralis-left-front', 'vastus-lateralis-left-back', 'vastus-lateralis-right-back'],
     HAMSTRINGS: ['hamstrings-left-1', 'hamstrings-left-2', 'hamstrings-right-1', 'hamstrings-right-2'],
     GLUTEUS_MAXIMUS: ['gluteus-maximus-left', 'gluteus-maximus-right'],
     GLUTEUS_MEDIUS: ['gluteus-medius-right', 'gluteus-medius-left', 'gluteus-medius-right-front', 'gluteus-medius-left-front'],
@@ -67,12 +67,19 @@ async function loadSvg() {
         svg.removeAttribute('width'); svg.removeAttribute('height'); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', 'Vista frontal y posterior del cuerpo humano');
         elements.stage.appendChild(document.importNode(svg, true));
         state.svg = elements.stage.querySelector('svg');
+        const missingIds = validateSvgMap();
+        if (missingIds.length) throw new Error(`IDs SVG sin encontrar: ${missingIds.join(', ')}`);
         elements.loading.remove();
         setDiagnostic('SVG cargado · 20 códigos mapeados', 'ok');
     } catch (error) {
         elements.loading.innerHTML = `<p>${error.message}</p>`;
         setDiagnostic(error.message, 'error');
     }
+}
+
+function validateSvgMap() {
+    const expectedIds = Object.values(muscleSvgMap).flat();
+    return [...new Set(expectedIds.filter(id => !state.svg.getElementById(id)))];
 }
 
 async function authenticate(mode) {
