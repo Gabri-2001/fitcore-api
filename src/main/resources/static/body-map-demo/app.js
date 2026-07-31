@@ -13,20 +13,40 @@ const muscleSvgMap = {
     LATISSIMUS_DORSI: ['latissimus-dorsi-left-1', 'latissimus-dorsi-right-1', 'latissimus-dorsi-left-2', 'latissimus-dorsi-right-2', 'latissimus-dorsi-left-3', 'latissimus-dorsi-right-3'],
     TRAPEZIUS_UPPER: ['trapezius-upper-left', 'trapezius-upper-right'],
     TRAPEZIUS_MIDDLE: ['trapezius-middle-left-1', 'trapezius-middle-left-2', 'trapezius-middle-right-1', 'trapezius-middle-right-2'],
+    TRAPEZIUS_LOWER: ['trapezius-lower-left', 'trapezius-lower-right'],
     RHOMBOIDS_REGION: ['trapezius-middle-left-1', 'trapezius-middle-left-2', 'trapezius-middle-right-1', 'trapezius-middle-right-2'],
+    TERES_MAJOR: ['teres-major-left', 'teres-major-right'],
+    INFRASPINATUS: ['infraspinatus-left-1', 'infraspinatus-right-1'],
+    ERECTOR_SPINAE_LUMBAR: ['erector-spinae-lumbar-left', 'erector-spinae-lumbar-right'],
     DELTOID_FRONT: ['deltoid-anterior-right', 'deltoid-anterior-left'],
     DELTOID_LATERAL: ['deltoid-lateral-right', 'deltoid-lateral-left', 'deltoid-lateral-left-2', 'deltoid-lateral-right-2'],
     DELTOID_REAR: ['deltoid-posterior-right', 'deltoid-posterior-left'],
     BICEPS_BRACHII: ['biceps-right', 'biceps-left'],
+    BRACHIALIS: ['brachialis-front-left-1', 'brachialis-front-left-2', 'brachialis-front-right-1', 'brachialis-front-right-2', 'brachialis-back-left', 'brachialis-back-right'],
+    BRACHIORADIALIS: ['brachioradialis-left-1', 'brachioradialis-left-2', 'brachioradialis-right-1', 'brachioradialis-right-2'],
+    FOREARM_FLEXORS: ['forearm-flexors-left-1', 'forearm-flexors-left-2', 'forearm-flexors-right-1', 'forearm-flexors-right-2'],
+    FOREARM_EXTENSORS: ['forearm-extensors-left-1', 'forearm-extensors-left-2', 'forearm-extensors-left-3', 'forearm-extensors-left-4', 'forearm-extensors-right-1', 'forearm-extensors-right-2', 'forearm-extensors-right-3', 'forearm-extensors-right-4'],
     TRICEPS_BRACHII: ['triceps-lateral-head-back-left', 'triceps-lateral-head-back-right', 'triceps-lateral-head-front-left', 'triceps-lateral-head-front-right', 'triceps-long-head-left-1', 'triceps-long-head-right-1', 'triceps-long-head-left-2', 'triceps-long-head-right-2', 'triceps-medial-head-left', 'triceps-medial-head-right'],
+    TRICEPS_LONG_HEAD: ['triceps-long-head-left-1', 'triceps-long-head-right-1', 'triceps-long-head-left-2', 'triceps-long-head-right-2'],
+    TRICEPS_LATERAL_HEAD: ['triceps-lateral-head-back-left', 'triceps-lateral-head-back-right', 'triceps-lateral-head-front-left', 'triceps-lateral-head-front-right'],
+    TRICEPS_MEDIAL_HEAD: ['triceps-medial-head-left', 'triceps-medial-head-right'],
     QUADRICEPS: ['rectus-femoris-right', 'rectus-femoris-left', 'vastus-medialis-right', 'vastus-medialis-left', 'vastus-lateralis-right-front', 'vastus-lateralis-left-front', 'vastus-lateralis-left-back', 'vastus-lateralis-right-back'],
+    RECTUS_FEMORIS: ['rectus-femoris-right', 'rectus-femoris-left'],
+    VASTUS_MEDIALIS: ['vastus-medialis-right', 'vastus-medialis-left'],
+    VASTUS_LATERALIS: ['vastus-lateralis-right-front', 'vastus-lateralis-left-front', 'vastus-lateralis-left-back', 'vastus-lateralis-right-back'],
+    SARTORIUS: ['sartorius-left', 'sartorius-right'],
     HAMSTRINGS: ['hamstrings-left-1', 'hamstrings-left-2', 'hamstrings-right-1', 'hamstrings-right-2'],
     GLUTEUS_MAXIMUS: ['gluteus-maximus-left', 'gluteus-maximus-right'],
-    GLUTEUS_MEDIUS: ['gluteus-medius-right', 'gluteus-medius-left', 'gluteus-medius-right-front', 'gluteus-medius-left-front'],
+    GLUTEUS_MEDIUS: ['gluteus-medius-right', 'gluteus-medius-left', 'gluteus-medius-right-front', 'gluteus-medius-left-front', 'abductors-left-back', 'abductors-right-back'],
     HIP_ADDUCTORS: ['adductors-right-front', 'adductors-left-front'],
     CALVES: ['gastrocnemius-left-1', 'gastrocnemius-left-2', 'gastrocnemius-right-1', 'gastrocnemius-right-2', 'soleus-left', 'soleus-right'],
+    GASTROCNEMIUS: ['gastrocnemius-left-1', 'gastrocnemius-left-2', 'gastrocnemius-right-1', 'gastrocnemius-right-2'],
+    SOLEUS: ['soleus-left', 'soleus-right'],
+    TIBIALIS_ANTERIOR: ['tibialis-anterior-left-front', 'tibialis-anterior-right-front'],
+    PERONEALS: ['peroneals-left', 'peroneals-right'],
     RECTUS_ABDOMINIS: ['rectus-abdominis-1-right', 'rectus-abdominis-1-left', 'rectus-abdominis-2-right', 'rectus-abdominis-2-left', 'rectus-abdominis-3-right', 'rectus-abdominis-3-left', 'rectus-abdominis-4-right', 'rectus-abdominis-4-left'],
-    OBLIQUES_SERRATUS_REGION: ['obliques-serratus-1-right', 'obliques-serratus-1-left', 'obliques-serratus-2-right', 'obliques-serratus-2-left', 'obliques-serratus-3-right', 'obliques-serratus-3-left', 'obliques-serratus-4-right', 'obliques-serratus-4-left', 'obliques-serratus-5-right', 'obliques-serratus-5-left', 'obliques-serratus-6-right', 'obliques-serratus-6-left']
+    OBLIQUES_SERRATUS_REGION: ['obliques-serratus-1-right', 'obliques-serratus-1-left', 'obliques-serratus-2-right', 'obliques-serratus-2-left', 'obliques-serratus-3-right', 'obliques-serratus-3-left', 'obliques-serratus-4-right', 'obliques-serratus-4-left', 'obliques-serratus-5-right', 'obliques-serratus-5-left', 'obliques-serratus-6-right', 'obliques-serratus-6-left'],
+    STERNOCLEIDOMASTOID: ['sternocleidomastoid-left-1', 'sternocleidomastoid-left-2', 'sternocleidomastoid-left-3', 'sternocleidomastoid-right-1', 'sternocleidomastoid-right-2', 'sternocleidomastoid-right-3']
 };
 
 const labels = {
@@ -70,7 +90,7 @@ async function loadSvg() {
         const missingIds = validateSvgMap();
         if (missingIds.length) throw new Error(`IDs SVG sin encontrar: ${missingIds.join(', ')}`);
         elements.loading.remove();
-        setDiagnostic('SVG cargado · 20 códigos mapeados', 'ok');
+        setDiagnostic(`SVG cargado · ${Object.keys(muscleSvgMap).length} códigos mapeados`, 'ok');
     } catch (error) {
         elements.loading.innerHTML = `<p>${error.message}</p>`;
         setDiagnostic(error.message, 'error');
