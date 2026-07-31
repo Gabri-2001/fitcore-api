@@ -9,7 +9,10 @@ import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionExercise;
 import com.gabri.fitcoreapi.workout.repository.WorkoutSessionExerciseRepository;
 import com.gabri.fitcoreapi.workout.repository.WorkoutSessionRepository;
-import jakarta.persistence.EntityManager;
+import com.gabri.fitcoreapi.workout.repository.WorkoutExerciseRepository;
+import com.gabri.fitcoreapi.exercise.domain.ExerciseVariant;
+import com.gabri.fitcoreapi.exercise.repository.ExerciseVariantRepository;
+import com.gabri.fitcoreapi.common.exception.BusinessRuleException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,20 +26,23 @@ public class WorkoutSessionExerciseService {
     private final WorkoutSessionExerciseRepository workoutSessionExerciseRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final UserRepository userRepository;
-    private final EntityManager entityManager;
+    private final WorkoutExerciseRepository workoutExerciseRepository;
+    private final ExerciseVariantRepository exerciseVariantRepository;
     private final MessageResolver messageResolver;
 
     public WorkoutSessionExerciseService(
             WorkoutSessionExerciseRepository workoutSessionExerciseRepository,
             WorkoutSessionRepository workoutSessionRepository,
             UserRepository userRepository,
-            EntityManager entityManager,
+            WorkoutExerciseRepository workoutExerciseRepository,
+            ExerciseVariantRepository exerciseVariantRepository,
             MessageResolver messageResolver
     ) {
         this.workoutSessionExerciseRepository = workoutSessionExerciseRepository;
         this.workoutSessionRepository = workoutSessionRepository;
         this.userRepository = userRepository;
-        this.entityManager = entityManager;
+        this.workoutExerciseRepository = workoutExerciseRepository;
+        this.exerciseVariantRepository = exerciseVariantRepository;
         this.messageResolver = messageResolver;
     }
 
@@ -44,6 +50,7 @@ public class WorkoutSessionExerciseService {
             Long userId,
             Long workoutSessionId,
             Long workoutExerciseId,
+            String exerciseVariantCode,
             boolean completed,
             Integer performedSets,
             Integer performedReps,
@@ -68,15 +75,25 @@ public class WorkoutSessionExerciseService {
             );
         }
 
-        WorkoutExercise workoutExercise = entityManager.find(WorkoutExercise.class, workoutExerciseId);
-        if (workoutExercise == null) {
-            throw new ResourceNotFoundException(
-                    messageResolver.get("error.workoutExercise.notFound", workoutExerciseId)
-            );
+        ExerciseVariant variant = exerciseVariantRepository.findByCodeAndActiveTrue(exerciseVariantCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Exercise variant not found with code: " + exerciseVariantCode));
+
+        WorkoutExercise workoutExercise = null;
+        if (workoutExerciseId != null) {
+            workoutExercise = workoutExerciseRepository.findById(workoutExerciseId)
+                    .orElseThrow(() -> new ResourceNotFoundException(messageResolver.get("error.workoutExercise.notFound", workoutExerciseId)));
+            if (workoutSession.getWorkoutDay() == null ||
+                    !workoutExercise.getWorkoutDay().getId().equals(workoutSession.getWorkoutDay().getId())) {
+                throw new BusinessRuleException("The planned exercise does not belong to this workout session day");
+            }
+            if (!workoutExercise.getExerciseVariant().getId().equals(variant.getId())) {
+                throw new BusinessRuleException("The exercise variant does not match the planned exercise");
+            }
         }
 
         WorkoutSessionExercise sessionExercise = new WorkoutSessionExercise(
                 workoutExercise,
+                variant,
                 completed,
                 performedSets,
                 performedReps,

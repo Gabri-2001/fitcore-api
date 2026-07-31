@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ import java.util.List;
 )
 @RestController
 @RequestMapping("/api/users/{userId}/workout-sessions/{workoutSessionId}/exercises")
+@PreAuthorize("@userAccess.isCurrentUser(#userId)")
 public class WorkoutSessionExerciseController {
 
     private final WorkoutSessionExerciseService workoutSessionExerciseService;
@@ -39,6 +41,7 @@ public class WorkoutSessionExerciseController {
                 userId,
                 workoutSessionId,
                 request.getWorkoutExerciseId(),
+                request.getExerciseVariantCode(),
                 request.isCompleted(),
                 request.getPerformedSets(),
                 request.getPerformedReps(),

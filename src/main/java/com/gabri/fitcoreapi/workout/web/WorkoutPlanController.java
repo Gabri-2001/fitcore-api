@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,6 +19,7 @@ import java.util.List;
 @Tag(name = "Workout Plans", description = "Operations related to workout planning")
 @RestController
 @RequestMapping("/api/users/{userId}/workout-plans")
+@PreAuthorize("@userAccess.isCurrentUser(#userId)")
 public class WorkoutPlanController {
 
     private final WorkoutPlanService workoutPlanService;

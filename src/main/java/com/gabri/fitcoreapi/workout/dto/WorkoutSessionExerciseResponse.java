@@ -8,6 +8,8 @@ public class WorkoutSessionExerciseResponse {
 
     private Long id;
     private Long workoutExerciseId;
+    private String exerciseVariantCode;
+    private boolean extra;
     private boolean completed;
     private Integer performedSets;
     private Integer performedReps;
@@ -19,6 +21,8 @@ public class WorkoutSessionExerciseResponse {
     public WorkoutSessionExerciseResponse(
             Long id,
             Long workoutExerciseId,
+            String exerciseVariantCode,
+            boolean extra,
             boolean completed,
             Integer performedSets,
             Integer performedReps,
@@ -29,6 +33,8 @@ public class WorkoutSessionExerciseResponse {
     ) {
         this.id = id;
         this.workoutExerciseId = workoutExerciseId;
+        this.exerciseVariantCode = exerciseVariantCode;
+        this.extra = extra;
         this.completed = completed;
         this.performedSets = performedSets;
         this.performedReps = performedReps;
@@ -41,7 +47,9 @@ public class WorkoutSessionExerciseResponse {
     public static WorkoutSessionExerciseResponse from(WorkoutSessionExercise sessionExercise) {
         return new WorkoutSessionExerciseResponse(
                 sessionExercise.getId(),
-                sessionExercise.getWorkoutExercise().getId(),
+                sessionExercise.getWorkoutExercise() == null ? null : sessionExercise.getWorkoutExercise().getId(),
+                sessionExercise.getExerciseVariant().getCode(),
+                sessionExercise.isExtra(),
                 sessionExercise.isCompleted(),
                 sessionExercise.getPerformedSets(),
                 sessionExercise.getPerformedReps(),
@@ -59,6 +67,9 @@ public class WorkoutSessionExerciseResponse {
     public Long getWorkoutExerciseId() {
         return workoutExerciseId;
     }
+
+    public String getExerciseVariantCode() { return exerciseVariantCode; }
+    public boolean isExtra() { return extra; }
 
     public boolean isCompleted() {
         return completed;

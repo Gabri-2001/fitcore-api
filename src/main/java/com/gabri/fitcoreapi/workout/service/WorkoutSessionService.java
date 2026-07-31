@@ -73,6 +73,10 @@ public class WorkoutSessionService {
                 );
             }
 
+            if (!workoutDay.getWorkoutPlan().getUser().getId().equals(user.getId())) {
+                throw new ResourceNotFoundException(messageResolver.get("error.workoutDay.notFound", workoutDayId));
+            }
+
             workoutSession.setWorkoutDay(workoutDay);
         }
 

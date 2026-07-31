@@ -9,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +21,7 @@ import java.util.List;
 @Tag(name = "Workout Sessions", description = "Operations related to real workout sessions")
 @RestController
 @RequestMapping("/api/users/{userId}/workout-sessions")
+@PreAuthorize("@userAccess.isCurrentUser(#userId)")
 public class WorkoutSessionController {
 
     private final WorkoutSessionService workoutSessionService;

@@ -7,8 +7,10 @@ import java.math.BigDecimal;
 
 public class CreateWorkoutSessionExerciseRequest {
 
-    @NotNull(message = "{validation.workoutSessionExercise.workoutExerciseId.required}")
     private Long workoutExerciseId;
+
+    @NotNull
+    private String exerciseVariantCode;
 
     private boolean completed;
 
@@ -32,6 +34,8 @@ public class CreateWorkoutSessionExerciseRequest {
     public Long getWorkoutExerciseId() {
         return workoutExerciseId;
     }
+
+    public String getExerciseVariantCode() { return exerciseVariantCode; }
 
     public boolean isCompleted() {
         return completed;
