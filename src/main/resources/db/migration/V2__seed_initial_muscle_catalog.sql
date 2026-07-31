@@ -1,6 +1,3 @@
-DO $$
-BEGIN
-IF to_regclass('muscles') IS NOT NULL THEN
 INSERT INTO muscles (code, name, muscle_group, description, visual_only_region, active, created_at, updated_at)
 VALUES
 ('PECTORAL_UPPER', 'Pectoral superior', 'CHEST', NULL, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -24,5 +21,3 @@ VALUES
 ('RECTUS_ABDOMINIS', 'Recto abdominal', 'CORE', NULL, false, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 ('OBLIQUES_SERRATUS_REGION', 'Región oblicuos y serrato', 'CORE', NULL, true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (code) DO NOTHING;
-END IF;
-END $$;
