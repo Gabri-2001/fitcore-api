@@ -44,6 +44,17 @@ class ExerciseMuscleActivationTest {
     }
 
     @org.junit.jupiter.api.Test
+    void shouldKeepLowMediumEvidenceCompatibleWithLegacyConfidence() {
+        ExerciseMuscleActivation activation = new ExerciseMuscleActivation(
+                null, null, MuscleRole.SECONDARY, "Limited exact-variant evidence",
+                EvidenceType.BIOMECHANICAL_INFERENCE, EvidenceLevel.LOW_MEDIUM, null, 5);
+
+        assertThat(activation.getEvidenceLevel()).isEqualTo(EvidenceLevel.LOW_MEDIUM);
+        assertThat(activation.getConfidence()).isEqualTo(EvidenceConfidence.MEDIUM);
+        assertThat(activation.getMappingVersion()).isEqualTo(5);
+    }
+
+    @org.junit.jupiter.api.Test
     void shouldRejectInvalidMappingVersion() {
         assertThatThrownBy(() -> new ExerciseMuscleActivation(
                 null, null, MuscleRole.PRIMARY, null,

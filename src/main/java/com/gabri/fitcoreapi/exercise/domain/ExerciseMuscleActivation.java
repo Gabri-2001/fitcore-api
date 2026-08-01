@@ -172,7 +172,7 @@ public class ExerciseMuscleActivation extends BaseEntity {
     private static EvidenceConfidence legacyConfidenceFor(EvidenceLevel evidenceLevel) {
         return switch (requireEvidenceLevel(evidenceLevel)) {
             case HIGH -> EvidenceConfidence.HIGH;
-            case MEDIUM, LOW -> EvidenceConfidence.MEDIUM;
+            case MEDIUM, LOW_MEDIUM, LOW -> EvidenceConfidence.MEDIUM;
             case REVIEW -> EvidenceConfidence.REVIEW;
         };
     }
