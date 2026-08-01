@@ -24,6 +24,23 @@ class ExerciseMuscleActivationTest {
         assertThat(activation.getSourceType()).isEqualTo(ActivationSourceType.PEER_REVIEWED);
         assertThat(activation.getSourceRefs()).isEqualTo("S10");
         assertThat(activation.getMappingVersion()).isEqualTo(2);
+        assertThat(activation.getEvidenceType()).isEqualTo(EvidenceType.DIRECT_EMG);
+        assertThat(activation.getEvidenceLevel()).isEqualTo(EvidenceLevel.HIGH);
+        assertThat(activation.getSourceRef()).isEqualTo("S10");
+        assertThat(activation.getRationale()).isEqualTo("Direct evidence");
+    }
+
+    @org.junit.jupiter.api.Test
+    void shouldPreserveNormalizedEvidenceMetadata() {
+        ExerciseMuscleActivation activation = new ExerciseMuscleActivation(
+                null, null, MuscleRole.STABILIZER, "Scapular control",
+                EvidenceType.BIOMECHANICAL_INFERENCE, EvidenceLevel.MEDIUM, "S13", 3);
+
+        assertThat(activation.getActivationLevel()).isEqualTo(1);
+        assertThat(activation.getEvidenceType()).isEqualTo(EvidenceType.BIOMECHANICAL_INFERENCE);
+        assertThat(activation.getEvidenceLevel()).isEqualTo(EvidenceLevel.MEDIUM);
+        assertThat(activation.getSourceRef()).isEqualTo("S13");
+        assertThat(activation.getMappingVersion()).isEqualTo(3);
     }
 
     @org.junit.jupiter.api.Test

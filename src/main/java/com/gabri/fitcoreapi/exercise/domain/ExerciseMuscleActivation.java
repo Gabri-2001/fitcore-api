@@ -51,6 +51,20 @@ public class ExerciseMuscleActivation extends BaseEntity {
     @Column(name = "mapping_version", nullable = false)
     private Integer mappingVersion = 1;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "evidence_type", nullable = false, length = 60)
+    private EvidenceType evidenceType = EvidenceType.REVIEW_REQUIRED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "evidence_level", nullable = false, length = 30)
+    private EvidenceLevel evidenceLevel = EvidenceLevel.REVIEW;
+
+    @Column(name = "source_ref", length = 80)
+    private String sourceRef;
+
+    @Column(length = 1000)
+    private String rationale;
+
     protected ExerciseMuscleActivation() {
     }
 
@@ -81,6 +95,86 @@ public class ExerciseMuscleActivation extends BaseEntity {
         }
         this.sourceRefs = sourceRefs;
         this.mappingVersion = mappingVersion;
+        this.evidenceType = evidenceTypeFor(sourceType);
+        this.evidenceLevel = evidenceLevelFor(confidence);
+        this.sourceRef = sourceRefs;
+        this.rationale = notes;
+    }
+
+    public ExerciseMuscleActivation(
+            ExerciseVariant exerciseVariant,
+            Muscle muscle,
+            MuscleRole role,
+            String rationale,
+            EvidenceType evidenceType,
+            EvidenceLevel evidenceLevel,
+            String sourceRef,
+            int mappingVersion
+    ) {
+        this.exerciseVariant = exerciseVariant;
+        this.muscle = muscle;
+        this.role = role;
+        this.activationLevel = levelFor(role);
+        this.notes = rationale;
+        this.confidence = legacyConfidenceFor(evidenceLevel);
+        this.sourceType = legacySourceTypeFor(evidenceType);
+        this.sourceRefs = sourceRef;
+        this.mappingVersion = requireMappingVersion(mappingVersion);
+        this.evidenceType = requireEvidenceType(evidenceType);
+        this.evidenceLevel = requireEvidenceLevel(evidenceLevel);
+        this.sourceRef = sourceRef;
+        this.rationale = rationale;
+    }
+
+    private static int requireMappingVersion(int mappingVersion) {
+        if (mappingVersion < 1) throw new BusinessRuleException("Mapping version must be greater than zero");
+        return mappingVersion;
+    }
+
+    private static EvidenceType requireEvidenceType(EvidenceType evidenceType) {
+        if (evidenceType == null) throw new BusinessRuleException("Evidence type is required");
+        return evidenceType;
+    }
+
+    private static EvidenceLevel requireEvidenceLevel(EvidenceLevel evidenceLevel) {
+        if (evidenceLevel == null) throw new BusinessRuleException("Evidence level is required");
+        return evidenceLevel;
+    }
+
+    private static EvidenceType evidenceTypeFor(ActivationSourceType sourceType) {
+        return switch (sourceType) {
+            case PEER_REVIEWED -> EvidenceType.DIRECT_EMG;
+            case ANATOMICAL_REFERENCE -> EvidenceType.ANATOMICAL_CONSENSUS;
+            case PROFESSIONAL_REFERENCE -> EvidenceType.INDIRECT_EMG_FROM_SIMILAR_EXERCISE;
+            case BIOMECHANICAL_INFERENCE, MIXED -> EvidenceType.BIOMECHANICAL_INFERENCE;
+            case LEGACY_SEED -> EvidenceType.REVIEW_REQUIRED;
+        };
+    }
+
+    private static EvidenceLevel evidenceLevelFor(EvidenceConfidence confidence) {
+        return switch (confidence) {
+            case HIGH -> EvidenceLevel.HIGH;
+            case MEDIUM -> EvidenceLevel.MEDIUM;
+            case REVIEW -> EvidenceLevel.REVIEW;
+        };
+    }
+
+    private static ActivationSourceType legacySourceTypeFor(EvidenceType evidenceType) {
+        return switch (requireEvidenceType(evidenceType)) {
+            case DIRECT_EMG -> ActivationSourceType.PEER_REVIEWED;
+            case INDIRECT_EMG_FROM_SIMILAR_EXERCISE -> ActivationSourceType.PROFESSIONAL_REFERENCE;
+            case ANATOMICAL_CONSENSUS -> ActivationSourceType.ANATOMICAL_REFERENCE;
+            case BIOMECHANICAL_INFERENCE, VISUAL_APPROXIMATION -> ActivationSourceType.BIOMECHANICAL_INFERENCE;
+            case REVIEW_REQUIRED -> ActivationSourceType.LEGACY_SEED;
+        };
+    }
+
+    private static EvidenceConfidence legacyConfidenceFor(EvidenceLevel evidenceLevel) {
+        return switch (requireEvidenceLevel(evidenceLevel)) {
+            case HIGH -> EvidenceConfidence.HIGH;
+            case MEDIUM, LOW -> EvidenceConfidence.MEDIUM;
+            case REVIEW -> EvidenceConfidence.REVIEW;
+        };
     }
 
     private static EvidenceConfidence requireConfidence(EvidenceConfidence confidence) {
@@ -113,4 +207,8 @@ public class ExerciseMuscleActivation extends BaseEntity {
     public ActivationSourceType getSourceType() { return sourceType; }
     public String getSourceRefs() { return sourceRefs; }
     public Integer getMappingVersion() { return mappingVersion; }
+    public EvidenceType getEvidenceType() { return evidenceType; }
+    public EvidenceLevel getEvidenceLevel() { return evidenceLevel; }
+    public String getSourceRef() { return sourceRef; }
+    public String getRationale() { return rationale; }
 }

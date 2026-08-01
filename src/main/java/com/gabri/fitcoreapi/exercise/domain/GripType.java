@@ -4,6 +4,7 @@ public enum GripType {
     PRONATED,
     SUPINATED,
     NEUTRAL,
+    SEMI_NEUTRAL,
     SEMI_PRONATED,
     SEMI_SUPINATED,
     MIXED,

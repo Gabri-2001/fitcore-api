@@ -4,5 +4,6 @@ public enum Laterality {
     BILATERAL,
     UNILATERAL,
     ALTERNATING,
+    ISO_LATERAL,
     NOT_APPLICABLE
 }

@@ -6,6 +6,8 @@ public enum BodyPosition {
     SUPINE,
     PRONE,
     CHEST_SUPPORTED,
+    BENT_OVER,
+    INCLINE_PRONE,
     KNEELING,
     HALF_KNEELING,
     HANGING,

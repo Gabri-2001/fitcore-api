@@ -78,6 +78,29 @@ public class ExerciseVariant extends BaseEntity {
     @Column(name = "requires_caution", nullable = false)
     private boolean requiresCaution = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "primary_focus", nullable = false, length = 80)
+    private ExerciseFocus primaryFocus = ExerciseFocus.GENERAL_STRENGTH;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "secondary_focus", length = 80)
+    private ExerciseFocus secondaryFocus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 40)
+    private Practicality practicality = Practicality.COMMON;
+
+    @Column(name = "focus_description", length = 1000)
+    private String focusDescription;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "focus_evidence_type", nullable = false, length = 60)
+    private EvidenceType focusEvidenceType = EvidenceType.BIOMECHANICAL_INFERENCE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "focus_evidence_level", nullable = false, length = 30)
+    private EvidenceLevel focusEvidenceLevel = EvidenceLevel.MEDIUM;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -272,6 +295,13 @@ public class ExerciseVariant extends BaseEntity {
     public String getName() {
         return name;
     }
+
+    public ExerciseFocus getPrimaryFocus() { return primaryFocus; }
+    public ExerciseFocus getSecondaryFocus() { return secondaryFocus; }
+    public Practicality getPracticality() { return practicality; }
+    public String getFocusDescription() { return focusDescription; }
+    public EvidenceType getFocusEvidenceType() { return focusEvidenceType; }
+    public EvidenceLevel getFocusEvidenceLevel() { return focusEvidenceLevel; }
 
     public void setName(String name) {
         this.name = name;
