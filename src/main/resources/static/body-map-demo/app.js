@@ -3,7 +3,8 @@ const API = '';
 const state = {
     token: sessionStorage.getItem('fitcore.demo.token'),
     user: JSON.parse(sessionStorage.getItem('fitcore.demo.user') || 'null'),
-    exercises: [], variants: [], filteredVariants: [], session: [], svg: null
+    exercises: [], variants: [], filteredVariants: [], session: [], svg: null,
+    showSessionStabilizers: false
 };
 
 const muscleSvgMap = {
@@ -63,7 +64,7 @@ const elements = {
     equipment: $('equipment-select'), gripType: $('grip-type-select'), gripWidth: $('grip-width-select'), variant: $('variant-select'),
     summary: $('variant-summary'), preview: $('preview-button'), add: $('add-button'), clear: $('clear-button'), sessionList: $('session-list'),
     stage: $('body-map-stage'), loading: $('map-loading'), title: $('map-title'), subtitle: $('map-subtitle'), activeCount: $('active-count'),
-    diagnostic: $('diagnostic'), toasts: $('toast-region')
+    diagnostic: $('diagnostic'), toasts: $('toast-region'), sessionStabilizers: $('session-stabilizers')
 };
 
 async function api(path, options = {}) {
@@ -188,11 +189,14 @@ async function addToSession() {
 function paintSession() {
     if (!state.session.length) return paintActivations([], 'Mapa muscular', 'Las regiones se iluminarán según su nivel de activación.');
     const combined = new Map();
-    state.session.flatMap(item => item.activations).forEach(a => {
+    state.session.flatMap(item => item.activations)
+        .filter(a => state.showSessionStabilizers || a.role !== 'STABILIZER')
+        .forEach(a => {
         const existing = combined.get(a.muscleCode);
         if (!existing || a.activationLevel > existing.activationLevel) combined.set(a.muscleCode, a);
     });
-    paintActivations([...combined.values()], 'Activación de la sesión', `${state.session.length} ejercicio${state.session.length === 1 ? '' : 's'} combinado${state.session.length === 1 ? '' : 's'}`);
+    const stabilizerNote = state.showSessionStabilizers ? ' · con estabilizadores' : ' · primarios y secundarios';
+    paintActivations([...combined.values()], 'Activación de la sesión', `${state.session.length} ejercicio${state.session.length === 1 ? '' : 's'} combinado${state.session.length === 1 ? '' : 's'}${stabilizerNote}`);
 }
 
 function paintActivations(activations, title, subtitle) {
@@ -233,6 +237,7 @@ elements.exercise.addEventListener('change', onExerciseChange);
 elements.variant.addEventListener('change', updateVariantSummary);
 elements.preview.addEventListener('click', previewVariant); elements.add.addEventListener('click', addToSession);
 elements.clear.addEventListener('click', () => { state.session = []; renderSession(); paintSession(); });
+elements.sessionStabilizers.addEventListener('change', event => { state.showSessionStabilizers = event.target.checked; paintSession(); });
 elements.sessionList.addEventListener('click', event => { const button = event.target.closest('[data-remove]'); if (!button) return; state.session.splice(Number(button.dataset.remove), 1); renderSession(); paintSession(); });
 
 loadSvg();

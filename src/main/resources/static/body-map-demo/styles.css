@@ -77,6 +77,16 @@ select:disabled, input:disabled { cursor: not-allowed; background: #f1f1ed; colo
 .summary-icon { display: grid; place-items: center; flex: 0 0 20px; height: 20px; border-radius: 50%; background: var(--forest); color: white; font: 800 11px/1 serif; }
 .variant-summary p { margin: 0; font-size: 11px; line-height: 1.5; }
 .session-heading { display: flex; align-items: flex-end; justify-content: space-between; }
+.session-toggle { margin-top: 16px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 14px; display: flex; align-items: center; gap: 11px; cursor: pointer; background: #f8faf7; }
+.session-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.session-toggle > span:last-child { display: grid; gap: 2px; }
+.session-toggle strong { font-size: 12px; }
+.session-toggle small { color: var(--ink-soft); font-size: 10px; }
+.toggle-track { position: relative; width: 35px; height: 20px; flex: 0 0 35px; border-radius: 999px; background: #c9d0cc; transition: .2s ease; }
+.toggle-track::after { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0003; transition: .2s ease; }
+.session-toggle input:checked + .toggle-track { background: var(--forest); }
+.session-toggle input:checked + .toggle-track::after { transform: translateX(15px); }
+.session-toggle input:focus-visible + .toggle-track { outline: 3px solid color-mix(in srgb, var(--lime), transparent 35%); outline-offset: 2px; }
 .session-list { display: grid; gap: 8px; }
 .empty-state { display: flex; align-items: center; gap: 12px; color: #7d8983; }
 .empty-state span { display: grid; place-items: center; width: 34px; height: 34px; border: 1px dashed #abb4af; border-radius: 9px; font-weight: 800; }
