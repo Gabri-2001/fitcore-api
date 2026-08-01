@@ -48,6 +48,14 @@ const muscleSvgMap = {
     STERNOCLEIDOMASTOID: ['sternocleidomastoid-left-1', 'sternocleidomastoid-left-2', 'sternocleidomastoid-left-3', 'sternocleidomastoid-right-1', 'sternocleidomastoid-right-2', 'sternocleidomastoid-right-3']
 };
 
+const focusMuscleMap = {
+    BACK_WIDTH: ['LATISSIMUS_DORSI'],
+    LAT_BIAS: ['LATISSIMUS_DORSI', 'TERES_MAJOR'],
+    BICEPS_BIAS: ['BICEPS_BRACHII'],
+    BRACHIALIS_BRACHIORADIALIS_BIAS: ['BRACHIALIS', 'BRACHIORADIALIS'],
+    GRIP_STRENGTH: ['FOREARM_FLEXORS_REGION']
+};
+
 const labels = {
     BARBELL: 'Barra', DUMBBELL: 'Mancuernas', CABLE: 'Polea', BODYWEIGHT: 'Peso corporal',
     PRONATED: 'Prono', SUPINATED: 'Supino', NEUTRAL: 'Neutro', SEMI_PRONATED: 'Semiprono', SEMI_SUPINATED: 'Semisupino', MIXED: 'Mixto', HOOK: 'Gancho', NO_SPECIFIC_GRIP: 'Sin agarre específico',
@@ -55,7 +63,8 @@ const labels = {
     COMMON: 'Común', UNCOMMON: 'Poco común', MACHINE_DEPENDENT: 'Depende del equipamiento',
     TECHNIQUE_DEPENDENT: 'Depende de la técnica', NOT_RECOMMENDED: 'No recomendada',
     BACK_WIDTH: 'Amplitud de espalda', BACK_THICKNESS: 'Espesor de espalda', LAT_BIAS: 'Énfasis dorsal',
-    UPPER_BACK_BIAS: 'Énfasis en espalda alta', BICEPS_BIAS: 'Énfasis en bíceps',
+    UPPER_BACK_BIAS: 'Énfasis en espalda alta', SCAPULAR_CONTROL: 'Control escapular',
+    BICEPS_BIAS: 'Énfasis en bíceps', GRIP_STRENGTH: 'Fuerza de agarre',
     BRACHIALIS_BRACHIORADIALIS_BIAS: 'Énfasis braquial y braquiorradial',
     CHEST_STERNAL_BIAS: 'Énfasis en pecho medio', CHEST_CLAVICULAR_BIAS: 'Énfasis en pecho superior',
     CHEST_LOWER_BIAS: 'Énfasis en pecho inferior', TRICEPS_BIAS: 'Énfasis en tríceps',
@@ -67,7 +76,11 @@ const labels = {
     CORE_FLEXION: 'Flexión de core', CORE_ANTI_EXTENSION: 'Anti-extensión',
     CORE_ANTI_ROTATION: 'Anti-rotación', CORE_LATERAL_STABILITY: 'Estabilidad lateral',
     POSTERIOR_CHAIN: 'Cadena posterior', GENERAL_STRENGTH: 'Fuerza general',
-    MACHINE_STABILITY: 'Estabilidad guiada', UNILATERAL_STABILITY: 'Estabilidad unilateral'
+    MACHINE_STABILITY: 'Estabilidad guiada', UNILATERAL_STABILITY: 'Estabilidad unilateral',
+    DIRECT_EMG: 'EMG directo', INDIRECT_EMG_FROM_SIMILAR_EXERCISE: 'EMG indirecto de ejercicio similar',
+    BIOMECHANICAL_INFERENCE: 'Inferencia biomecánica', ANATOMICAL_CONSENSUS: 'Consenso anatómico',
+    VISUAL_APPROXIMATION: 'Aproximación visual', REVIEW_REQUIRED: 'Revisión requerida',
+    HIGH: 'Alta', LOW_MEDIUM: 'Baja-media', LOW: 'Baja', REVIEW: 'En revisión'
 };
 
 const $ = id => document.getElementById(id);
@@ -187,8 +200,11 @@ function applyFilters() {
 function updateVariantSummary() {
     const variant = currentVariant(); const enabled = !!variant;
     elements.preview.disabled = !enabled; elements.add.disabled = !enabled;
+    const focus = enabled
+        ? [variant.primaryFocus, variant.secondaryFocus].filter(Boolean).map(friendly).join(' · ')
+        : '';
     elements.summary.innerHTML = enabled
-        ? `<span class="summary-icon">i</span><p><strong>${variant.name}</strong><br>${friendly(variant.equipment)} · agarre ${friendly(variant.gripType || 'NOT_APPLICABLE').toLowerCase()} · ${friendly(variant.gripWidth || 'NOT_APPLICABLE').toLowerCase()} · ${friendly(variant.primaryFocus).toLowerCase()} · ${friendly(variant.practicality).toLowerCase()}${variant.requiresCaution ? ' · requiere precaución' : ''}</p>`
+        ? `<span class="summary-icon">i</span><p><strong>${variant.name}</strong><br>${friendly(variant.equipment)} · agarre ${friendly(variant.gripType || 'NOT_APPLICABLE').toLowerCase()} · ${friendly(variant.gripWidth || 'NOT_APPLICABLE').toLowerCase()}<small><b>Enfoque:</b> ${focus} · ${friendly(variant.practicality).toLowerCase()}${variant.requiresCaution ? ' · requiere precaución' : ''}</small><small>${variant.focusDescription || ''}</small><small><b>Evidencia:</b> ${friendly(variant.focusEvidenceType)} · ${evidenceLevelLabel(variant.focusEvidenceLevel)}</small></p>`
         : '<span class="summary-icon">i</span><p>No existe una variante con esta combinación.</p>';
 }
 
@@ -198,7 +214,7 @@ async function getActivations(variant) {
 
 async function previewVariant() {
     const variant = currentVariant(); if (!variant) return;
-    try { const activations = await getActivations(variant); paintActivations(activations, variant.name, 'Previsualización de una variante'); }
+    try { const activations = await getActivations(variant); paintActivations(activations, variant.name, 'Previsualización de una variante', variant); }
     catch (error) { toast(error.message, true); }
 }
 
@@ -224,9 +240,10 @@ function paintSession() {
     paintActivations([...combined.values()], 'Activación de la sesión', `${state.session.length} ejercicio${state.session.length === 1 ? '' : 's'} combinado${state.session.length === 1 ? '' : 's'}${stabilizerNote}`);
 }
 
-function paintActivations(activations, title, subtitle) {
+function paintActivations(activations, title, subtitle, variant = null) {
     if (!state.svg) return;
     state.svg.querySelectorAll('[data-fitcore-muscle]').forEach(node => { node.removeAttribute('data-fitcore-muscle'); node.removeAttribute('data-fitcore-level'); });
+    state.svg.querySelectorAll('[data-fitcore-focus]').forEach(node => node.removeAttribute('data-fitcore-focus'));
     const missing = [];
     activations.forEach(a => {
         const ids = muscleSvgMap[a.muscleCode] || [];
@@ -244,8 +261,23 @@ function paintActivations(activations, title, subtitle) {
         });
         if (!found) missing.push(a.muscleCode);
     });
+    paintTechnicalFocus(variant);
     elements.title.textContent = title; elements.subtitle.textContent = subtitle; elements.activeCount.textContent = String(activations.length);
-    setDiagnostic(missing.length ? `Sin región SVG: ${missing.join(', ')}` : activations.length ? 'Todos los códigos tienen región SVG' : 'Esperando selección', missing.length ? 'error' : activations.length ? 'ok' : 'idle');
+    setDiagnostic(missing.length ? `Sin región SVG directa; omitidos sin error: ${missing.join(', ')}` : activations.length ? 'Todos los códigos tienen región SVG' : 'Esperando selección', missing.length ? 'warning' : activations.length ? 'ok' : 'idle');
+}
+
+function paintTechnicalFocus(variant) {
+    if (!variant) return;
+    const focusLayers = [
+        [variant.secondaryFocus, 'secondary'],
+        [variant.primaryFocus, 'primary']
+    ];
+    focusLayers.forEach(([focus, level]) => {
+        (focusMuscleMap[focus] || []).flatMap(code => muscleSvgMap[code] || []).forEach(id => {
+            const node = state.svg.getElementById(id);
+            if (node?.hasAttribute('data-fitcore-muscle')) node.dataset.fitcoreFocus = level;
+        });
+    });
 }
 
 function renderSession() {
@@ -260,6 +292,7 @@ function resetFilters() {
 function currentVariant() { return state.filteredVariants.find(v => v.code === elements.variant.value) || state.filteredVariants[0] || null; }
 function unique(values) { return [...new Set(values.filter(Boolean))]; }
 function friendly(value) { if (!value) return 'No aplica'; return labels[value] || value.toLowerCase().replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()); }
+function evidenceLevelLabel(value) { return ({ HIGH: 'Alta', MEDIUM: 'Media', LOW_MEDIUM: 'Baja-media', LOW: 'Baja', REVIEW: 'En revisión' })[value] || friendly(value); }
 function fillSelect(select, entries, placeholder) { select.innerHTML = ''; if (placeholder) select.add(new Option(placeholder, '')); entries.forEach(([value, text]) => select.add(new Option(text, value))); if (!placeholder && entries.length) select.value = entries[0][0]; }
 function setApiStatus(text, stateName) { elements.apiStatusText.textContent = text; elements.apiStatus.dataset.state = stateName; }
 function setDiagnostic(text, stateName) { elements.diagnostic.lastElementChild.textContent = text; elements.diagnostic.dataset.state = stateName; }
