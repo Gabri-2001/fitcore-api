@@ -10,4 +10,7 @@ import java.util.List;
 public interface ExerciseMuscleActivationRepository extends JpaRepository<ExerciseMuscleActivation, Long> {
     @EntityGraph(attributePaths = "muscle")
     List<ExerciseMuscleActivation> findByExerciseVariantOrderByActivationLevelDesc(ExerciseVariant exerciseVariant);
+
+    @EntityGraph(attributePaths = {"exerciseVariant", "muscle"})
+    List<ExerciseMuscleActivation> findByExerciseVariantIdIn(List<Long> exerciseVariantIds);
 }

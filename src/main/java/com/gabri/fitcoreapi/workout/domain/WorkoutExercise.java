@@ -71,4 +71,11 @@ public class WorkoutExercise extends BaseEntity {
     public Integer getExerciseOrder() {
         return exerciseOrder;
     }
+
+    public void changeOrder(Integer exerciseOrder) {
+        if (exerciseOrder == null || exerciseOrder < 1) {
+            throw new IllegalArgumentException("Exercise order must be greater than zero");
+        }
+        this.exerciseOrder = exerciseOrder;
+    }
 }

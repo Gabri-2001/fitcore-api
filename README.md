@@ -112,6 +112,19 @@ This keeps traceability while still allowing real-world flexibility.
 - add performed exercises to a real workout session
 - list performed exercises of a real workout session
 
+### Exercise catalog and discovery
+- store image, thumbnail, and accessible alternative text per concrete exercise variant
+- search variants by name or code
+- filter by one or more equipment types
+- filter by canonical muscles or muscle groups
+- exclude stabilizers from aggregate discovery by default
+- return paginated results suitable for web and mobile clients
+
+### Workout plan structure
+- create a workout plan with ordered days and ordered exercises
+- retrieve the complete ordered plan structure
+- reorder every exercise of an active workout day using stable database ids
+
 ### Nutrition execution
 - create nutrition logs
 - list nutrition logs
@@ -127,6 +140,15 @@ This keeps traceability while still allowing real-world flexibility.
 - Swagger / OpenAPI documentation
 - service-layer tests
 - web-layer tests
+
+### Progress and training statistics
+- register body-weight, body-fat, and muscle-mass measurements
+- compare any training period with the immediately previous period
+- report workouts, duration, completed sets, volume, and estimated one-repetition maximum
+- distribute effective sets and volume across primary and secondary muscle groups
+- exclude stabilizers from accumulated muscle distribution
+- compare training adherence and measured trends with the active user goal
+- return `INSUFFICIENT_DATA` when the available data cannot support a progress claim
 
 ---
 
@@ -228,6 +250,17 @@ This structure keeps the project more modular and scalable than a flat layer-onl
 - `GET /api/users/{userId}/workout-plans`
 - `GET /api/users/{userId}/workout-plans/active`
 - `GET /api/users/{userId}/workout-plans/{workoutPlanId}`
+- `GET /api/users/{userId}/workout-plans/{workoutPlanId}/detail`
+- `PUT /api/users/{userId}/workout-plans/{workoutPlanId}/days/{workoutDayId}/exercise-order`
+
+### Exercise discovery
+- `GET /api/exercise-variants/search`
+- optional parameters: `q`, `equipment`, `muscleCode`, `muscleGroup`, `includeStabilizers`, `page`, and `size`
+
+### Progress and statistics
+- `POST /api/users/{userId}/progress-records`
+- `GET /api/users/{userId}/progress-records`
+- `GET /api/users/{userId}/training-statistics`
 
 ### Diet plans
 - `POST /api/users/{userId}/diet-plans`
@@ -372,13 +405,18 @@ At the current stage, the backend already includes:
 - i18n support preparation
 - Swagger/OpenAPI
 - service and web-layer tests
-
-The next major backend steps planned are:
-
-- Spring Security
-- authorization by ownership
+- JWT authentication and ownership authorization
 - Flyway migrations
-- final technical polish
+- canonical exercise and muscle catalogs
+- body-map demonstration client
+- exercise discovery filters and paginated search
+- ordered workout-plan structures
+- comparative training statistics and conservative goal-progress assessment
+
+The next major backend steps planned are production hardening, richer nutrition workflows,
+recommendation services, and completion of the media catalog. The API stores media metadata,
+but original or properly licensed exercise illustrations still need to be created and assigned
+to every variant before clients can display a complete exercise-image library.
 
 The frontend is planned as a later phase, once the API surface is stable enough to support realistic user flows.
 
@@ -388,8 +426,6 @@ The frontend is planned as a later phase, once the API surface is stable enough 
 
 Possible future improvements include:
 
-- authentication and authorization
-- database migrations with Flyway
 - richer daily evaluation and recommendation flows
 - more complete progress tracking features
 - frontend application
@@ -400,4 +436,3 @@ Possible future improvements include:
 ## Author
 
 Gabriel Diaz
-

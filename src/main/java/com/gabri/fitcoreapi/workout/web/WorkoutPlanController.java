@@ -38,11 +38,31 @@ public class WorkoutPlanController {
                 userId,
                 request.getName(),
                 request.getDescription(),
-                request.getStartDate()
+                request.getStartDate(),
+                request.getDays()
         );
 
         URI location = URI.create("/api/users/" + userId + "/workout-plans/" + workoutPlan.getId());
         return ResponseEntity.created(location).body(WorkoutPlanResponse.from(workoutPlan));
+    }
+
+    @Operation(summary = "Get a workout plan with its ordered days and exercises")
+    @GetMapping("/{workoutPlanId}/detail")
+    public com.gabri.fitcoreapi.workout.dto.WorkoutPlanDetailResponse getWorkoutPlanDetail(
+            @PathVariable Long userId, @PathVariable Long workoutPlanId) {
+        return workoutPlanService.getWorkoutPlanDetail(userId, workoutPlanId);
+    }
+
+    @Operation(summary = "Reorder all exercises of an active workout day")
+    @PutMapping("/{workoutPlanId}/days/{workoutDayId}/exercise-order")
+    public com.gabri.fitcoreapi.workout.dto.WorkoutDayResponse reorderExercises(
+            @PathVariable Long userId,
+            @PathVariable Long workoutPlanId,
+            @PathVariable Long workoutDayId,
+            @Valid @RequestBody com.gabri.fitcoreapi.workout.dto.ReorderWorkoutExercisesRequest request
+    ) {
+        return workoutPlanService.reorderExercises(
+                userId, workoutPlanId, workoutDayId, request.workoutExerciseIds());
     }
 
     @Operation(summary = "Get the active workout plan of a user")

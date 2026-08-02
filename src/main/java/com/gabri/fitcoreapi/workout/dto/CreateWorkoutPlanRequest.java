@@ -2,8 +2,11 @@ package com.gabri.fitcoreapi.workout.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CreateWorkoutPlanRequest {
 
@@ -14,6 +17,9 @@ public class CreateWorkoutPlanRequest {
 
     @NotNull(message = "{validation.workoutPlan.startDate.required}")
     private LocalDate startDate;
+
+    @Valid
+    private List<CreateWorkoutDayRequest> days = new ArrayList<>();
 
     public CreateWorkoutPlanRequest() {
     }
@@ -28,5 +34,9 @@ public class CreateWorkoutPlanRequest {
 
     public LocalDate getStartDate() {
         return startDate;
+    }
+
+    public List<CreateWorkoutDayRequest> getDays() {
+        return days == null ? List.of() : days;
     }
 }

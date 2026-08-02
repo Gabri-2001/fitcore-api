@@ -93,6 +93,15 @@ public class ExerciseVariant extends BaseEntity {
     @Column(name = "focus_description", length = 1000)
     private String focusDescription;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    @Column(name = "thumbnail_url", length = 500)
+    private String thumbnailUrl;
+
+    @Column(name = "image_alt_text", length = 240)
+    private String imageAltText;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "focus_evidence_type", nullable = false, length = 60)
     private EvidenceType focusEvidenceType = EvidenceType.BIOMECHANICAL_INFERENCE;
@@ -300,6 +309,9 @@ public class ExerciseVariant extends BaseEntity {
     public ExerciseFocus getSecondaryFocus() { return secondaryFocus; }
     public Practicality getPracticality() { return practicality; }
     public String getFocusDescription() { return focusDescription; }
+    public String getImageUrl() { return imageUrl; }
+    public String getThumbnailUrl() { return thumbnailUrl; }
+    public String getImageAltText() { return imageAltText; }
     public EvidenceType getFocusEvidenceType() { return focusEvidenceType; }
     public EvidenceLevel getFocusEvidenceLevel() { return focusEvidenceLevel; }
 

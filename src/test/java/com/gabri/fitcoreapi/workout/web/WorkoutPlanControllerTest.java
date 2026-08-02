@@ -65,7 +65,7 @@ class WorkoutPlanControllerTest {
 
         ReflectionTestUtils.setField(workoutPlan, "id", 20L);
 
-        when(workoutPlanService.createWorkoutPlan(any(), any(), any(), any())).thenReturn(workoutPlan);
+        when(workoutPlanService.createWorkoutPlan(any(), any(), any(), any(), any())).thenReturn(workoutPlan);
 
         String requestBody = """
                 {
