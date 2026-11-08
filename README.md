@@ -405,6 +405,16 @@ The goal is to validate both:
 .\mvnw.cmd spring-boot:run
 ```
 
+### FitCore Test Lab
+
+With the API running, open:
+
+- `http://localhost:8080/fitcore-lab/`
+
+The local test client covers authentication, exercise discovery and the body map, workout-plan
+editing, real session and set logging, goals, progress statistics, recommendations, and HTTP
+diagnostics. Nutrition is intentionally excluded while that domain remains under review.
+
 ---
 
 ## How to run tests
@@ -472,7 +482,7 @@ At the current stage, the backend already includes:
 - JWT authentication and ownership authorization
 - Flyway migrations
 - canonical exercise and muscle catalogs
-- body-map demonstration client
+- body-map demonstration client and integrated FitCore Test Lab
 - exercise discovery filters and paginated search
 - ordered workout-plan structures
 - comparative training statistics and conservative goal-progress assessment
@@ -482,7 +492,8 @@ email-based verification/password recovery, and completion of the actual media c
 can upload and serve variant media, but original or properly licensed exercise illustrations still
 need to be created and assigned before clients can display a complete exercise-image library.
 
-The frontend is planned as a later phase, once the API surface is stable enough to support realistic user flows.
+Production web and mobile clients remain a later phase. The integrated Test Lab now provides a
+responsive reference client for validating the stable API workflows during backend development.
 
 ---
 

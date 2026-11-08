@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/api-docs/**",
                                 "/body-map-demo/**",
+                                "/fitcore-lab/**",
                                 "/media/exercises/**",
                                 "/actuator/health"
                         ).permitAll()
