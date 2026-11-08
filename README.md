@@ -79,9 +79,15 @@ This keeps traceability while still allowing real-world flexibility.
 ## Current functional scope
 
 ### User management
-- create users
-- list users
-- get user by id
+- register accounts through the authentication workflow
+- retrieve the authenticated profile through `/api/users/me`
+- enforce ownership on user-scoped resources
+
+### Authentication and security
+- short-lived JWT access tokens plus rotating opaque refresh tokens
+- refresh-token revocation on logout and password change
+- JSON responses for unauthenticated and forbidden requests
+- authentication rate limiting and configurable CORS
 
 ### Goal profiles
 - create goal profiles
@@ -89,6 +95,8 @@ This keeps traceability while still allowing real-world flexibility.
 - get goal profile history
 - get goal profile by id
 - preserve historical goal changes
+- define measurable weight, body-fat, muscle-mass and target-date goals
+- define intended training frequency and ordered priority muscle groups
 
 ### Workout plans
 - create workout plans
@@ -111,6 +119,9 @@ This keeps traceability while still allowing real-world flexibility.
 - get workout session by id
 - add performed exercises to a real workout session
 - list performed exercises of a real workout session
+- update, complete, cancel or delete non-completed sessions
+- update/delete performed exercises and individual set logs
+- derive exercise summaries from set logs
 
 ### Exercise catalog and discovery
 - store image, thumbnail, and accessible alternative text per concrete exercise variant
@@ -124,6 +135,8 @@ This keeps traceability while still allowing real-world flexibility.
 - create a workout plan with ordered days and ordered exercises
 - retrieve the complete ordered plan structure
 - reorder every exercise of an active workout day using stable database ids
+- replace a complete active structure as a new historical version
+- duplicate a previous structure into a new plan family
 
 ### Nutrition execution
 - create nutrition logs
@@ -140,6 +153,8 @@ This keeps traceability while still allowing real-world flexibility.
 - Swagger / OpenAPI documentation
 - service-layer tests
 - web-layer tests
+- PostgreSQL/Flyway integration test with Testcontainers
+- Actuator health endpoint, Docker Compose and CI workflow
 
 ### Progress and training statistics
 - register body-weight, body-fat, and muscle-mass measurements
@@ -149,6 +164,18 @@ This keeps traceability while still allowing real-world flexibility.
 - exclude stabilizers from accumulated muscle distribution
 - compare training adherence and measured trends with the active user goal
 - return `INSUFFICIENT_DATA` when the available data cannot support a progress claim
+- count only completed sessions and smooth body-measurement trends
+- report the current value, remaining distance and completion percentage for measurable goals
+
+### Training recommendations
+- generate conservative training/recovery recommendations from the previous 28 days
+- keep recommendation history and explicit pending/accepted/rejected states
+- never mutate a workout plan automatically when a recommendation is accepted
+
+### Exercise media
+- upload JPEG, PNG or WebP media to a concrete variant through an administrator-only endpoint
+- store media on a configurable filesystem path and expose stable URLs
+- keep missing media as `null` until an original or licensed illustration is assigned
 
 ---
 
@@ -235,8 +262,12 @@ This structure keeps the project more modular and scalable than a flat layer-onl
 ## API overview
 
 ### Users
-- `POST /api/users`
-- `GET /api/users`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `POST /api/auth/change-password`
+- `GET /api/users/me`
 - `GET /api/users/{userId}`
 
 ### Goal profiles
@@ -252,6 +283,8 @@ This structure keeps the project more modular and scalable than a flat layer-onl
 - `GET /api/users/{userId}/workout-plans/{workoutPlanId}`
 - `GET /api/users/{userId}/workout-plans/{workoutPlanId}/detail`
 - `PUT /api/users/{userId}/workout-plans/{workoutPlanId}/days/{workoutDayId}/exercise-order`
+- `PUT /api/users/{userId}/workout-plans/{workoutPlanId}`
+- `POST /api/users/{userId}/workout-plans/{workoutPlanId}/duplicate`
 
 ### Exercise discovery
 - `GET /api/exercise-variants/search`
@@ -272,8 +305,24 @@ This structure keeps the project more modular and scalable than a flat layer-onl
 - `POST /api/users/{userId}/workout-sessions`
 - `GET /api/users/{userId}/workout-sessions`
 - `GET /api/users/{userId}/workout-sessions/{workoutSessionId}`
+- `PATCH /api/users/{userId}/workout-sessions/{workoutSessionId}`
+- `POST /api/users/{userId}/workout-sessions/{workoutSessionId}/complete`
+- `POST /api/users/{userId}/workout-sessions/{workoutSessionId}/cancel`
+- `DELETE /api/users/{userId}/workout-sessions/{workoutSessionId}`
 - `POST /api/users/{userId}/workout-sessions/{workoutSessionId}/exercises`
 - `GET /api/users/{userId}/workout-sessions/{workoutSessionId}/exercises`
+- `PUT/DELETE /api/users/{userId}/workout-sessions/{workoutSessionId}/exercises/{sessionExerciseId}`
+- `POST/GET/PUT/DELETE /api/users/{userId}/workout-session-exercises/{sessionExerciseId}/sets`
+
+### Training recommendations
+- `POST /api/users/{userId}/training-recommendations/generate`
+- `GET /api/users/{userId}/training-recommendations`
+- `POST /api/users/{userId}/training-recommendations/{recommendationId}/accept`
+- `POST /api/users/{userId}/training-recommendations/{recommendationId}/reject`
+
+### Exercise media
+- `POST /api/exercise-variants/{code}/media` (`ADMIN`)
+- `GET /media/exercises/{fileName}`
 
 ### Nutrition logs
 - `POST /api/users/{userId}/nutrition-logs`
@@ -382,10 +431,25 @@ Example:
 spring.datasource.url=jdbc:postgresql://localhost:5432/fitcore_api
 spring.datasource.username=your_username
 spring.datasource.password=your_password
-spring.jpa.hibernate.ddl-auto=update
+spring.jpa.hibernate.ddl-auto=validate
 ```
 
 Adjust these values to match your local setup.
+
+---
+
+## Docker development environment
+
+Provide secrets through environment variables and start both services:
+
+```powershell
+$env:DB_PASSWORD="choose-a-database-password"
+$env:JWT_SECRET="a-base64-encoded-key-of-at-least-256-bits"
+docker compose up --build
+```
+
+Exercise images are persisted in the `fitcore-media` volume. PostgreSQL data is persisted in
+`fitcore-postgres`.
 
 ---
 
@@ -413,10 +477,10 @@ At the current stage, the backend already includes:
 - ordered workout-plan structures
 - comparative training statistics and conservative goal-progress assessment
 
-The next major backend steps planned are production hardening, richer nutrition workflows,
-recommendation services, and completion of the media catalog. The API stores media metadata,
-but original or properly licensed exercise illustrations still need to be created and assigned
-to every variant before clients can display a complete exercise-image library.
+The remaining major backend work is deliberately concentrated in richer nutrition workflows,
+email-based verification/password recovery, and completion of the actual media catalog. The API
+can upload and serve variant media, but original or properly licensed exercise illustrations still
+need to be created and assigned before clients can display a complete exercise-image library.
 
 The frontend is planned as a later phase, once the API surface is stable enough to support realistic user flows.
 

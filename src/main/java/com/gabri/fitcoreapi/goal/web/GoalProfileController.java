@@ -42,7 +42,13 @@ public class GoalProfileController {
                 request.getTargetCarbs(),
                 request.getTargetFats(),
                 request.getReviewFrequencyDays(),
-                request.getStartDate()
+                request.getStartDate(),
+                request.getTargetWeightKg(),
+                request.getTargetBodyFatPercentage(),
+                request.getTargetMuscleMassKg(),
+                request.getTargetDate(),
+                request.getTargetTrainingDaysPerWeek(),
+                request.getPriorityMuscleGroups()
         );
 
         URI location = URI.create("/api/users/" + userId + "/goal-profiles/" + goalProfile.getId());

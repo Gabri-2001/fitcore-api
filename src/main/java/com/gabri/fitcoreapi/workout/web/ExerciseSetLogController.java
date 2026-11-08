@@ -26,4 +26,19 @@ public class ExerciseSetLogController {
     public List<ExerciseSetLogResponse> findAll(@PathVariable Long userId, @PathVariable Long sessionExerciseId) {
         return service.findAll(userId, sessionExerciseId).stream().map(ExerciseSetLogResponse::from).toList();
     }
+
+    @PutMapping("/{setLogId}")
+    public ExerciseSetLogResponse update(@PathVariable Long userId, @PathVariable Long sessionExerciseId,
+            @PathVariable Long setLogId, @Valid @RequestBody UpdateExerciseSetLogRequest request) {
+        return ExerciseSetLogResponse.from(service.update(userId, sessionExerciseId, setLogId,
+                request.setNumber(), request.weight(), request.reps(), request.rir(), request.rpe(),
+                request.completed(), request.notes()));
+    }
+
+    @DeleteMapping("/{setLogId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long userId, @PathVariable Long sessionExerciseId,
+            @PathVariable Long setLogId) {
+        service.delete(userId, sessionExerciseId, setLogId);
+    }
 }

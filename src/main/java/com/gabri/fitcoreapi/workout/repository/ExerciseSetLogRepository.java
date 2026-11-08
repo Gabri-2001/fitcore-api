@@ -10,6 +10,8 @@ import java.util.List;
 
 public interface ExerciseSetLogRepository extends JpaRepository<ExerciseSetLog, Long> {
     List<ExerciseSetLog> findByWorkoutSessionExerciseOrderBySetNumber(WorkoutSessionExercise exercise);
+    java.util.Optional<ExerciseSetLog> findByIdAndWorkoutSessionExerciseIdAndWorkoutSessionExerciseWorkoutSessionUserId(
+            Long id, Long workoutSessionExerciseId, Long userId);
     List<ExerciseSetLog> findByWorkoutSessionExerciseWorkoutSessionUserIdAndCompletedTrue(Long userId);
 
     @Query("""
@@ -20,6 +22,7 @@ public interface ExerciseSetLogRepository extends JpaRepository<ExerciseSetLog, 
             join fetch variant.exercise exercise
             where session.user.id = :userId
               and log.completed = true
+              and session.status = com.gabri.fitcoreapi.workout.domain.WorkoutSessionStatus.COMPLETED
               and session.sessionDate between :from and :to
             """)
     List<ExerciseSetLog> findCompletedForStatistics(

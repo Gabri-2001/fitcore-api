@@ -2,9 +2,11 @@ package com.gabri.fitcoreapi.goal.dto;
 
 import com.gabri.fitcoreapi.goal.domain.GoalProfile;
 import com.gabri.fitcoreapi.goal.domain.GoalType;
+import com.gabri.fitcoreapi.muscle.domain.MuscleGroup;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class GoalProfileResponse {
 
@@ -19,6 +21,12 @@ public class GoalProfileResponse {
     private boolean active;
     private LocalDate startDate;
     private LocalDate endDate;
+    private BigDecimal targetWeightKg;
+    private BigDecimal targetBodyFatPercentage;
+    private BigDecimal targetMuscleMassKg;
+    private LocalDate targetDate;
+    private Integer targetTrainingDaysPerWeek;
+    private List<MuscleGroup> priorityMuscleGroups;
 
     public GoalProfileResponse(
             Long id,
@@ -31,7 +39,13 @@ public class GoalProfileResponse {
             Integer version,
             boolean active,
             LocalDate startDate,
-            LocalDate endDate
+            LocalDate endDate,
+            BigDecimal targetWeightKg,
+            BigDecimal targetBodyFatPercentage,
+            BigDecimal targetMuscleMassKg,
+            LocalDate targetDate,
+            Integer targetTrainingDaysPerWeek,
+            List<MuscleGroup> priorityMuscleGroups
     ) {
         this.id = id;
         this.goalType = goalType;
@@ -44,6 +58,12 @@ public class GoalProfileResponse {
         this.active = active;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.targetWeightKg = targetWeightKg;
+        this.targetBodyFatPercentage = targetBodyFatPercentage;
+        this.targetMuscleMassKg = targetMuscleMassKg;
+        this.targetDate = targetDate;
+        this.targetTrainingDaysPerWeek = targetTrainingDaysPerWeek;
+        this.priorityMuscleGroups = priorityMuscleGroups;
     }
 
     public static GoalProfileResponse from(GoalProfile goalProfile) {
@@ -58,7 +78,13 @@ public class GoalProfileResponse {
                 goalProfile.getVersion(),
                 goalProfile.isActive(),
                 goalProfile.getStartDate(),
-                goalProfile.getEndDate()
+                goalProfile.getEndDate(),
+                goalProfile.getTargetWeightKg(),
+                goalProfile.getTargetBodyFatPercentage(),
+                goalProfile.getTargetMuscleMassKg(),
+                goalProfile.getTargetDate(),
+                goalProfile.getTargetTrainingDaysPerWeek(),
+                goalProfile.getPriorityMuscleGroups()
         );
     }
 
@@ -105,4 +131,11 @@ public class GoalProfileResponse {
     public LocalDate getEndDate() {
         return endDate;
     }
+
+    public BigDecimal getTargetWeightKg() { return targetWeightKg; }
+    public BigDecimal getTargetBodyFatPercentage() { return targetBodyFatPercentage; }
+    public BigDecimal getTargetMuscleMassKg() { return targetMuscleMassKg; }
+    public LocalDate getTargetDate() { return targetDate; }
+    public Integer getTargetTrainingDaysPerWeek() { return targetTrainingDaysPerWeek; }
+    public List<MuscleGroup> getPriorityMuscleGroups() { return priorityMuscleGroups; }
 }

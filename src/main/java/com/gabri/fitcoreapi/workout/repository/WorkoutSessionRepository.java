@@ -2,6 +2,7 @@ package com.gabri.fitcoreapi.workout.repository;
 
 import com.gabri.fitcoreapi.user.domain.User;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
+import com.gabri.fitcoreapi.workout.domain.WorkoutSessionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
@@ -24,4 +25,7 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 
     List<WorkoutSession> findByUserIdAndSessionDateBetweenOrderBySessionDateAsc(
             Long userId, LocalDate startDate, LocalDate endDate);
+
+    List<WorkoutSession> findByUserIdAndStatusAndSessionDateBetweenOrderBySessionDateAsc(
+            Long userId, WorkoutSessionStatus status, LocalDate startDate, LocalDate endDate);
 }

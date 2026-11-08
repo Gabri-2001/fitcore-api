@@ -69,7 +69,8 @@ class GoalProfileControllerTest {
 
         ReflectionTestUtils.setField(goalProfile, "id", 10L);
 
-        when(goalProfileService.createGoalProfile(any(), any(), any(), any(), any(), any(), any(), any()))
+        when(goalProfileService.createGoalProfile(any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any()))
                 .thenReturn(goalProfile);
 
         String requestBody = """
@@ -80,7 +81,11 @@ class GoalProfileControllerTest {
                   "targetCarbs": 350,
                   "targetFats": 80,
                   "reviewFrequencyDays": 14,
-                  "startDate": "2026-04-25"
+                  "startDate": "2026-04-25",
+                  "targetMuscleMassKg": 75,
+                  "targetDate": "2026-12-31",
+                  "targetTrainingDaysPerWeek": 4,
+                  "priorityMuscleGroups": ["BACK", "QUADRICEPS"]
                 }
                 """;
 

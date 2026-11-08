@@ -78,4 +78,11 @@ public class WorkoutExercise extends BaseEntity {
         }
         this.exerciseOrder = exerciseOrder;
     }
+
+    public void updatePrescription(ExerciseVariant exerciseVariant, Integer sets, Integer reps, Integer restSeconds) {
+        this.exerciseVariant = exerciseVariant;
+        this.sets = sets;
+        this.reps = reps;
+        this.restSeconds = restSeconds;
+    }
 }

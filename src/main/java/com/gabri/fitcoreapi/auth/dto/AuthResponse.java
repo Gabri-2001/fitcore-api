@@ -6,12 +6,21 @@ public class AuthResponse {
     private final Long userId;
     private final String email;
     private final String role;
+    private final String refreshToken;
+    private final long expiresInSeconds;
 
     public AuthResponse(String token, Long userId, String email, String role) {
+        this(token, userId, email, role, null, 0);
+    }
+
+    public AuthResponse(String token, Long userId, String email, String role,
+            String refreshToken, long expiresInSeconds) {
         this.token = token;
         this.userId = userId;
         this.email = email;
         this.role = role;
+        this.refreshToken = refreshToken;
+        this.expiresInSeconds = expiresInSeconds;
     }
 
     public String getToken() {
@@ -29,4 +38,7 @@ public class AuthResponse {
     public String getRole() {
         return role;
     }
+
+    public String getRefreshToken() { return refreshToken; }
+    public long getExpiresInSeconds() { return expiresInSeconds; }
 }

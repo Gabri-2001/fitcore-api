@@ -50,8 +50,9 @@ class TrainingStatisticsServiceTest {
         when(users.findById(1L)).thenReturn(Optional.of(user));
         when(goals.findByUserAndActiveTrue(user)).thenReturn(Optional.of(goal));
         when(plans.findByUserAndActiveTrue(user)).thenReturn(Optional.empty());
-        when(sessions.findByUserIdAndSessionDateBetweenOrderBySessionDateAsc(
-                org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+        when(sessions.findByUserIdAndStatusAndSessionDateBetweenOrderBySessionDateAsc(
+                org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(List.of());
 
         ExerciseSetLog current = setLog("100.00", "80.00", 5, 10L);

@@ -65,6 +65,32 @@ public class WorkoutPlanController {
                 userId, workoutPlanId, workoutDayId, request.workoutExerciseIds());
     }
 
+    @Operation(summary = "Create a new version replacing the complete active workout-plan structure")
+    @PutMapping("/{workoutPlanId}")
+    public ResponseEntity<com.gabri.fitcoreapi.workout.dto.WorkoutPlanDetailResponse> reviseWorkoutPlan(
+            @PathVariable Long userId,
+            @PathVariable Long workoutPlanId,
+            @Valid @RequestBody com.gabri.fitcoreapi.workout.dto.ReviseWorkoutPlanRequest request
+    ) {
+        WorkoutPlan revised = workoutPlanService.reviseWorkoutPlan(userId, workoutPlanId,
+                request.name(), request.description(), request.effectiveDate(), request.days());
+        return ResponseEntity.created(URI.create("/api/users/" + userId + "/workout-plans/" + revised.getId()))
+                .body(com.gabri.fitcoreapi.workout.dto.WorkoutPlanDetailResponse.from(revised));
+    }
+
+    @Operation(summary = "Duplicate any workout plan as a new active plan family")
+    @PostMapping("/{workoutPlanId}/duplicate")
+    public ResponseEntity<com.gabri.fitcoreapi.workout.dto.WorkoutPlanDetailResponse> duplicateWorkoutPlan(
+            @PathVariable Long userId,
+            @PathVariable Long workoutPlanId,
+            @Valid @RequestBody com.gabri.fitcoreapi.workout.dto.DuplicateWorkoutPlanRequest request
+    ) {
+        WorkoutPlan duplicate = workoutPlanService.duplicateWorkoutPlan(
+                userId, workoutPlanId, request.name(), request.startDate());
+        return ResponseEntity.created(URI.create("/api/users/" + userId + "/workout-plans/" + duplicate.getId()))
+                .body(com.gabri.fitcoreapi.workout.dto.WorkoutPlanDetailResponse.from(duplicate));
+    }
+
     @Operation(summary = "Get the active workout plan of a user")
     @GetMapping("/active")
     public WorkoutPlanResponse getActiveWorkoutPlan(@Parameter(description = "User id") @PathVariable Long userId) {

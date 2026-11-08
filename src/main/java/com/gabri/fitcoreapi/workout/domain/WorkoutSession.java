@@ -14,6 +14,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +42,15 @@ public class WorkoutSession extends BaseEntity {
     @Column(name = "session_intensity", nullable = false, length = 40)
     private WorkoutSessionIntensity sessionIntensity;
 
-    @Column(name = "duration_minutes", nullable = false)
+    @Column(name = "duration_minutes")
     private Integer durationMinutes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private WorkoutSessionStatus status;
+
+    @Column(name = "completed_at")
+    private Instant completedAt;
 
     @Column(length = 1500)
     private String notes;
@@ -70,6 +78,7 @@ public class WorkoutSession extends BaseEntity {
         this.durationMinutes = durationMinutes;
         this.notes = notes;
         this.estimatedTotalCaloriesBurned = estimatedTotalCaloriesBurned;
+        this.status = WorkoutSessionStatus.IN_PROGRESS;
     }
 
     public void setUser(User user) {
@@ -119,5 +128,57 @@ public class WorkoutSession extends BaseEntity {
 
     public List<WorkoutSessionExercise> getSessionExercises() {
         return sessionExercises;
+    }
+
+    public WorkoutSessionStatus getStatus() {
+        return status;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void update(
+            LocalDate sessionDate,
+            WorkoutSessionCategory sessionCategory,
+            WorkoutSessionIntensity sessionIntensity,
+            Integer durationMinutes,
+            String notes,
+            BigDecimal estimatedTotalCaloriesBurned
+    ) {
+        requireInProgress();
+        if (sessionDate != null) this.sessionDate = sessionDate;
+        if (sessionCategory != null) this.sessionCategory = sessionCategory;
+        if (sessionIntensity != null) this.sessionIntensity = sessionIntensity;
+        if (durationMinutes != null) this.durationMinutes = durationMinutes;
+        if (notes != null) this.notes = notes;
+        if (estimatedTotalCaloriesBurned != null) {
+            this.estimatedTotalCaloriesBurned = estimatedTotalCaloriesBurned;
+        }
+    }
+
+    public void complete(Instant completionTime) {
+        requireInProgress();
+        if (durationMinutes == null || durationMinutes < 1) {
+            throw new IllegalStateException("A completed workout session requires a positive duration");
+        }
+        this.status = WorkoutSessionStatus.COMPLETED;
+        this.completedAt = completionTime;
+    }
+
+    public void cancel() {
+        requireInProgress();
+        this.status = WorkoutSessionStatus.CANCELLED;
+        this.completedAt = null;
+    }
+
+    public boolean isEditable() {
+        return status == WorkoutSessionStatus.IN_PROGRESS;
+    }
+
+    public void requireInProgress() {
+        if (!isEditable()) {
+            throw new IllegalStateException("Only an in-progress workout session can be modified");
+        }
     }
 }

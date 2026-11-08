@@ -315,6 +315,12 @@ public class ExerciseVariant extends BaseEntity {
     public EvidenceType getFocusEvidenceType() { return focusEvidenceType; }
     public EvidenceLevel getFocusEvidenceLevel() { return focusEvidenceLevel; }
 
+    public void updateMedia(String imageUrl, String thumbnailUrl, String imageAltText) {
+        this.imageUrl = imageUrl;
+        this.thumbnailUrl = thumbnailUrl;
+        this.imageAltText = imageAltText;
+    }
+
     public void setName(String name) {
         this.name = name;
     }

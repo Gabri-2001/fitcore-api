@@ -8,6 +8,8 @@ import com.gabri.fitcoreapi.workout.domain.WorkoutDay;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionCategory;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionIntensity;
+import com.gabri.fitcoreapi.workout.domain.WorkoutSessionStatus;
+import com.gabri.fitcoreapi.common.exception.BusinessRuleException;
 import com.gabri.fitcoreapi.workout.repository.WorkoutSessionRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -120,5 +123,45 @@ public class WorkoutSessionService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         messageResolver.get("error.workoutSession.notFound", workoutSessionId)
                 ));
+    }
+
+    public WorkoutSession updateWorkoutSession(Long userId, Long workoutSessionId,
+            LocalDate sessionDate, WorkoutSessionCategory category, WorkoutSessionIntensity intensity,
+            Integer durationMinutes, String notes, BigDecimal estimatedCalories) {
+        WorkoutSession session = getWorkoutSessionById(userId, workoutSessionId);
+        try {
+            session.update(sessionDate, category, intensity, durationMinutes, notes, estimatedCalories);
+        } catch (IllegalStateException exception) {
+            throw new BusinessRuleException(exception.getMessage());
+        }
+        return session;
+    }
+
+    public WorkoutSession completeWorkoutSession(Long userId, Long workoutSessionId) {
+        WorkoutSession session = getWorkoutSessionById(userId, workoutSessionId);
+        try {
+            session.complete(Instant.now());
+        } catch (IllegalStateException exception) {
+            throw new BusinessRuleException(exception.getMessage());
+        }
+        return session;
+    }
+
+    public WorkoutSession cancelWorkoutSession(Long userId, Long workoutSessionId) {
+        WorkoutSession session = getWorkoutSessionById(userId, workoutSessionId);
+        try {
+            session.cancel();
+        } catch (IllegalStateException exception) {
+            throw new BusinessRuleException(exception.getMessage());
+        }
+        return session;
+    }
+
+    public void deleteWorkoutSession(Long userId, Long workoutSessionId) {
+        WorkoutSession session = getWorkoutSessionById(userId, workoutSessionId);
+        if (session.getStatus() == WorkoutSessionStatus.COMPLETED) {
+            throw new BusinessRuleException("Completed workout sessions cannot be deleted; cancel or retain the history");
+        }
+        workoutSessionRepository.delete(session);
     }
 }

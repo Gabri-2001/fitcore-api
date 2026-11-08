@@ -42,6 +42,16 @@ public class ExerciseSetLog extends BaseEntity {
     public BigDecimal getRpe() { return rpe; }
     public boolean isCompleted() { return completed; }
     public String getNotes() { return notes; }
+    public void update(Integer setNumber, BigDecimal weight, Integer reps, Integer rir,
+            BigDecimal rpe, boolean completed, String notes) {
+        this.setNumber = setNumber;
+        this.weight = weight;
+        this.reps = reps;
+        this.rir = rir;
+        this.rpe = rpe;
+        this.completed = completed;
+        this.notes = notes;
+    }
     public BigDecimal estimatedOneRepMax() {
         if (!completed || weight == null || reps == null || reps <= 0) return BigDecimal.ZERO;
         return weight.multiply(BigDecimal.ONE.add(BigDecimal.valueOf(reps).divide(BigDecimal.valueOf(30), 6, java.math.RoundingMode.HALF_UP)));

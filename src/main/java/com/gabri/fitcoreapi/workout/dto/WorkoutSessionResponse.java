@@ -3,9 +3,11 @@ package com.gabri.fitcoreapi.workout.dto;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionCategory;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionIntensity;
+import com.gabri.fitcoreapi.workout.domain.WorkoutSessionStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.Instant;
 
 public class WorkoutSessionResponse {
 
@@ -17,6 +19,8 @@ public class WorkoutSessionResponse {
     private Integer durationMinutes;
     private String notes;
     private BigDecimal estimatedTotalCaloriesBurned;
+    private WorkoutSessionStatus status;
+    private Instant completedAt;
 
     public WorkoutSessionResponse(
             Long id,
@@ -26,7 +30,9 @@ public class WorkoutSessionResponse {
             WorkoutSessionIntensity sessionIntensity,
             Integer durationMinutes,
             String notes,
-            BigDecimal estimatedTotalCaloriesBurned
+            BigDecimal estimatedTotalCaloriesBurned,
+            WorkoutSessionStatus status,
+            Instant completedAt
     ) {
         this.id = id;
         this.workoutDayId = workoutDayId;
@@ -36,6 +42,8 @@ public class WorkoutSessionResponse {
         this.durationMinutes = durationMinutes;
         this.notes = notes;
         this.estimatedTotalCaloriesBurned = estimatedTotalCaloriesBurned;
+        this.status = status;
+        this.completedAt = completedAt;
     }
 
     public static WorkoutSessionResponse from(WorkoutSession workoutSession) {
@@ -47,7 +55,9 @@ public class WorkoutSessionResponse {
                 workoutSession.getSessionIntensity(),
                 workoutSession.getDurationMinutes(),
                 workoutSession.getNotes(),
-                workoutSession.getEstimatedTotalCaloriesBurned()
+                workoutSession.getEstimatedTotalCaloriesBurned(),
+                workoutSession.getStatus(),
+                workoutSession.getCompletedAt()
         );
     }
 
@@ -82,4 +92,7 @@ public class WorkoutSessionResponse {
     public BigDecimal getEstimatedTotalCaloriesBurned() {
         return estimatedTotalCaloriesBurned;
     }
+
+    public WorkoutSessionStatus getStatus() { return status; }
+    public Instant getCompletedAt() { return completedAt; }
 }

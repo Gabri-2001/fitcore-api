@@ -46,6 +46,10 @@ public class JwtService {
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
+    public long getExpirationSeconds() {
+        return expirationMillis / 1000;
+    }
+
     private boolean isTokenExpired(String token) {
         return extractAllClaims(token).getExpiration().before(new Date());
     }

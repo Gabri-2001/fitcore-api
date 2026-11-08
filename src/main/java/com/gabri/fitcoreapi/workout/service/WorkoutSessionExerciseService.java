@@ -74,6 +74,7 @@ public class WorkoutSessionExerciseService {
                     messageResolver.get("error.workoutSession.userMismatch", workoutSessionId, userId)
             );
         }
+        requireEditable(workoutSession);
 
         ExerciseVariant variant = exerciseVariantRepository.findByCodeAndActiveTrue(exerciseVariantCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Exercise variant not found with code: " + exerciseVariantCode));
@@ -127,5 +128,50 @@ public class WorkoutSessionExerciseService {
         }
 
         return workoutSessionExerciseRepository.findByWorkoutSession(workoutSession);
+    }
+
+    public WorkoutSessionExercise updateWorkoutSessionExercise(
+            Long userId,
+            Long workoutSessionId,
+            Long sessionExerciseId,
+            boolean completed,
+            Integer performedSets,
+            Integer performedReps,
+            BigDecimal performedWeightKg,
+            Integer performedDurationMinutes,
+            BigDecimal estimatedCaloriesBurned,
+            String notes
+    ) {
+        WorkoutSessionExercise exercise = ownedExercise(userId, workoutSessionId, sessionExerciseId);
+        requireEditable(exercise.getWorkoutSession());
+        if (!exercise.getSetLogs().isEmpty()) {
+            throw new BusinessRuleException("Set-based exercise totals are derived from their set logs");
+        }
+        exercise.update(completed, performedSets, performedReps, performedWeightKg,
+                performedDurationMinutes, estimatedCaloriesBurned, notes);
+        return exercise;
+    }
+
+    public void deleteWorkoutSessionExercise(Long userId, Long workoutSessionId, Long sessionExerciseId) {
+        WorkoutSessionExercise exercise = ownedExercise(userId, workoutSessionId, sessionExerciseId);
+        requireEditable(exercise.getWorkoutSession());
+        workoutSessionExerciseRepository.delete(exercise);
+    }
+
+    private WorkoutSessionExercise ownedExercise(Long userId, Long workoutSessionId, Long sessionExerciseId) {
+        WorkoutSessionExercise exercise = workoutSessionExerciseRepository
+                .findByIdAndWorkoutSessionUserId(sessionExerciseId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Workout session exercise not found with id: " + sessionExerciseId));
+        if (!exercise.getWorkoutSession().getId().equals(workoutSessionId)) {
+            throw new ResourceNotFoundException("Workout session exercise not found with id: " + sessionExerciseId);
+        }
+        return exercise;
+    }
+
+    private void requireEditable(WorkoutSession session) {
+        if (!session.isEditable()) {
+            throw new BusinessRuleException("Only an in-progress workout session can be modified");
+        }
     }
 }

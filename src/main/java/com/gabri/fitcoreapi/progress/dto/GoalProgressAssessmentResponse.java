@@ -16,6 +16,11 @@ public record GoalProgressAssessmentResponse(
         BigDecimal outcomeTrendPercent,
         String summaryKey,
         List<GoalSignalResponse> signals,
-        List<String> limitationKeys
+        List<String> limitationKeys,
+        String targetMetric,
+        BigDecimal targetValue,
+        BigDecimal currentValue,
+        BigDecimal remainingToTarget,
+        BigDecimal targetCompletionPercent
 ) {
 }

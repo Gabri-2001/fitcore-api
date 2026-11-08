@@ -152,6 +152,57 @@ public class WorkoutPlanService {
         return WorkoutDayResponse.from(day);
     }
 
+    public WorkoutPlan reviseWorkoutPlan(Long userId, Long workoutPlanId, String name,
+            String description, LocalDate effectiveDate, List<CreateWorkoutDayRequest> dayRequests) {
+        WorkoutPlan current = getWorkoutPlanById(userId, workoutPlanId);
+        if (!current.isActive()) {
+            throw new BusinessRuleException("Only the active workout plan can be revised");
+        }
+        if (effectiveDate.isBefore(current.getStartDate())) {
+            throw new BusinessRuleException("The revised plan cannot start before the current plan");
+        }
+
+        current.deactivate(endDateBefore(effectiveDate, current.getStartDate()));
+        WorkoutPlan revised = new WorkoutPlan(current.getPlanGroupId(), name, description,
+                current.getVersion() + 1, true, effectiveDate, null);
+        revised.setUser(current.getUser());
+        revised.setPreviousPlan(current);
+        addStructure(revised, dayRequests == null ? List.of() : dayRequests);
+        return workoutPlanRepository.save(revised);
+    }
+
+    public WorkoutPlan duplicateWorkoutPlan(Long userId, Long workoutPlanId, String name, LocalDate startDate) {
+        WorkoutPlan source = getWorkoutPlanById(userId, workoutPlanId);
+        WorkoutPlan active = workoutPlanRepository.findByUserAndActiveTrue(source.getUser()).orElse(null);
+        if (active != null) {
+            active.deactivate(endDateBefore(startDate, active.getStartDate()));
+        }
+
+        WorkoutPlan duplicate = new WorkoutPlan(UUID.randomUUID(), name, source.getDescription(),
+                1, true, startDate, null);
+        duplicate.setUser(source.getUser());
+        copyStructure(source, duplicate);
+        return workoutPlanRepository.save(duplicate);
+    }
+
+    private LocalDate endDateBefore(LocalDate newStartDate, LocalDate oldStartDate) {
+        return newStartDate.isAfter(oldStartDate) ? newStartDate.minusDays(1) : oldStartDate;
+    }
+
+    private void copyStructure(WorkoutPlan source, WorkoutPlan target) {
+        source.getWorkoutDays().stream()
+                .sorted(java.util.Comparator.comparing(WorkoutDay::getDayOrder))
+                .forEach(sourceDay -> {
+                    WorkoutDay day = new WorkoutDay(sourceDay.getName(), sourceDay.getDayOrder(), sourceDay.getDayType());
+                    sourceDay.getWorkoutExercises().stream()
+                            .sorted(java.util.Comparator.comparing(WorkoutExercise::getExerciseOrder))
+                            .forEach(sourceExercise -> day.addWorkoutExercise(new WorkoutExercise(
+                                    sourceExercise.getExerciseVariant(), sourceExercise.getSets(), sourceExercise.getReps(),
+                                    sourceExercise.getRestSeconds(), sourceExercise.getExerciseOrder())));
+                    target.addWorkoutDay(day);
+                });
+    }
+
     private void addStructure(WorkoutPlan plan, List<CreateWorkoutDayRequest> dayRequests) {
         var dayOrders = new HashSet<Integer>();
         for (CreateWorkoutDayRequest dayRequest : dayRequests) {

@@ -98,6 +98,14 @@ public class WorkoutSessionExercise extends BaseEntity {
 
     public List<ExerciseSetLog> getSetLogs() { return setLogs; }
 
+    public void addSetLog(ExerciseSetLog setLog) {
+        setLogs.add(setLog);
+    }
+
+    public void removeSetLog(ExerciseSetLog setLog) {
+        setLogs.remove(setLog);
+    }
+
     public boolean isCompleted() {
         return completed;
     }
@@ -124,5 +132,40 @@ public class WorkoutSessionExercise extends BaseEntity {
 
     public String getNotes() {
         return notes;
+    }
+
+    public void update(
+            boolean completed,
+            Integer performedSets,
+            Integer performedReps,
+            BigDecimal performedWeightKg,
+            Integer performedDurationMinutes,
+            BigDecimal estimatedCaloriesBurned,
+            String notes
+    ) {
+        this.completed = completed;
+        this.performedSets = performedSets;
+        this.performedReps = performedReps;
+        this.performedWeightKg = performedWeightKg;
+        this.performedDurationMinutes = performedDurationMinutes;
+        this.estimatedCaloriesBurned = estimatedCaloriesBurned;
+        this.notes = notes;
+    }
+
+    public void synchronizeSetSummary() {
+        if (setLogs.isEmpty()) {
+            performedSets = 0;
+            performedReps = 0;
+            performedWeightKg = null;
+            completed = false;
+            return;
+        }
+        List<ExerciseSetLog> completedLogs = setLogs.stream().filter(ExerciseSetLog::isCompleted).toList();
+        performedSets = completedLogs.size();
+        performedReps = completedLogs.stream().map(ExerciseSetLog::getReps)
+                .filter(java.util.Objects::nonNull).mapToInt(Integer::intValue).sum();
+        performedWeightKg = completedLogs.stream().map(ExerciseSetLog::getWeight)
+                .filter(java.util.Objects::nonNull).max(BigDecimal::compareTo).orElse(null);
+        completed = !completedLogs.isEmpty() && completedLogs.size() == setLogs.size();
     }
 }

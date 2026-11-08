@@ -20,6 +20,8 @@ import com.gabri.fitcoreapi.user.repository.UserRepository;
 import com.gabri.fitcoreapi.workout.domain.ExerciseSetLog;
 import com.gabri.fitcoreapi.workout.domain.WorkoutPlan;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
+import com.gabri.fitcoreapi.workout.domain.WorkoutSessionStatus;
+import com.gabri.fitcoreapi.exercise.domain.Equipment;
 import com.gabri.fitcoreapi.workout.repository.ExerciseSetLogRepository;
 import com.gabri.fitcoreapi.workout.repository.WorkoutPlanRepository;
 import com.gabri.fitcoreapi.workout.repository.WorkoutSessionRepository;
@@ -31,6 +33,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 
 @Service
 @Transactional(readOnly = true)
@@ -85,7 +88,8 @@ public class TrainingStatisticsService {
                 current.stats(),
                 comparison,
                 records,
-                periodDays
+                from,
+                to
         );
 
         return new TrainingStatisticsResponse(from, to, current.stats(), comparison, distribution, goalProgress);
@@ -101,7 +105,8 @@ public class TrainingStatisticsService {
 
     private Snapshot snapshot(Long userId, LocalDate from, LocalDate to) {
         List<WorkoutSession> periodSessions = sessions
-                .findByUserIdAndSessionDateBetweenOrderBySessionDateAsc(userId, from, to);
+                .findByUserIdAndStatusAndSessionDateBetweenOrderBySessionDateAsc(
+                        userId, WorkoutSessionStatus.COMPLETED, from, to);
         List<ExerciseSetLog> logs = setLogs.findCompletedForStatistics(userId, from, to);
         long duration = periodSessions.stream().map(WorkoutSession::getDurationMinutes)
                 .filter(Objects::nonNull).mapToLong(Integer::longValue).sum();
@@ -175,7 +180,8 @@ public class TrainingStatisticsService {
             TrainingPeriodStatsResponse current,
             TrainingComparisonResponse comparison,
             List<ProgressRecord> records,
-            long periodDays
+            LocalDate from,
+            LocalDate to
     ) {
         GoalProfile goal = goals.findByUserAndActiveTrue(user).orElse(null);
         if (goal == null) {
@@ -183,7 +189,7 @@ public class TrainingStatisticsService {
         }
 
         WorkoutPlan plan = plans.findByUserAndActiveTrue(user).orElse(null);
-        BigDecimal adherence = trainingAdherence(current.workouts(), plan, periodDays);
+        BigDecimal adherence = trainingAdherence(user.getId(), current.workouts(), plan, goal, from, to);
         boolean trainingAligned = adherence != null && adherence.compareTo(new BigDecimal("75")) >= 0;
         List<GoalSignalResponse> signals = new ArrayList<>();
         List<String> limitations = new ArrayList<>();
@@ -200,30 +206,35 @@ public class TrainingStatisticsService {
             if (trend == null) {
                 limitations.add("PREVIOUS_TRAINING_PERIOD_REQUIRED");
                 return assessment(goal.getGoalType(), GoalProgressStatus.INSUFFICIENT_DATA,
-                        AssessmentConfidence.LOW, trainingAligned, adherence, null, signals, limitations);
+                        AssessmentConfidence.LOW, trainingAligned, adherence, null, signals, limitations,
+                        TargetProgress.empty());
             }
             GoalProgressStatus status = trend.compareTo(BigDecimal.ONE) > 0
                     ? GoalProgressStatus.APPROACHING
                     : (trend.compareTo(new BigDecimal("-2")) >= 0 && trainingAligned
                             ? GoalProgressStatus.ON_TRACK : GoalProgressStatus.NEEDS_ATTENTION);
             return assessment(goal.getGoalType(), status, AssessmentConfidence.MEDIUM,
-                    trainingAligned, adherence, trend, signals, limitations);
+                    trainingAligned, adherence, trend, signals, limitations, TargetProgress.empty());
         }
+
+        List<ProgressRecord> goalRecords = goal.getStartDate().isAfter(to) ? List.of()
+                : progressRecords.findByUserIdAndRecordDateBetweenOrderByRecordDateAsc(
+                        user.getId(), goal.getStartDate(), to);
 
         if (records.size() < 2) {
             limitations.add("TWO_BODY_MEASUREMENTS_REQUIRED");
             return assessment(goal.getGoalType(), GoalProgressStatus.INSUFFICIENT_DATA,
-                    AssessmentConfidence.LOW, trainingAligned, adherence, null, signals, limitations);
+                    AssessmentConfidence.LOW, trainingAligned, adherence, null, signals, limitations,
+                    targetProgress(goal, goalRecords));
         }
 
-        ProgressRecord first = records.getFirst();
-        ProgressRecord last = records.getLast();
-        Outcome outcome = bodyOutcome(goal.getGoalType(), first, last);
+        Outcome outcome = bodyOutcome(goal.getGoalType(), records);
+        TargetProgress targetProgress = targetProgress(goal, goalRecords);
         signals.addAll(outcome.signals());
         limitations.addAll(outcome.limitations());
         if (outcome.desiredTrend() == null) {
             return assessment(goal.getGoalType(), GoalProgressStatus.INSUFFICIENT_DATA,
-                    AssessmentConfidence.LOW, trainingAligned, adherence, null, signals, limitations);
+                    AssessmentConfidence.LOW, trainingAligned, adherence, null, signals, limitations, targetProgress);
         }
 
         GoalProgressStatus status;
@@ -238,28 +249,28 @@ public class TrainingStatisticsService {
             status = GoalProgressStatus.NEEDS_ATTENTION;
         }
         return assessment(goal.getGoalType(), status, outcome.confidence(),
-                trainingAligned, adherence, outcome.desiredTrend(), signals, limitations);
+                trainingAligned, adherence, outcome.desiredTrend(), signals, limitations, targetProgress);
     }
 
-    private Outcome bodyOutcome(GoalType goalType, ProgressRecord first, ProgressRecord last) {
+    private Outcome bodyOutcome(GoalType goalType, List<ProgressRecord> records) {
         List<GoalSignalResponse> signals = new ArrayList<>();
         List<String> limitations = new ArrayList<>();
         return switch (goalType) {
-            case FAT_LOSS -> decreasingOutcome(first, last, signals, limitations);
-            case MUSCLE_GAIN -> increasingOutcome(first, last, signals, limitations);
-            case RECOMPOSITION -> recompositionOutcome(first, last, signals, limitations);
-            case MAINTENANCE -> maintenanceOutcome(first, last, signals, limitations);
+            case FAT_LOSS -> decreasingOutcome(records, signals, limitations);
+            case MUSCLE_GAIN -> increasingOutcome(records, signals, limitations);
+            case RECOMPOSITION -> recompositionOutcome(records, signals, limitations);
+            case MAINTENANCE -> maintenanceOutcome(records, signals, limitations);
             case PERFORMANCE -> throw new IllegalStateException("Performance is assessed from training data");
         };
     }
 
-    private Outcome decreasingOutcome(ProgressRecord first, ProgressRecord last,
+    private Outcome decreasingOutcome(List<ProgressRecord> records,
             List<GoalSignalResponse> signals, List<String> limitations) {
-        BigDecimal raw = metricChange(first.getBodyFatPercentage(), last.getBodyFatPercentage());
+        BigDecimal raw = smoothedChange(records, ProgressRecord::getBodyFatPercentage);
         AssessmentConfidence confidence = AssessmentConfidence.HIGH;
         String code = "BODY_FAT_TREND";
         if (raw == null) {
-            raw = metricChange(first.getWeightKg(), last.getWeightKg());
+            raw = smoothedChange(records, ProgressRecord::getWeightKg);
             confidence = AssessmentConfidence.MEDIUM;
             code = "WEIGHT_TREND";
             limitations.add("BODY_FAT_MEASUREMENTS_RECOMMENDED");
@@ -269,13 +280,13 @@ public class TrainingStatisticsService {
         return new Outcome(desired, confidence, signals, limitations);
     }
 
-    private Outcome increasingOutcome(ProgressRecord first, ProgressRecord last,
+    private Outcome increasingOutcome(List<ProgressRecord> records,
             List<GoalSignalResponse> signals, List<String> limitations) {
-        BigDecimal raw = metricChange(first.getMuscleMassKg(), last.getMuscleMassKg());
+        BigDecimal raw = smoothedChange(records, ProgressRecord::getMuscleMassKg);
         AssessmentConfidence confidence = AssessmentConfidence.HIGH;
         String code = "MUSCLE_MASS_TREND";
         if (raw == null) {
-            raw = metricChange(first.getWeightKg(), last.getWeightKg());
+            raw = smoothedChange(records, ProgressRecord::getWeightKg);
             confidence = AssessmentConfidence.MEDIUM;
             code = "WEIGHT_TREND";
             limitations.add("MUSCLE_MASS_MEASUREMENTS_RECOMMENDED");
@@ -284,10 +295,10 @@ public class TrainingStatisticsService {
         return new Outcome(raw, confidence, signals, limitations);
     }
 
-    private Outcome recompositionOutcome(ProgressRecord first, ProgressRecord last,
+    private Outcome recompositionOutcome(List<ProgressRecord> records,
             List<GoalSignalResponse> signals, List<String> limitations) {
-        BigDecimal fatChange = metricChange(first.getBodyFatPercentage(), last.getBodyFatPercentage());
-        BigDecimal muscleChange = metricChange(first.getMuscleMassKg(), last.getMuscleMassKg());
+        BigDecimal fatChange = smoothedChange(records, ProgressRecord::getBodyFatPercentage);
+        BigDecimal muscleChange = smoothedChange(records, ProgressRecord::getMuscleMassKg);
         signals.add(new GoalSignalResponse("BODY_FAT_TREND",
                 signalForPositiveTrend(fatChange == null ? null : fatChange.negate()), fatChange));
         signals.add(new GoalSignalResponse("MUSCLE_MASS_TREND", signalForPositiveTrend(muscleChange), muscleChange));
@@ -300,9 +311,9 @@ public class TrainingStatisticsService {
         return new Outcome(desired, AssessmentConfidence.HIGH, signals, limitations);
     }
 
-    private Outcome maintenanceOutcome(ProgressRecord first, ProgressRecord last,
+    private Outcome maintenanceOutcome(List<ProgressRecord> records,
             List<GoalSignalResponse> signals, List<String> limitations) {
-        BigDecimal weightChange = metricChange(first.getWeightKg(), last.getWeightKg());
+        BigDecimal weightChange = smoothedChange(records, ProgressRecord::getWeightKg);
         if (weightChange == null) {
             limitations.add("WEIGHT_MEASUREMENTS_REQUIRED");
             signals.add(new GoalSignalResponse("WEIGHT_STABILITY", GoalSignalStatus.UNKNOWN, null));
@@ -315,12 +326,24 @@ public class TrainingStatisticsService {
         return new Outcome(stabilityMargin, AssessmentConfidence.MEDIUM, signals, limitations);
     }
 
-    private BigDecimal trainingAdherence(long workouts, WorkoutPlan plan, long periodDays) {
-        if (plan == null || plan.getWorkoutDays().isEmpty()) return null;
-        long trainingDays = plan.getWorkoutDays().stream()
+    private BigDecimal trainingAdherence(Long userId, long workouts, WorkoutPlan plan, GoalProfile goal,
+            LocalDate from, LocalDate to) {
+        Long configuredDays = goal.getTargetTrainingDaysPerWeek() == null
+                ? null : goal.getTargetTrainingDaysPerWeek().longValue();
+        if (configuredDays == null && (plan == null || plan.getWorkoutDays().isEmpty())) return null;
+        long trainingDays = configuredDays != null ? configuredDays : plan.getWorkoutDays().stream()
                 .filter(day -> day.getDayType() != com.gabri.fitcoreapi.workout.domain.WorkoutDayType.REST)
                 .count();
         if (trainingDays == 0) return null;
+        LocalDate effectiveStart = from;
+        if (plan != null && plan.getStartDate().isAfter(effectiveStart)) effectiveStart = plan.getStartDate();
+        if (goal.getStartDate().isAfter(effectiveStart)) effectiveStart = goal.getStartDate();
+        if (effectiveStart.isAfter(to)) return null;
+        if (effectiveStart.isAfter(from)) {
+            workouts = sessions.findByUserIdAndStatusAndSessionDateBetweenOrderBySessionDateAsc(
+                    userId, WorkoutSessionStatus.COMPLETED, effectiveStart, to).size();
+        }
+        long periodDays = ChronoUnit.DAYS.between(effectiveStart, to) + 1;
         BigDecimal expected = BigDecimal.valueOf(trainingDays)
                 .multiply(BigDecimal.valueOf(periodDays))
                 .divide(BigDecimal.valueOf(7), 4, RoundingMode.HALF_UP);
@@ -333,16 +356,18 @@ public class TrainingStatisticsService {
     private GoalProgressAssessmentResponse insufficient(GoalType goalType, String summaryKey,
             List<String> limitations) {
         return new GoalProgressAssessmentResponse(goalType, GoalProgressStatus.INSUFFICIENT_DATA,
-                AssessmentConfidence.LOW, false, null, null, summaryKey, List.of(), limitations);
+                AssessmentConfidence.LOW, false, null, null, summaryKey, List.of(), limitations,
+                null, null, null, null, null);
     }
 
     private GoalProgressAssessmentResponse assessment(GoalType goalType, GoalProgressStatus status,
             AssessmentConfidence confidence, boolean trainingAligned, BigDecimal adherence, BigDecimal trend,
-            List<GoalSignalResponse> signals, List<String> limitations) {
+            List<GoalSignalResponse> signals, List<String> limitations, TargetProgress target) {
         return new GoalProgressAssessmentResponse(
                 goalType, status, confidence, trainingAligned, adherence, trend,
                 "goal.progress." + status.name().toLowerCase(Locale.ROOT).replace('_', '-'),
-                List.copyOf(signals), List.copyOf(limitations)
+                List.copyOf(signals), List.copyOf(limitations), target.metric(), target.targetValue(),
+                target.currentValue(), target.remaining(), target.completionPercent()
         );
     }
 
@@ -364,6 +389,64 @@ public class TrainingStatisticsService {
         return first == null || last == null ? null : percentChange(last, first);
     }
 
+    private BigDecimal smoothedChange(List<ProgressRecord> records,
+            Function<ProgressRecord, BigDecimal> extractor) {
+        int window = smoothingWindow(records.size());
+        BigDecimal first = average(records.subList(0, window), extractor);
+        BigDecimal last = average(records.subList(records.size() - window, records.size()), extractor);
+        return metricChange(first, last);
+    }
+
+    private BigDecimal average(List<ProgressRecord> records, Function<ProgressRecord, BigDecimal> extractor) {
+        List<BigDecimal> values = records.stream().map(extractor).filter(Objects::nonNull).toList();
+        if (values.isEmpty()) return null;
+        return values.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                .divide(BigDecimal.valueOf(values.size()), 4, RoundingMode.HALF_UP);
+    }
+
+    private TargetProgress targetProgress(GoalProfile goal, List<ProgressRecord> records) {
+        TargetMetric metric = targetMetric(goal);
+        if (metric == null || records.isEmpty()) return TargetProgress.empty();
+        int window = smoothingWindow(records.size());
+        BigDecimal baseline = average(records.subList(0, window), metric.extractor());
+        BigDecimal current = average(records.subList(records.size() - window, records.size()), metric.extractor());
+        if (baseline == null || current == null) return new TargetProgress(metric.code(), metric.target(), current, null, null);
+        BigDecimal remaining = metric.target().subtract(current).abs().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal initialDistance = metric.target().subtract(baseline).abs();
+        BigDecimal completion = initialDistance.signum() == 0
+                ? (remaining.signum() == 0 ? BigDecimal.valueOf(100) : BigDecimal.ZERO)
+                : BigDecimal.ONE.subtract(remaining.divide(initialDistance, 6, RoundingMode.HALF_UP))
+                        .multiply(BigDecimal.valueOf(100)).max(BigDecimal.ZERO).min(BigDecimal.valueOf(200))
+                        .setScale(2, RoundingMode.HALF_UP);
+        return new TargetProgress(metric.code(), metric.target(), current.setScale(2, RoundingMode.HALF_UP),
+                remaining, completion);
+    }
+
+    private TargetMetric targetMetric(GoalProfile goal) {
+        return switch (goal.getGoalType()) {
+            case FAT_LOSS -> goal.getTargetBodyFatPercentage() != null
+                    ? new TargetMetric("BODY_FAT_PERCENTAGE", goal.getTargetBodyFatPercentage(), ProgressRecord::getBodyFatPercentage)
+                    : valueOrNull("WEIGHT_KG", goal.getTargetWeightKg(), ProgressRecord::getWeightKg);
+            case MUSCLE_GAIN -> goal.getTargetMuscleMassKg() != null
+                    ? new TargetMetric("MUSCLE_MASS_KG", goal.getTargetMuscleMassKg(), ProgressRecord::getMuscleMassKg)
+                    : valueOrNull("WEIGHT_KG", goal.getTargetWeightKg(), ProgressRecord::getWeightKg);
+            case RECOMPOSITION -> goal.getTargetBodyFatPercentage() != null
+                    ? new TargetMetric("BODY_FAT_PERCENTAGE", goal.getTargetBodyFatPercentage(), ProgressRecord::getBodyFatPercentage)
+                    : valueOrNull("MUSCLE_MASS_KG", goal.getTargetMuscleMassKg(), ProgressRecord::getMuscleMassKg);
+            case MAINTENANCE -> valueOrNull("WEIGHT_KG", goal.getTargetWeightKg(), ProgressRecord::getWeightKg);
+            case PERFORMANCE -> null;
+        };
+    }
+
+    private int smoothingWindow(int recordCount) {
+        return Math.min(3, Math.max(1, recordCount / 2));
+    }
+
+    private TargetMetric valueOrNull(String code, BigDecimal target,
+            Function<ProgressRecord, BigDecimal> extractor) {
+        return target == null ? null : new TargetMetric(code, target, extractor);
+    }
+
     private BigDecimal percentChange(BigDecimal current, BigDecimal previous) {
         if (current == null || previous == null || previous.signum() == 0) return null;
         return current.subtract(previous).multiply(BigDecimal.valueOf(100))
@@ -383,9 +466,12 @@ public class TrainingStatisticsService {
     }
 
     private BigDecimal volume(ExerciseSetLog log) {
-        return log.getWeight() == null || log.getReps() == null
-                ? BigDecimal.ZERO
-                : log.getWeight().multiply(BigDecimal.valueOf(log.getReps()));
+        if (log.getReps() == null) return BigDecimal.ZERO;
+        BigDecimal load = log.getWeight();
+        if (load == null && log.getWorkoutSessionExercise().getExerciseVariant().getEquipment() == Equipment.BODYWEIGHT) {
+            load = log.getWorkoutSessionExercise().getWorkoutSession().getUser().getWeightKg();
+        }
+        return load == null ? BigDecimal.ZERO : load.multiply(BigDecimal.valueOf(log.getReps()));
     }
 
     private BigDecimal rounded(BigDecimal value) {
@@ -401,5 +487,16 @@ public class TrainingStatisticsService {
             List<GoalSignalResponse> signals,
             List<String> limitations
     ) {
+    }
+
+    private record TargetMetric(String code, BigDecimal target,
+            Function<ProgressRecord, BigDecimal> extractor) {
+    }
+
+    private record TargetProgress(String metric, BigDecimal targetValue, BigDecimal currentValue,
+            BigDecimal remaining, BigDecimal completionPercent) {
+        private static TargetProgress empty() {
+            return new TargetProgress(null, null, null, null, null);
+        }
     }
 }

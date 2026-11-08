@@ -81,4 +81,38 @@ public class WorkoutSessionController {
                 workoutSessionService.getWorkoutSessionById(userId, workoutSessionId)
         );
     }
+
+    @Operation(summary = "Update an in-progress workout session")
+    @PatchMapping("/{workoutSessionId}")
+    public WorkoutSessionResponse updateWorkoutSession(
+            @PathVariable Long userId,
+            @PathVariable Long workoutSessionId,
+            @Valid @RequestBody com.gabri.fitcoreapi.workout.dto.UpdateWorkoutSessionRequest request
+    ) {
+        return WorkoutSessionResponse.from(workoutSessionService.updateWorkoutSession(
+                userId, workoutSessionId, request.sessionDate(), request.sessionCategory(),
+                request.sessionIntensity(), request.durationMinutes(), request.notes(),
+                request.estimatedTotalCaloriesBurned()));
+    }
+
+    @Operation(summary = "Complete an in-progress workout session")
+    @PostMapping("/{workoutSessionId}/complete")
+    public WorkoutSessionResponse completeWorkoutSession(@PathVariable Long userId,
+            @PathVariable Long workoutSessionId) {
+        return WorkoutSessionResponse.from(workoutSessionService.completeWorkoutSession(userId, workoutSessionId));
+    }
+
+    @Operation(summary = "Cancel an in-progress workout session")
+    @PostMapping("/{workoutSessionId}/cancel")
+    public WorkoutSessionResponse cancelWorkoutSession(@PathVariable Long userId,
+            @PathVariable Long workoutSessionId) {
+        return WorkoutSessionResponse.from(workoutSessionService.cancelWorkoutSession(userId, workoutSessionId));
+    }
+
+    @Operation(summary = "Delete a workout session that has not been completed")
+    @DeleteMapping("/{workoutSessionId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteWorkoutSession(@PathVariable Long userId, @PathVariable Long workoutSessionId) {
+        workoutSessionService.deleteWorkoutSession(userId, workoutSessionId);
+    }
 }

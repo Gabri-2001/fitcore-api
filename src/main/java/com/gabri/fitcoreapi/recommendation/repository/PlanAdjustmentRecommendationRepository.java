@@ -6,6 +6,7 @@ import com.gabri.fitcoreapi.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PlanAdjustmentRecommendationRepository extends JpaRepository<PlanAdjustmentRecommendation, Long> {
 
@@ -15,4 +16,6 @@ public interface PlanAdjustmentRecommendationRepository extends JpaRepository<Pl
             User user,
             RecommendationStatus status
     );
+
+    Optional<PlanAdjustmentRecommendation> findByIdAndUser(Long id, User user);
 }

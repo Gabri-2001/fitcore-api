@@ -149,4 +149,25 @@ public class PlanAdjustmentRecommendation extends BaseEntity {
     public RecommendationStatus getStatus() {
         return status;
     }
+
+    public void accept() {
+        requirePending();
+        status = RecommendationStatus.ACCEPTED;
+    }
+
+    public void reject() {
+        requirePending();
+        status = RecommendationStatus.REJECTED;
+    }
+
+    public void expire() {
+        requirePending();
+        status = RecommendationStatus.EXPIRED;
+    }
+
+    private void requirePending() {
+        if (status != RecommendationStatus.PENDING) {
+            throw new IllegalStateException("Only pending recommendations can change status");
+        }
+    }
 }

@@ -11,14 +11,19 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private final MessageSource messageSource;
 
@@ -42,6 +47,18 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleNoResource(
+            NoResourceFoundException ex,
+            HttpServletRequest request
+    ) {
+        Locale locale = LocaleContextHolder.getLocale();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiErrorResponse(
+                Instant.now(), HttpStatus.NOT_FOUND.value(),
+                messageSource.getMessage("error.notFound", null, "Not Found", locale),
+                "Resource not found", request.getRequestURI()));
     }
 
     @ExceptionHandler(BusinessRuleException.class)
@@ -93,11 +110,13 @@ public class GlobalExceptionHandler {
     ) {
         Locale locale = LocaleContextHolder.getLocale();
 
+        log.error("Unhandled request failure at {}", request.getRequestURI(), ex);
         ApiErrorResponse response = new ApiErrorResponse(
                 Instant.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 messageSource.getMessage("error.internalServerError", null, locale),
-                ex.getMessage(),
+                messageSource.getMessage("error.internalServerError.message", null,
+                        "An unexpected error occurred", locale),
                 request.getRequestURI()
         );
 

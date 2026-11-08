@@ -73,4 +73,11 @@ public class WorkoutDay extends BaseEntity {
     public List<WorkoutExercise> getWorkoutExercises() {
         return workoutExercises;
     }
+
+    public void changeOrder(Integer dayOrder) {
+        if (dayOrder == null || dayOrder < 1) {
+            throw new IllegalArgumentException("Workout day order must be greater than zero");
+        }
+        this.dayOrder = dayOrder;
+    }
 }

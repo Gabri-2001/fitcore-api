@@ -65,4 +65,27 @@ public class WorkoutSessionExerciseController {
                 .map(WorkoutSessionExerciseResponse::from)
                 .toList();
     }
+
+    @Operation(summary = "Update a performed exercise in an in-progress session")
+    @PutMapping("/{sessionExerciseId}")
+    public WorkoutSessionExerciseResponse updateWorkoutSessionExercise(
+            @PathVariable Long userId,
+            @PathVariable Long workoutSessionId,
+            @PathVariable Long sessionExerciseId,
+            @Valid @RequestBody com.gabri.fitcoreapi.workout.dto.UpdateWorkoutSessionExerciseRequest request
+    ) {
+        return WorkoutSessionExerciseResponse.from(
+                workoutSessionExerciseService.updateWorkoutSessionExercise(
+                        userId, workoutSessionId, sessionExerciseId, request.completed(),
+                        request.performedSets(), request.performedReps(), request.performedWeightKg(),
+                        request.performedDurationMinutes(), request.estimatedCaloriesBurned(), request.notes()));
+    }
+
+    @Operation(summary = "Delete a performed exercise from an in-progress session")
+    @DeleteMapping("/{sessionExerciseId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteWorkoutSessionExercise(@PathVariable Long userId, @PathVariable Long workoutSessionId,
+            @PathVariable Long sessionExerciseId) {
+        workoutSessionExerciseService.deleteWorkoutSessionExercise(userId, workoutSessionId, sessionExerciseId);
+    }
 }

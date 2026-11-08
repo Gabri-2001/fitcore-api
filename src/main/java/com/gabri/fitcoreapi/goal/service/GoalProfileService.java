@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import com.gabri.fitcoreapi.muscle.domain.MuscleGroup;
+import com.gabri.fitcoreapi.common.exception.BusinessRuleException;
 
 @Service
 @Transactional
@@ -35,6 +37,27 @@ public class GoalProfileService {
             Integer reviewFrequencyDays,
             LocalDate startDate
     ) {
+        return createGoalProfile(userId, goalType, targetCalories, targetProtein, targetCarbs, targetFats,
+                reviewFrequencyDays, startDate, null, null, null, null, null, List.of());
+    }
+
+    public GoalProfile createGoalProfile(
+            Long userId,
+            GoalType goalType,
+            BigDecimal targetCalories,
+            BigDecimal targetProtein,
+            BigDecimal targetCarbs,
+            BigDecimal targetFats,
+            Integer reviewFrequencyDays,
+            LocalDate startDate,
+            BigDecimal targetWeightKg,
+            BigDecimal targetBodyFatPercentage,
+            BigDecimal targetMuscleMassKg,
+            LocalDate targetDate,
+            Integer targetTrainingDaysPerWeek,
+            List<MuscleGroup> priorityMuscleGroups
+    ) {
+        validateTargets(startDate, targetDate, priorityMuscleGroups);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
@@ -52,7 +75,13 @@ public class GoalProfileService {
                 nextVersion,
                 true,
                 startDate,
-                null
+                null,
+                targetWeightKg,
+                targetBodyFatPercentage,
+                targetMuscleMassKg,
+                targetDate,
+                targetTrainingDaysPerWeek,
+                priorityMuscleGroups
         );
 
         newGoalProfile.setUser(user);
@@ -63,6 +92,15 @@ public class GoalProfileService {
         }
 
         return goalProfileRepository.save(newGoalProfile);
+    }
+
+    private void validateTargets(LocalDate startDate, LocalDate targetDate, List<MuscleGroup> priorities) {
+        if (targetDate != null && targetDate.isBefore(startDate)) {
+            throw new BusinessRuleException("Goal target date cannot be before its start date");
+        }
+        if (priorities != null && priorities.stream().distinct().count() != priorities.size()) {
+            throw new BusinessRuleException("Priority muscle groups cannot be duplicated");
+        }
     }
 
     @Transactional(readOnly = true)
