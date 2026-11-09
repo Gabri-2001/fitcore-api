@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <meta name="theme-color" content="#123f35">
-    <title>FitCore · Test Lab</title>
+    <title>FitCore · Laboratorio de pruebas</title>
     <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 <a class="skip-link" href="#workspace">Saltar al contenido</a>
 <div class="app-shell">
     <aside class="sidebar" aria-label="Navegación principal">
-        <a class="brand" href="#overview" aria-label="FitCore Test Lab">
+        <a class="brand" href="#overview" aria-label="Laboratorio de pruebas de FitCore">
             <span class="brand-mark">FC</span>
-            <span><strong>FitCore</strong><small>TEST LAB</small></span>
+            <span><strong>FitCore</strong><small>LABORATORIO</small></span>
         </a>
         <nav id="main-nav" class="main-nav">
             <button class="nav-item is-active" data-view="overview"><span>01</span>Inicio</button>
@@ -44,16 +44,16 @@
         <section class="view is-active" id="view-overview" data-title="Panel de pruebas" data-eyebrow="FITCORE · CONTROL DE CALIDAD">
             <div class="hero-grid">
                 <article class="hero-card">
-                    <p class="eyebrow">BACKEND REAL · SIN DATOS SIMULADOS</p>
+                    <p class="eyebrow">SERVIDOR REAL · SIN DATOS SIMULADOS</p>
                     <h2>Verifica el flujo completo de un entrenamiento.</h2>
-                    <p>Desde elegir una variante y crear el plan hasta registrar series, medir el progreso y revisar recomendaciones.</p>
+                    <p>Desde elegir un ejercicio y configurar su ejecución hasta registrar series, medir el progreso y revisar recomendaciones.</p>
                     <div class="hero-actions"><button class="button button-primary" data-go="catalog">Explorar catálogo</button><button class="button button-secondary" data-go="training">Iniciar entrenamiento</button></div>
-                    <ul class="feature-list"><li>JWT con renovación automática</li><li>Body map conectado a activaciones canónicas</li><li>Registro técnico de cada petición</li></ul>
+                    <ul class="feature-list"><li>JWT con renovación automática</li><li>Mapa muscular conectado a activaciones canónicas</li><li>Registro técnico de cada petición</li></ul>
                 </article>
                 <article class="auth-card" id="auth-card">
                     <div class="section-heading"><div><p class="eyebrow">ACCESO</p><h2>Conecta tu usuario</h2></div><span class="status-pill" id="auth-status">Sin sesión</span></div>
                     <form id="auth-form">
-                        <label>Email<input id="auth-email" type="email" autocomplete="email" value="gabielademardiaz@gmail.com" required></label>
+                        <label>Correo electrónico<input id="auth-email" type="email" autocomplete="email" value="gabielademardiaz@gmail.com" required></label>
                         <label>Contraseña<input id="auth-password" type="password" autocomplete="current-password" minlength="8" required></label>
                         <div class="button-row"><button class="button button-primary" type="submit">Iniciar sesión</button><button class="button button-secondary" id="register-button" type="button">Crear usuario de prueba</button></div>
                     </form>
@@ -61,8 +61,8 @@
                 </article>
             </div>
             <div class="metric-grid" id="overview-metrics">
-                <article class="metric"><span>API</span><strong id="metric-api">—</strong><small>Estado de Actuator</small></article>
-                <article class="metric"><span>Catálogo</span><strong id="metric-exercises">—</strong><small>Variantes disponibles</small></article>
+                <article class="metric"><span>API</span><strong id="metric-api">—</strong><small>Estado del servicio</small></article>
+                <article class="metric"><span>Catálogo</span><strong id="metric-exercises">—</strong><small>Ejercicios disponibles</small></article>
                 <article class="metric"><span>Plan activo</span><strong id="metric-plan">—</strong><small>Versión actual</small></article>
                 <article class="metric"><span>Entrenamientos</span><strong id="metric-workouts">—</strong><small>Últimos 30 días</small></article>
             </div>
@@ -79,20 +79,19 @@
             <div class="catalog-layout">
                 <aside class="panel filter-panel">
                     <div class="section-heading"><div><p class="eyebrow">BÚSQUEDA</p><h2>Encontrar ejercicios</h2></div><button id="catalog-clear" class="text-button">Limpiar</button></div>
-                    <label>Nombre o código<input id="catalog-query" type="search" placeholder="Ej. dominadas, press…"></label>
+                    <label>Nombre del ejercicio<input id="catalog-query" type="search" placeholder="Ej. dominadas, press…"></label>
                     <div class="field-grid"><label>Equipamiento<select id="catalog-equipment"><option value="">Todo</option></select></label><label>Grupo muscular<select id="catalog-muscle"><option value="">Todos</option></select></label></div>
                     <label class="check-row"><input id="catalog-stabilizers" type="checkbox"><span>Incluir estabilizadores en el filtro</span></label>
                     <button id="catalog-search" class="button button-primary button-block">Buscar en la API</button>
-                    <div class="result-meta"><strong id="catalog-count">0 resultados</strong><span id="catalog-page">Página 1</span></div>
+                    <div class="result-meta"><strong id="catalog-count">0 ejercicios</strong><span id="catalog-page">Una entrada por ejercicio</span></div>
                     <div id="catalog-results" class="catalog-results"><div class="empty-state">Inicia sesión para cargar el catálogo.</div></div>
-                    <div class="pagination"><button id="catalog-prev" class="icon-button" aria-label="Página anterior">←</button><button id="catalog-next" class="icon-button" aria-label="Página siguiente">→</button></div>
                 </aside>
                 <div class="panel map-panel">
-                    <div class="map-toolbar"><div><p class="eyebrow">BODY MAP</p><h2 id="map-title">Selecciona una variante</h2><p id="map-subtitle">Se mostrarán músculos primarios y secundarios.</p></div><label class="switch"><input id="map-stabilizers" type="checkbox"><span>Mostrar estabilizadores</span></label></div>
+                    <div class="map-toolbar"><div><p class="eyebrow">MAPA MUSCULAR</p><h2 id="map-title">Selecciona un ejercicio</h2><p id="map-subtitle">Se mostrarán músculos primarios y secundarios.</p></div><label class="switch"><input id="map-stabilizers" type="checkbox"><span>Mostrar estabilizadores</span></label></div>
                     <div class="map-stage" id="map-stage"><div class="map-loader">Cargando anatomía…</div></div>
                     <div class="map-legend"><span><i class="primary"></i>Primario</span><span><i class="secondary"></i>Secundario</span><span><i class="stabilizer"></i>Estabilizador</span><strong id="map-diagnostic">Esperando selección</strong></div>
                 </div>
-                <aside class="panel detail-panel" id="variant-detail"><div class="empty-state">Selecciona un ejercicio para ver sus detalles técnicos.</div></aside>
+                <aside class="panel detail-panel" id="variant-detail"><div class="empty-state">Selecciona un ejercicio y configura cómo vas a realizarlo.</div></aside>
             </div>
         </section>
 
@@ -115,14 +114,13 @@
                 <aside class="panel session-builder">
                     <div class="section-heading"><div><p class="eyebrow">SESIÓN REAL</p><h2>Configurar</h2></div><span class="status-pill" id="session-status">Sin iniciar</span></div>
                     <label>Fecha<input id="session-date" type="date"></label>
-                    <div class="field-grid"><label>Categoría<select id="session-category"><option>HYPERTROPHY</option><option>STRENGTH</option><option>ENDURANCE</option><option>CARDIO</option><option>MOBILITY</option><option>MIXED</option></select></label><label>Intensidad<select id="session-intensity"><option>MODERATE</option><option>LOW</option><option>HIGH</option><option>VERY_HIGH</option></select></label></div>
+                    <div class="field-grid"><label>Categoría<select id="session-category"><option value="HYPERTROPHY">Hipertrofia</option><option value="STRENGTH">Fuerza</option><option value="ENDURANCE">Resistencia</option><option value="CARDIO">Cardio</option><option value="MOBILITY">Movilidad</option><option value="MIXED">Mixto</option></select></label><label>Intensidad<select id="session-intensity"><option value="MODERATE">Moderada</option><option value="LOW">Baja</option><option value="HIGH">Alta</option><option value="VERY_HIGH">Muy alta</option></select></label></div>
                     <label>Día del plan (opcional)<select id="session-day"><option value="">Sesión libre</option></select></label>
                     <label>Notas<textarea id="session-notes" rows="3" placeholder="Sensaciones iniciales"></textarea></label>
                     <button id="session-start" class="button button-primary button-block">Iniciar sesión</button>
                     <div class="session-actions"><button id="session-complete" class="button button-primary" disabled>Completar</button><button id="session-cancel" class="button button-secondary" disabled>Cancelar</button><button id="session-delete" class="text-button danger" disabled>Eliminar</button></div>
                     <hr>
-                    <label>Añadir variante<input id="session-variant" list="variant-codes" placeholder="Código de variante"></label>
-                    <datalist id="variant-codes"></datalist>
+                    <label>Añadir ejercicio<select id="session-variant"><option value="">Selecciona una configuración</option></select></label>
                     <button id="session-add-exercise" class="button button-secondary button-block" disabled>+ Añadir ejercicio</button>
                 </aside>
                 <div class="session-workspace">
@@ -143,19 +141,19 @@
                 <article class="panel"><div class="section-heading"><div><p class="eyebrow">OBJETIVO VS. REALIDAD</p><h2>Alineación del entrenamiento</h2></div><span id="goal-status" class="status-pill">Sin datos</span></div><div id="goal-assessment" class="goal-assessment"><div class="empty-state">Crea un objetivo y registra progreso.</div></div></article>
             </div>
             <div class="forms-grid">
-                <form id="goal-form" class="panel compact-form"><div class="section-heading"><div><p class="eyebrow">NUEVO OBJETIVO</p><h2>Definir meta</h2></div></div><div class="field-grid"><label>Tipo<select id="goal-type"><option>MUSCLE_GAIN</option><option>FAT_LOSS</option><option>RECOMPOSITION</option><option>PERFORMANCE</option><option>MAINTENANCE</option></select></label><label>Días/semana<input id="goal-days" type="number" min="1" max="7" value="4"></label><label>Peso objetivo (kg)<input id="goal-weight" type="number" min="1" step="0.1"></label><label>Masa muscular (kg)<input id="goal-muscle" type="number" min="0" step="0.1"></label><label>Grasa objetivo (%)<input id="goal-fat" type="number" min="0" step="0.1"></label><label>Fecha objetivo<input id="goal-target-date" type="date"></label></div><label>Grupos prioritarios<select id="goal-groups" multiple size="4"></select></label><button class="button button-primary button-block" type="submit">Guardar objetivo</button></form>
+                <form id="goal-form" class="panel compact-form"><div class="section-heading"><div><p class="eyebrow">NUEVO OBJETIVO</p><h2>Definir meta</h2></div></div><div class="field-grid"><label>Tipo<select id="goal-type"><option value="MUSCLE_GAIN">Ganancia muscular</option><option value="FAT_LOSS">Pérdida de grasa</option><option value="RECOMPOSITION">Recomposición corporal</option><option value="PERFORMANCE">Rendimiento</option><option value="MAINTENANCE">Mantenimiento</option></select></label><label>Días/semana<input id="goal-days" type="number" min="1" max="7" value="4"></label><label>Peso objetivo (kg)<input id="goal-weight" type="number" min="1" step="0.1"></label><label>Masa muscular (kg)<input id="goal-muscle" type="number" min="0" step="0.1"></label><label>Grasa objetivo (%)<input id="goal-fat" type="number" min="0" step="0.1"></label><label>Fecha objetivo<input id="goal-target-date" type="date"></label></div><label>Grupos prioritarios<select id="goal-groups" multiple size="4"></select></label><button class="button button-primary button-block" type="submit">Guardar objetivo</button></form>
                 <form id="progress-form" class="panel compact-form"><div class="section-heading"><div><p class="eyebrow">MEDICIÓN</p><h2>Registrar progreso</h2></div></div><div class="field-grid"><label>Fecha<input id="progress-date" type="date" required></label><label>Peso (kg)<input id="progress-weight" type="number" min="20" max="500" step="0.1"></label><label>Grasa (%)<input id="progress-fat" type="number" min="1" max="80" step="0.1"></label><label>Masa muscular (kg)<input id="progress-muscle" type="number" min="5" max="250" step="0.1"></label></div><label>Notas<textarea id="progress-notes" rows="3"></textarea></label><button class="button button-secondary button-block" type="submit">Guardar medición</button><div id="progress-history" class="mini-history"></div></form>
             </div>
         </section>
 
         <section class="view" id="view-recommendations" data-title="Recomendaciones" data-eyebrow="ANÁLISIS · AJUSTES · DECISIONES">
-            <div class="section-heading page-heading"><div><p class="eyebrow">AJUSTES DEL PLAN</p><h2>Recomendaciones basadas en tus datos</h2><p>El motor analiza los 28 días anteriores y mantiene un historial auditable.</p></div><div class="button-row"><select id="recommendation-filter" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option>PENDING</option><option>ACCEPTED</option><option>REJECTED</option><option>EXPIRED</option></select><button id="recommendation-generate" class="button button-primary">Generar recomendación</button></div></div>
+            <div class="section-heading page-heading"><div><p class="eyebrow">AJUSTES DEL PLAN</p><h2>Recomendaciones basadas en tus datos</h2><p>El motor analiza los 28 días anteriores y mantiene un historial auditable.</p></div><div class="button-row"><select id="recommendation-filter" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="PENDING">Pendientes</option><option value="ACCEPTED">Aceptadas</option><option value="REJECTED">Rechazadas</option><option value="EXPIRED">Caducadas</option></select><button id="recommendation-generate" class="button button-primary">Generar recomendación</button></div></div>
             <div id="recommendation-list" class="recommendation-list"><div class="empty-state large">Inicia sesión para consultar recomendaciones.</div></div>
         </section>
 
         <section class="view" id="view-diagnostics" data-title="Diagnóstico técnico" data-eyebrow="SALUD · TRAZAS · RESPUESTAS">
             <div class="diagnostic-grid">
-                <article class="panel health-card"><div class="section-heading"><div><p class="eyebrow">ACTUATOR</p><h2>Estado de la API</h2></div><button id="health-check" class="button button-secondary">Comprobar</button></div><div class="health-orb" id="health-orb"><span>—</span><small>Sin comprobar</small></div><dl id="health-details"><div><dt>Endpoint</dt><dd>/actuator/health</dd></div><div><dt>Autenticación</dt><dd id="diag-auth">No</dd></div><div><dt>Usuario</dt><dd id="diag-user">—</dd></div></dl></article>
+                <article class="panel health-card"><div class="section-heading"><div><p class="eyebrow">SALUD DEL SERVICIO</p><h2>Estado de la API</h2></div><button id="health-check" class="button button-secondary">Comprobar</button></div><div class="health-orb" id="health-orb"><span>—</span><small>Sin comprobar</small></div><dl id="health-details"><div><dt>Ruta técnica</dt><dd>/actuator/health</dd></div><div><dt>Autenticación</dt><dd id="diag-auth">No</dd></div><div><dt>Usuario</dt><dd id="diag-user">—</dd></div></dl></article>
                 <article class="panel log-card"><div class="section-heading"><div><p class="eyebrow">REGISTRO HTTP</p><h2>Últimas peticiones</h2></div><div class="button-row"><button id="log-copy" class="text-button">Copiar</button><button id="log-clear" class="text-button danger">Limpiar</button></div></div><div id="request-log" class="request-log"><div class="empty-state">Las llamadas aparecerán aquí.</div></div></article>
             </div>
         </section>

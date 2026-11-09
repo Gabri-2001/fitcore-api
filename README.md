@@ -411,7 +411,8 @@ With the API running, open:
 
 - `http://localhost:8080/fitcore-lab/`
 
-The local test client covers authentication, exercise discovery and the body map, workout-plan
+The local test client groups the catalogue by base exercise and lets the user configure equipment,
+grip and the other execution attributes before showing the body map. It also covers workout-plan
 editing, real session and set logging, goals, progress statistics, recommendations, and HTTP
 diagnostics. Nutrition is intentionally excluded while that domain remains under review.
 

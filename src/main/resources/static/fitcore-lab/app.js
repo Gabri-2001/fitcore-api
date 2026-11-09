@@ -2,8 +2,9 @@ const API = '';
 const STORAGE_KEY = 'fitcore.lab.session.v1';
 const state = {
     auth: JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'),
-    logs: [], variants: [], catalogPage: 0, catalogTotalPages: 0, selectedVariant: null,
-    activations: [], svg: null, activePlan: null, planDays: [], currentSession: null,
+    logs: [], exercises: [], variants: [], catalogExercises: [], selectedExercise: null,
+    selectedVariant: null, variantConfiguration: {}, activations: [], svg: null,
+    activePlan: null, planDays: [], currentSession: null,
     sessionExercises: [], sessionSets: new Map()
 };
 
@@ -55,16 +56,46 @@ const enums = {
 };
 
 const labels = {
-    BARBELL:'Barra', DUMBBELL:'Mancuernas', EZ_BAR:'Barra Z', CABLE:'Polea', MACHINE_SELECTORISED:'Máquina de placas', MACHINE_PLATE_LOADED:'Máquina de discos', SMITH_MACHINE:'Multipower', BODYWEIGHT:'Peso corporal', TRAP_BAR:'Barra hexagonal', KETTLEBELL:'Kettlebell', WEIGHT_PLATE:'Disco', BENCH:'Banco', BAND:'Banda', MEDICINE_BALL:'Balón medicinal', AB_WHEEL:'Rueda abdominal', WRIST_ROLLER:'Rodillo de muñeca', NONE:'Sin equipamiento',
-    CHEST:'Pecho', BACK:'Espalda', SHOULDERS:'Hombros', SCAPULAR:'Escápulas', ROTATOR_CUFF:'Manguito rotador', BICEPS:'Bíceps', TRICEPS:'Tríceps', FOREARMS:'Antebrazos', QUADRICEPS:'Cuádriceps', HAMSTRINGS:'Isquiotibiales', GLUTES:'Glúteos', ADDUCTORS:'Aductores', CALVES:'Gemelos', CORE:'Core', NECK:'Cuello', FULL_BODY:'Cuerpo completo',
-    PRIMARY:'Primario', SECONDARY:'Secundario', STABILIZER:'Estabilizador', MUSCLE_GAIN:'Ganancia muscular', FAT_LOSS:'Pérdida de grasa', RECOMPOSITION:'Recomposición', PERFORMANCE:'Rendimiento', MAINTENANCE:'Mantenimiento',
-    ON_TRACK:'En progreso', NEEDS_ADJUSTMENT:'Necesita ajuste', INSUFFICIENT_DATA:'Datos insuficientes', AHEAD:'Por delante', BEHIND:'Por detrás', ALIGNED:'Alineado', NOT_ALIGNED:'No alineado'
+    BARBELL:'Barra', DUMBBELL:'Mancuernas', EZ_BAR:'Barra Z', CABLE:'Polea', MACHINE_SELECTORISED:'Máquina de placas', MACHINE_PLATE_LOADED:'Máquina de discos', SMITH_MACHINE:'Multipower', BODYWEIGHT:'Peso corporal', TRAP_BAR:'Barra hexagonal', KETTLEBELL:'Pesa rusa', WEIGHT_PLATE:'Disco', BENCH:'Banco', BAND:'Banda', MEDICINE_BALL:'Balón medicinal', AB_WHEEL:'Rueda abdominal', WRIST_ROLLER:'Rodillo de muñeca', NONE:'Sin equipamiento',
+    CHEST:'Pecho', BACK:'Espalda', SHOULDERS:'Hombros', SCAPULAR:'Escápulas', ROTATOR_CUFF:'Manguito rotador', BICEPS:'Bíceps', TRICEPS:'Tríceps', FOREARMS:'Antebrazos', QUADRICEPS:'Cuádriceps', HAMSTRINGS:'Isquiotibiales', GLUTES:'Glúteos', ADDUCTORS:'Aductores', CALVES:'Gemelos', CORE:'Zona media', NECK:'Cuello', FULL_BODY:'Cuerpo completo',
+    PRIMARY:'Primario', SECONDARY:'Secundario', STABILIZER:'Estabilizador', MUSCLE_GAIN:'Ganancia muscular', FAT_LOSS:'Pérdida de grasa', RECOMPOSITION:'Recomposición corporal', PERFORMANCE:'Rendimiento', MAINTENANCE:'Mantenimiento',
+    PRONATED:'Prono', SUPINATED:'Supino', NEUTRAL:'Neutro', SEMI_NEUTRAL:'Semineutro', SEMI_PRONATED:'Semiprono', SEMI_SUPINATED:'Semisupino', MIXED:'Mixto', HOOK:'Gancho', NO_SPECIFIC_GRIP:'Sin agarre específico',
+    NARROW:'Estrecha', MEDIUM:'Media', WIDE:'Ancha', NOT_APPLICABLE:'No aplica', NO_ATTACHMENT:'Sin accesorio', STRAIGHT_BAR:'Barra recta', EZ_BAR_ATTACHMENT:'Barra Z', ROPE:'Cuerda', V_BAR:'Barra en V', D_HANDLE:'Asa individual', LAT_BAR:'Barra de jalón', MAG_GRIP:'Agarre ergonómico', ANKLE_STRAP:'Tobillera',
+    FLAT:'Plano', LOW_INCLINE:'Inclinación baja', INCLINE:'Inclinado', HIGH_INCLINE:'Inclinación alta', DECLINE:'Declinado', UPRIGHT:'Vertical',
+    STANDING:'De pie', SEATED:'Sentado', SUPINE:'Tumbado boca arriba', PRONE:'Tumbado boca abajo', CHEST_SUPPORTED:'Pecho apoyado', BENT_OVER:'Inclinado hacia delante', INCLINE_PRONE:'Boca abajo en banco inclinado', KNEELING:'De rodillas', HALF_KNEELING:'Una rodilla apoyada', HANGING:'Suspendido', QUADRUPED:'Cuadrupedia', SIDE_LYING:'Tumbado de lado',
+    TO_CHEST:'Hacia el pecho', TO_UPPER_CHEST:'Hacia la parte alta del pecho', TO_HIP:'Hacia la cadera', TO_ABDOMEN:'Hacia el abdomen', TO_FACE:'Hacia la cara', LOW_TO_HIGH:'De abajo hacia arriba', HIGH_TO_LOW:'De arriba hacia abajo', ARC:'En arco', OVERHEAD:'Sobre la cabeza', DOWNWARD:'Descendente', UPWARD:'Ascendente', HORIZONTAL:'Horizontal', ROTATIONAL:'Rotacional',
+    FREE:'Libre', UNSUPPORTED:'Sin apoyo', BENCH_SUPPORTED:'Apoyado en banco', MACHINE_SUPPORTED:'Apoyado en máquina', FLOOR_SUPPORTED:'Apoyado en el suelo',
+    CONVENTIONAL:'Convencional', SUMO:'Sumo', SPLIT:'Posición dividida', STAGGERED:'Posición escalonada', FEET_NARROW:'Pies juntos', FEET_MEDIUM:'Pies a anchura media', FEET_WIDE:'Pies separados',
+    ARMS_BY_SIDES:'Brazos a los lados', ARMS_IN_FRONT:'Brazos al frente', ARMS_OVERHEAD:'Brazos sobre la cabeza', ARMS_BEHIND_TORSO:'Brazos detrás del torso', ABDUCTED:'Brazos separados',
+    MID:'Media', EXTENDED:'Extendidas', SLIGHTLY_FLEXED:'Ligeramente flexionadas', FLEXED:'Flexionadas', DYNAMIC:'Dinámica', ISOMETRIC:'Isométrica', ECCENTRIC_EMPHASIS:'Énfasis excéntrico',
+    COMMON:'Común', UNCOMMON:'Poco común', MACHINE_DEPENDENT:'Depende de la máquina', TECHNIQUE_DEPENDENT:'Depende de la técnica', NOT_RECOMMENDED:'No recomendado',
+    DIRECT_EMG:'EMG directo', INDIRECT_EMG_FROM_SIMILAR_EXERCISE:'EMG indirecto de ejercicio similar', BIOMECHANICAL_INFERENCE:'Inferencia biomecánica', ANATOMICAL_CONSENSUS:'Consenso anatómico', VISUAL_APPROXIMATION:'Aproximación visual', REVIEW_REQUIRED:'Pendiente de revisión',
+    PEER_REVIEWED:'Revisión científica', ANATOMICAL_REFERENCE:'Referencia anatómica', PROFESSIONAL_REFERENCE:'Referencia profesional', LEGACY_SEED:'Dato heredado', REVIEW:'En revisión', HIGH:'Alta', LOW_MEDIUM:'Baja-media', LOW:'Baja',
+    BACK_WIDTH:'Amplitud de espalda', BACK_THICKNESS:'Densidad de espalda', LAT_BIAS:'Énfasis dorsal', UPPER_BACK_BIAS:'Énfasis en espalda alta', SCAPULAR_CONTROL:'Control escapular', BICEPS_BIAS:'Énfasis en bíceps', BRACHIALIS_BRACHIORADIALIS_BIAS:'Énfasis en braquial y braquiorradial', GRIP_STRENGTH:'Fuerza de agarre', CHEST_STERNAL_BIAS:'Énfasis en pecho medio', CHEST_CLAVICULAR_BIAS:'Énfasis en pecho superior', CHEST_LOWER_BIAS:'Énfasis en pecho inferior', TRICEPS_BIAS:'Énfasis en tríceps', SHOULDER_STRENGTH:'Fuerza de hombro', SIDE_DELTS_BIAS:'Énfasis en deltoides lateral', REAR_DELTS_BIAS:'Énfasis en deltoides posterior', QUAD_BIAS:'Énfasis en cuádriceps', GLUTE_BIAS:'Énfasis en glúteo', HAMSTRING_BIAS:'Énfasis en isquiotibiales', ADDUCTOR_BIAS:'Énfasis en aductores', HIP_ABDUCTION_BIAS:'Énfasis en abductores', CALF_GASTROCNEMIUS_BIAS:'Énfasis en gastrocnemio', CALF_SOLEUS_BIAS:'Énfasis en sóleo', CORE_FLEXION:'Flexión del abdomen', CORE_ANTI_EXTENSION:'Antiextensión del abdomen', CORE_ANTI_ROTATION:'Antirrotación del abdomen', CORE_LATERAL_STABILITY:'Estabilidad lateral', POSTERIOR_CHAIN:'Cadena posterior', GENERAL_STRENGTH:'Fuerza general', MACHINE_STABILITY:'Estabilidad guiada', UNILATERAL_STABILITY:'Estabilidad unilateral',
+    STRENGTH:'Fuerza', CARDIO:'Cardio', MOBILITY:'Movilidad', SPORT_SPECIFIC:'Específico del deporte', HYPERTROPHY:'Hipertrofia', ENDURANCE:'Resistencia', MODERATE:'Moderada', VERY_HIGH:'Muy alta',
+    HORIZONTAL_PUSH:'Empuje horizontal', VERTICAL_PUSH:'Empuje vertical', HORIZONTAL_PULL:'Tirón horizontal', VERTICAL_PULL:'Tirón vertical', SQUAT:'Sentadilla', HIP_HINGE:'Bisagra de cadera', LUNGE:'Zancada', HIP_EXTENSION:'Extensión de cadera', HIP_ABDUCTION:'Abducción de cadera', HIP_ADDUCTION:'Aducción de cadera', KNEE_EXTENSION:'Extensión de rodilla', KNEE_FLEXION:'Flexión de rodilla', ELBOW_FLEXION:'Flexión de codo', ELBOW_EXTENSION:'Extensión de codo', SHOULDER_ABDUCTION:'Abducción de hombro', SHOULDER_FLEXION:'Flexión de hombro', SHOULDER_HORIZONTAL_ABDUCTION:'Abducción horizontal de hombro', SHOULDER_EXTERNAL_ROTATION:'Rotación externa de hombro', SCAPULAR_ELEVATION:'Elevación escapular', SCAPULAR_RETRACTION_DEPRESSION:'Retracción y depresión escapular', ANKLE_PLANTAR_FLEXION:'Flexión plantar', ANKLE_DORSIFLEXION:'Flexión dorsal del tobillo', TRUNK_FLEXION:'Flexión del tronco', HIP_TRUNK_FLEXION:'Flexión de cadera y tronco', TRUNK_ROTATION:'Rotación del tronco', ANTI_EXTENSION:'Antiextensión', ANTI_ROTATION:'Antirrotación', ANTI_LATERAL_FLEXION:'Antiflexión lateral', CARRY:'Transporte de carga', ISOLATION:'Aislamiento',
+    BILATERAL:'Bilateral', UNILATERAL:'Unilateral', ALTERNATING:'Alterna', ISO_LATERAL:'Iso-lateral',
+    PUSH:'Empuje', PULL:'Tirón', LEGS:'Piernas', UPPER:'Tren superior', LOWER:'Tren inferior', REST:'Descanso',
+    IN_PROGRESS:'En curso', COMPLETED:'Completada', CANCELLED:'Cancelada', PENDING:'Pendiente', ACCEPTED:'Aceptada', REJECTED:'Rechazada', EXPIRED:'Caducada',
+    CALORIE_ADJUSTMENT:'Ajuste de calorías', CARDIO_ADJUSTMENT:'Ajuste de cardio', TRAINING_VOLUME_ADJUSTMENT:'Ajuste del volumen de entrenamiento', RECOVERY_ADJUSTMENT:'Ajuste de recuperación', MIXED_ADJUSTMENT:'Ajuste combinado',
+    APPROACHING:'Acercándose al objetivo', ON_TRACK:'En progreso', NEEDS_ATTENTION:'Necesita atención', NEEDS_ADJUSTMENT:'Necesita ajuste', INSUFFICIENT_DATA:'Datos insuficientes', POSITIVE:'Positiva', NEUTRAL:'Neutral', NEGATIVE:'Negativa', UNKNOWN:'Desconocida', AHEAD:'Por delante', BEHIND:'Por detrás', ALIGNED:'Alineado', NOT_ALIGNED:'No alineado',
+    TRAINING_ADHERENCE:'Constancia de entrenamiento', BODY_FAT_TREND:'Evolución de la grasa corporal', WEIGHT_TREND:'Evolución del peso', MUSCLE_MASS_TREND:'Evolución de la masa muscular', WEIGHT_STABILITY:'Estabilidad del peso', BODY_FAT_PERCENTAGE:'Porcentaje de grasa corporal', WEIGHT_KG:'Peso', MUSCLE_MASS_KG:'Masa muscular',
+    ACTIVE_GOAL_REQUIRED:'Necesitas un objetivo activo', PREVIOUS_TRAINING_PERIOD_REQUIRED:'Se necesita un periodo de entrenamiento anterior', TWO_BODY_MEASUREMENTS_REQUIRED:'Se necesitan al menos dos mediciones corporales', BODY_FAT_MEASUREMENTS_RECOMMENDED:'Se recomiendan mediciones de grasa corporal', MUSCLE_MASS_MEASUREMENTS_RECOMMENDED:'Se recomiendan mediciones de masa muscular', BODY_FAT_AND_MUSCLE_MASS_MEASUREMENTS_REQUIRED:'Se necesitan mediciones de grasa y masa muscular', WEIGHT_MEASUREMENTS_REQUIRED:'Se necesitan mediciones de peso',
+    'goal.progress.no-active-goal':'No hay un objetivo activo', 'goal.progress.insufficient-measurements':'Faltan mediciones para evaluar el progreso', 'goal.progress.insufficient-training':'Faltan entrenamientos completados', 'goal.progress.on-track':'El entrenamiento avanza según el objetivo', 'goal.progress.approaching':'Te estás acercando a tu objetivo', 'goal.progress.needs-attention':'Conviene revisar el plan y la evolución'
+};
+
+const recommendationReasons = {
+    'Training adherence is below 50%; review schedule feasibility and recovery before adding volume.':'La constancia de entrenamiento está por debajo del 50 %; revisa la viabilidad del horario y la recuperación antes de añadir volumen.',
+    'Training adherence is acceptable but the measured outcome is not moving toward the active goal.':'La constancia de entrenamiento es aceptable, pero las mediciones no avanzan hacia el objetivo activo.',
+    'Current training is aligned with the active goal; maintain volume and progress repetitions gradually.':'El entrenamiento actual está alineado con el objetivo activo; mantén el volumen y aumenta las repeticiones de forma gradual.'
 };
 
 const $ = id => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0, 10);
 const daysAgo = days => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 const friendly = value => value == null ? '—' : (labels[value] || String(value).toLowerCase().replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()));
+const variantValue = (key, value) => key === 'gripType' && value === 'NEUTRAL' ? 'Neutro' : friendly(value);
+const localizeText = value => String(value ?? '').replaceAll('Chin-up', 'Dominada supina').replaceAll('chin-up', 'dominada supina').replaceAll('pull-up', 'dominada');
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 const optionalNumber = value => value === '' || value == null ? null : Number(value);
 const formatNumber = value => Number(value || 0).toLocaleString('es-ES', { maximumFractionDigits: 1 });
@@ -188,10 +219,10 @@ async function healthCheck() {
     const orb = $('health-orb');
     try {
         const result = await api('/actuator/health', {auth:false});
-        const ok = result.status === 'UP'; orb.dataset.state = ok ? 'ok':'error'; orb.innerHTML = `<span>${escapeHtml(result.status)}</span><small>Spring Boot Actuator</small>`;
-        $('connection-state').dataset.state = ok ? 'ok':'error'; $('connection-state').lastElementChild.textContent = ok ? 'API conectada':'API degradada'; $('metric-api').textContent = result.status;
+        const ok = result.status === 'UP'; const statusText = ok ? 'OPERATIVA':'DEGRADADA'; orb.dataset.state = ok ? 'ok':'error'; orb.innerHTML = `<span>${statusText}</span><small>Comprobación del servicio</small>`;
+        $('connection-state').dataset.state = ok ? 'ok':'error'; $('connection-state').lastElementChild.textContent = ok ? 'API conectada':'API degradada'; $('metric-api').textContent = ok ? 'Operativa':'Degradada';
     } catch (error) {
-        orb.dataset.state = 'error'; orb.innerHTML = '<span>DOWN</span><small>Sin conexión</small>'; $('connection-state').dataset.state = 'error'; $('connection-state').lastElementChild.textContent = 'API sin conexión'; $('metric-api').textContent = 'DOWN';
+        orb.dataset.state = 'error'; orb.innerHTML = '<span>NO DISPONIBLE</span><small>Sin conexión</small>'; $('connection-state').dataset.state = 'error'; $('connection-state').lastElementChild.textContent = 'API sin conexión'; $('metric-api').textContent = 'No disponible';
     }
 }
 
@@ -211,45 +242,114 @@ function fillSelect(select, values, placeholder = null) {
     values.forEach(value => select.add(new Option(friendly(value), value)));
 }
 
-async function searchCatalog(page = 0) {
+const variantConfigFields = [
+    {key:'equipment', label:'Material o equipo', always:true},
+    {key:'gripType', label:'Tipo de agarre', empty:['NO_SPECIFIC_GRIP']},
+    {key:'gripWidth', label:'Apertura del agarre', empty:['NOT_APPLICABLE']},
+    {key:'attachmentType', label:'Barra o accesorio', empty:['NO_ATTACHMENT','NOT_APPLICABLE']},
+    {key:'benchAngle', label:'Ángulo del banco', empty:['NOT_APPLICABLE']},
+    {key:'bodyPosition', label:'Posición corporal', empty:['NOT_APPLICABLE']},
+    {key:'trajectory', label:'Trayectoria', empty:['NOT_APPLICABLE']},
+    {key:'supportType', label:'Tipo de apoyo', empty:['NOT_APPLICABLE']},
+    {key:'stanceType', label:'Colocación de los pies', empty:['NOT_APPLICABLE']},
+    {key:'footPlacement', label:'Posición de los pies', empty:['NOT_APPLICABLE']},
+    {key:'kneePosition', label:'Posición de las rodillas', empty:['NOT_APPLICABLE']},
+    {key:'shoulderPosition', label:'Posición de los brazos', empty:['NOT_APPLICABLE']},
+    {key:'contractionType', label:'Tipo de contracción', empty:['NOT_APPLICABLE']},
+    {key:'laterality', label:'Ejecución', empty:['NOT_APPLICABLE']}
+];
+
+async function searchCatalog() {
     if (!requireAuth()) return;
-    const params = new URLSearchParams({page:String(page), size:'20'});
+    const params = new URLSearchParams({page:'0', size:'100'});
     const q = $('catalog-query').value.trim(), equipment = $('catalog-equipment').value, muscleGroup = $('catalog-muscle').value;
     if (q) params.set('q', q); if (equipment) params.append('equipment', equipment); if (muscleGroup) params.append('muscleGroup', muscleGroup);
     params.set('includeStabilizers', String($('catalog-stabilizers').checked));
     try {
+        if (!state.exercises.length || !state.variants.length) {
+            [state.exercises, state.variants] = await Promise.all([api('/api/exercises'), api('/api/exercise-variants')]);
+            updateVariantDatalist();
+        }
         const result = await api(`/api/exercise-variants/search?${params}`);
-        state.variants = result.content || []; state.catalogPage = result.page; state.catalogTotalPages = result.totalPages;
-        $('catalog-count').textContent = `${result.totalElements} resultado${result.totalElements === 1 ? '':'s'}`; $('catalog-page').textContent = `Página ${result.totalPages ? result.page + 1:0} de ${result.totalPages}`;
-        $('catalog-prev').disabled = result.page <= 0; $('catalog-next').disabled = result.page + 1 >= result.totalPages;
-        renderCatalog(); updateVariantDatalist(); $('metric-exercises').textContent = result.totalElements;
+        const matchingVariants = result.content || [];
+        const allowedExerciseCodes = new Set(matchingVariants.map(variant => variant.exerciseCode));
+        state.catalogVariantCounts = matchingVariants.reduce((counts, variant) => counts.set(variant.exerciseCode, (counts.get(variant.exerciseCode) || 0) + 1), new Map());
+        state.catalogExercises = state.exercises.filter(exercise => allowedExerciseCodes.has(exercise.code));
+        $('catalog-count').textContent = `${state.catalogExercises.length} ejercicio${state.catalogExercises.length === 1 ? '':'s'}`;
+        $('catalog-page').textContent = `${matchingVariants.length} configuraciones disponibles`;
+        renderCatalog(); $('metric-exercises').textContent = state.exercises.length;
     } catch (error) { toast(error.message, true); }
 }
 
 function renderCatalog() {
     const container = $('catalog-results');
-    if (!state.variants.length) { container.innerHTML = '<div class="empty-state">No hay variantes con estos filtros.</div>'; return; }
-    container.innerHTML = state.variants.map(variant => {
-        const image = variant.thumbnailUrl || variant.imageUrl;
-        const thumb = image ? `<img class="exercise-thumb" src="${escapeHtml(image)}" alt="${escapeHtml(variant.imageAltText || variant.name)}">` : `<span class="exercise-thumb thumb-placeholder">${escapeHtml(variant.name.slice(0,2).toUpperCase())}</span>`;
-        return `<button class="catalog-item ${state.selectedVariant?.code === variant.code ? 'is-selected':''}" data-variant="${escapeHtml(variant.code)}">${thumb}<span><strong>${escapeHtml(variant.name)}</strong><small>${friendly(variant.equipment)} · ${friendly(variant.primaryFocus)}</small><small>${escapeHtml(variant.code)}</small></span></button>`;
+    if (!state.catalogExercises.length) { container.innerHTML = '<div class="empty-state">No hay ejercicios con estos filtros.</div>'; return; }
+    container.innerHTML = state.catalogExercises.map(exercise => {
+        const variants = state.variants.filter(variant => variant.exerciseCode === exercise.code);
+        const representative = variants.find(variant => variant.thumbnailUrl || variant.imageUrl) || variants[0];
+        const image = representative?.thumbnailUrl || representative?.imageUrl;
+        const variantCount = state.catalogVariantCounts?.get(exercise.code) || variants.length;
+        const thumb = image ? `<img class="exercise-thumb" src="${escapeHtml(image)}" alt="${escapeHtml(representative.imageAltText || exercise.name)}">` : `<span class="exercise-thumb thumb-placeholder">${escapeHtml(exercise.name.slice(0,2).toUpperCase())}</span>`;
+        return `<button class="catalog-item ${state.selectedExercise?.code === exercise.code ? 'is-selected':''}" data-exercise="${escapeHtml(exercise.code)}">${thumb}<span><strong>${escapeHtml(exercise.name)}</strong><small>${friendly(exercise.mainMuscleGroup)} · ${variantCount} configuraci${variantCount === 1 ? 'ón':'ones'}</small><small>${friendly(exercise.exerciseCategory)} · ${friendly(exercise.movementPattern)}</small></span></button>`;
     }).join('');
 }
 
-async function selectVariant(code) {
-    const variant = state.variants.find(item => item.code === code) || await api(`/api/exercise-variants/${encodeURIComponent(code)}`);
-    state.selectedVariant = variant;
-    try { state.activations = await api(`/api/exercise-variants/${encodeURIComponent(code)}/muscle-activations`); renderCatalog(); renderVariantDetail(); paintActivations(); }
-    catch (error) { toast(error.message, true); }
+async function selectExercise(code) {
+    state.selectedExercise = state.exercises.find(exercise => exercise.code === code);
+    state.variantConfiguration = {};
+    state.activations = [];
+    renderCatalog();
+    await previewConfiguredVariant();
+}
+
+function resolveConfiguredVariant() {
+    const variants = state.variants.filter(variant => variant.exerciseCode === state.selectedExercise?.code);
+    let candidates = variants;
+    const controls = [];
+    variantConfigFields.forEach(field => {
+        const allValues = [...new Set(variants.map(variant => variant[field.key]).filter(Boolean))];
+        const meaningful = allValues.filter(value => !(field.empty || []).includes(value));
+        if (!field.always && !meaningful.length) return;
+        const availableValues = [...new Set(candidates.map(variant => variant[field.key]).filter(Boolean))];
+        let selected = state.variantConfiguration[field.key];
+        if (!availableValues.includes(selected)) selected = availableValues[0];
+        state.variantConfiguration[field.key] = selected;
+        controls.push({...field, values:availableValues, selected});
+        candidates = candidates.filter(variant => variant[field.key] === selected);
+    });
+    let selectedVariant = candidates.find(variant => variant.code === state.variantConfiguration.variantCode) || candidates[0] || variants[0];
+    state.variantConfiguration.variantCode = selectedVariant?.code;
+    state.selectedVariant = selectedVariant;
+    return {controls, candidates, selectedVariant};
+}
+
+async function previewConfiguredVariant() {
+    const {selectedVariant} = resolveConfiguredVariant();
+    if (!selectedVariant) return;
+    state.activations = [];
+    renderVariantDetail();
+    const requestedCode = selectedVariant.code;
+    try {
+        const activations = await api(`/api/exercise-variants/${encodeURIComponent(requestedCode)}/muscle-activations`);
+        if (state.selectedVariant?.code !== requestedCode) return;
+        state.activations = activations;
+        renderVariantDetail(); paintActivations();
+    } catch (error) { toast(error.message, true); }
 }
 
 function renderVariantDetail() {
-    const v = state.selectedVariant;
+    const exercise = state.selectedExercise;
+    const {controls, candidates, selectedVariant:v} = resolveConfiguredVariant();
+    if (!exercise || !v) return;
     const activations = [...state.activations].sort((a,b) => b.activationLevel - a.activationLevel);
-    $('variant-detail').innerHTML = `<p class="eyebrow">VARIANTE SELECCIONADA</p><h2>${escapeHtml(v.name)}</h2><p>${escapeHtml(v.focusDescription || 'Sin descripción técnica.')}</p>
-        <dl class="detail-list"><div><dt>Código</dt><dd>${escapeHtml(v.code)}</dd></div><div><dt>Equipamiento</dt><dd>${friendly(v.equipment)}</dd></div><div><dt>Agarre</dt><dd>${friendly(v.gripType)}</dd></div><div><dt>Anchura</dt><dd>${friendly(v.gripWidth)}</dd></div><div><dt>Enfoque</dt><dd>${friendly(v.primaryFocus)}</dd></div><div><dt>Evidencia</dt><dd>${friendly(v.focusEvidenceType)} · ${friendly(v.focusEvidenceLevel)}</dd></div><div><dt>Practicidad</dt><dd>${friendly(v.practicality)}</dd></div></dl>
-        <div class="section-heading"><div><p class="eyebrow">ACTIVACIONES</p><h2>${activations.length} músculos</h2></div></div><div class="activation-list">${activations.map(a => `<div class="activation"><div><strong>${escapeHtml(a.muscleName)}</strong><span>${friendly(a.role)} · ${a.activationLevel}/5</span></div><small>${friendly(a.confidence)} · ${friendly(a.evidenceType)}</small><span class="activation-bar"><i style="width:${a.activationLevel * 20}%"></i></span></div>`).join('')}</div>`;
-    $('map-title').textContent = v.name; $('map-subtitle').textContent = `${friendly(v.equipment)} · ${friendly(v.gripType)} · ${friendly(v.gripWidth)}`;
+    const controlHtml = controls.map(control => `<label>${control.label}<select data-variant-config="${control.key}" ${control.values.length === 1 ? 'disabled':''}>${control.values.map(value => `<option value="${value}" ${value === control.selected ? 'selected':''}>${variantValue(control.key, value)}</option>`).join('')}</select></label>`).join('');
+    const finalChoice = candidates.length > 1 ? `<label>Configuración concreta<select data-variant-code>${candidates.map(variant => `<option value="${variant.code}" ${variant.code === v.code ? 'selected':''}>${escapeHtml(variant.name)}</option>`).join('')}</select></label>` : '';
+    $('variant-detail').innerHTML = `<p class="eyebrow">CONFIGURAR EJERCICIO</p><h2>${escapeHtml(exercise.name)}</h2><p>${escapeHtml(exercise.description || 'Selecciona cómo vas a realizar el ejercicio.')}</p>
+        <div class="variant-configurator">${controlHtml}${finalChoice}</div>
+        <div class="resolved-variant"><span>Configuración resultante</span><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(localizeText(v.focusDescription || 'Sin descripción técnica.'))}</small></div>
+        <dl class="detail-list"><div><dt>Enfoque principal</dt><dd>${friendly(v.primaryFocus)}</dd></div>${v.secondaryFocus ? `<div><dt>Enfoque secundario</dt><dd>${friendly(v.secondaryFocus)}</dd></div>`:''}<div><dt>Evidencia</dt><dd>${friendly(v.focusEvidenceType)} · ${friendly(v.focusEvidenceLevel)}</dd></div><div><dt>Uso habitual</dt><dd>${friendly(v.practicality)}</dd></div></dl>
+        <div class="section-heading"><div><p class="eyebrow">ACTIVACIONES</p><h2>${activations.length ? `${activations.length} músculos`:'Cargando…'}</h2></div></div><div class="activation-list">${activations.map(a => `<div class="activation"><div><strong>${escapeHtml(a.muscleName)}</strong><span>${friendly(a.role)} · nivel ${a.activationLevel}/5</span></div><small>Confianza ${friendly(a.confidence).toLowerCase()} · ${friendly(a.evidenceType)}</small><span class="activation-bar"><i style="width:${a.activationLevel * 20}%"></i></span></div>`).join('')}</div>`;
+    $('map-title').textContent = v.name; $('map-subtitle').textContent = `${friendly(v.equipment)} · ${variantValue('gripType', v.gripType)} · ${friendly(v.gripWidth)}`;
 }
 
 function paintActivations() {
@@ -259,13 +359,22 @@ function paintActivations() {
     state.activations.filter(a => showStabilizers || a.role !== 'STABILIZER').forEach(activation => {
         let found = false;
         (muscleSvgMap[activation.muscleCode] || []).forEach(id => { const node = state.svg.getElementById(id); if (node) { found = true; const priority = {STABILIZER:1,SECONDARY:2,PRIMARY:3}; const old = node.dataset.fitcoreRole; if (!old || priority[activation.role] > priority[old]) node.dataset.fitcoreRole = activation.role; } });
-        if (!found) missing.push(activation.muscleCode);
+        if (!found) missing.push(activation.muscleName);
     });
     $('map-diagnostic').textContent = missing.length ? `Sin región directa: ${missing.join(', ')}` : `${state.activations.filter(a => showStabilizers || a.role !== 'STABILIZER').length} músculos visibles`;
 }
 
 function updateVariantDatalist() {
-    $('variant-codes').innerHTML = state.variants.map(v => `<option value="${escapeHtml(v.code)}">${escapeHtml(v.name)}</option>`).join('');
+    $('session-variant').innerHTML = variantOptions('');
+}
+
+function variantOptions(selectedCode) {
+    const groups = state.exercises.map(exercise => ({exercise, variants:state.variants.filter(variant => variant.exerciseCode === exercise.code)})).filter(group => group.variants.length);
+    return `<option value="">Selecciona una configuración</option>${groups.map(group => `<optgroup label="${escapeHtml(group.exercise.name)}">${group.variants.map(variant => `<option value="${escapeHtml(variant.code)}" ${variant.code === selectedCode ? 'selected':''}>${escapeHtml(variant.name)}</option>`).join('')}</optgroup>`).join('')}`;
+}
+
+function variantName(code) {
+    return state.variants.find(variant => variant.code === code)?.name || 'Ejercicio';
 }
 
 function addPlanDay(source = null) {
@@ -278,11 +387,11 @@ function addPlanDay(source = null) {
 function renderPlanDays() {
     const container = $('plan-days');
     if (!state.planDays.length) { container.innerHTML = '<div class="empty-state large">Añade al menos un día para empezar a diseñar el plan.</div>'; return; }
-    container.innerHTML = state.planDays.map((day, dayIndex) => `<article class="day-card" data-day="${dayIndex}"><div class="day-head"><input value="${escapeHtml(day.name)}" data-day-name aria-label="Nombre del día"><select data-day-type aria-label="Tipo de día">${enums.dayTypes.map(t => `<option ${t===day.dayType?'selected':''}>${t}</option>`).join('')}</select><button class="text-button danger" data-remove-day>Eliminar día</button></div><div class="day-exercises">${day.exercises.map((exercise,index) => exerciseEditor(exercise,index)).join('')}</div><div class="day-foot"><small>${day.exercises.length} ejercicio${day.exercises.length===1?'':'s'}</small><button class="button button-secondary" data-add-plan-exercise>+ Ejercicio</button></div></article>`).join('');
+    container.innerHTML = state.planDays.map((day, dayIndex) => `<article class="day-card" data-day="${dayIndex}"><div class="day-head"><input value="${escapeHtml(day.name)}" data-day-name aria-label="Nombre del día"><select data-day-type aria-label="Tipo de día">${enums.dayTypes.map(t => `<option value="${t}" ${t===day.dayType?'selected':''}>${friendly(t)}</option>`).join('')}</select><button class="text-button danger" data-remove-day>Eliminar día</button></div><div class="day-exercises">${day.exercises.map((exercise,index) => exerciseEditor(exercise,index)).join('')}</div><div class="day-foot"><small>${day.exercises.length} ejercicio${day.exercises.length===1?'':'s'}</small><button class="button button-secondary" data-add-plan-exercise>+ Ejercicio</button></div></article>`).join('');
 }
 
 function exerciseEditor(exercise, index) {
-    return `<div class="exercise-editor" data-exercise="${index}"><div class="drag-actions"><button data-move="-1" aria-label="Subir">↑</button><button data-move="1" aria-label="Bajar">↓</button></div><label>Variante<input data-exercise-code list="variant-codes" value="${escapeHtml(exercise.exerciseVariantCode || '')}" placeholder="Código exacto"></label><label>Series<input data-exercise-sets type="number" min="1" value="${exercise.sets || 3}"></label><label>Reps<input data-exercise-reps type="number" min="1" value="${exercise.reps || 10}"></label><label>Descanso (s)<input data-exercise-rest type="number" min="0" value="${exercise.restSeconds ?? 90}"></label><button class="text-button danger remove-exercise" data-remove-exercise>Quitar</button></div>`;
+    return `<div class="exercise-editor" data-exercise="${index}"><div class="drag-actions"><button data-move="-1" aria-label="Subir">↑</button><button data-move="1" aria-label="Bajar">↓</button></div><label>Ejercicio y configuración<select data-exercise-code>${variantOptions(exercise.exerciseVariantCode)}</select></label><label>Series<input data-exercise-sets type="number" min="1" value="${exercise.sets || 3}"></label><label>Repeticiones<input data-exercise-reps type="number" min="1" value="${exercise.reps || 10}"></label><label>Descanso (s)<input data-exercise-rest type="number" min="0" value="${exercise.restSeconds ?? 90}"></label><button class="text-button danger remove-exercise" data-remove-exercise>Quitar</button></div>`;
 }
 
 function syncPlanEditor() {
@@ -347,7 +456,7 @@ async function restoreSession() {
 }
 
 async function addSessionExercise() {
-    if (!state.currentSession) return; const code = $('session-variant').value.trim(); if (!code) return toast('Indica el código de una variante.', true);
+    if (!state.currentSession) return; const code = $('session-variant').value.trim(); if (!code) return toast('Selecciona un ejercicio y su configuración.', true);
     try { await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises`, {method:'POST', body:JSON.stringify({workoutExerciseId:null, exerciseVariantCode:code, completed:false, performedSets:0, performedReps:0, performedWeightKg:null, performedDurationMinutes:null, estimatedCaloriesBurned:null, notes:null})}); $('session-variant').value=''; await loadSessionExercises(); toast('Ejercicio añadido.'); }
     catch (error) { toast(error.message, true); }
 }
@@ -367,7 +476,7 @@ function renderSession() {
     const container = $('session-exercises'); if (!state.sessionExercises.length) { container.innerHTML = `<div class="empty-state large">${active ? 'Añade el primer ejercicio de la sesión.':'Inicia una sesión para registrar ejercicios y series.'}</div>`; return; }
     container.innerHTML = state.sessionExercises.map(exercise => {
         const sets = state.sessionSets.get(exercise.id) || []; const next = sets.length ? Math.max(...sets.map(s => s.setNumber)) + 1 : 1;
-        return `<article class="session-card" data-session-exercise="${exercise.id}"><div class="session-card-head"><div><h3>${escapeHtml(exercise.exerciseVariantCode)}</h3><small>${exercise.extra ? 'Ejercicio extra':'Procedente del plan'} · ${sets.length} series</small></div><div class="button-row"><span class="status-pill" data-state="${exercise.completed?'COMPLETED':''}">${exercise.completed?'Completado':'En curso'}</span><button class="text-button danger" data-remove-session-exercise>Quitar</button></div></div><table class="set-table"><thead><tr><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Hecha</th><th></th></tr></thead><tbody>${sets.map(set => `<tr><td>${set.setNumber}</td><td>${formatNumber(set.weight)}</td><td>${set.reps ?? '—'}</td><td>${set.rir ?? '—'}</td><td>${set.rpe ?? '—'}</td><td>${set.completed?'✓':'—'}</td><td><button class="text-button danger" data-delete-set="${set.id}">×</button></td></tr>`).join('')}<tr class="new-set"><td><input data-set-number type="number" min="1" value="${next}" aria-label="Número de serie"></td><td><input data-set-weight type="number" min="0" step="0.25" aria-label="Peso"></td><td><input data-set-reps type="number" min="0" value="10" aria-label="Repeticiones"></td><td><input data-set-rir type="number" min="0" max="10" value="2" aria-label="RIR"></td><td><input data-set-rpe type="number" min="0" max="10" step="0.5" aria-label="RPE"></td><td><input class="set-complete" data-set-complete type="checkbox" checked aria-label="Completada"></td><td><button class="button button-primary" data-add-set>+</button></td></tr></tbody></table><div class="session-card-foot"><small>1RM estimado calculado por el backend</small><button class="text-button" data-complete-exercise>${exercise.completed?'Reabrir':'Marcar ejercicio completo'}</button></div></article>`;
+        return `<article class="session-card" data-session-exercise="${exercise.id}"><div class="session-card-head"><div><h3>${escapeHtml(variantName(exercise.exerciseVariantCode))}</h3><small>${exercise.extra ? 'Ejercicio extra':'Procedente del plan'} · ${sets.length} series</small></div><div class="button-row"><span class="status-pill" data-state="${exercise.completed?'COMPLETED':''}">${exercise.completed?'Completado':'En curso'}</span><button class="text-button danger" data-remove-session-exercise>Quitar</button></div></div><table class="set-table"><thead><tr><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Hecha</th><th></th></tr></thead><tbody>${sets.map(set => `<tr><td>${set.setNumber}</td><td>${formatNumber(set.weight)}</td><td>${set.reps ?? '—'}</td><td>${set.rir ?? '—'}</td><td>${set.rpe ?? '—'}</td><td>${set.completed?'✓':'—'}</td><td><button class="text-button danger" data-delete-set="${set.id}">×</button></td></tr>`).join('')}<tr class="new-set"><td><input data-set-number type="number" min="1" value="${next}" aria-label="Número de serie"></td><td><input data-set-weight type="number" min="0" step="0.25" aria-label="Peso"></td><td><input data-set-reps type="number" min="0" value="10" aria-label="Repeticiones"></td><td><input data-set-rir type="number" min="0" max="10" value="2" aria-label="RIR"></td><td><input data-set-rpe type="number" min="0" max="10" step="0.5" aria-label="RPE"></td><td><input class="set-complete" data-set-complete type="checkbox" checked aria-label="Completada"></td><td><button class="button button-primary" data-add-set>+</button></td></tr></tbody></table><div class="session-card-foot"><small>1RM estimado calculado por el backend</small><button class="text-button" data-complete-exercise>${exercise.completed?'Reabrir':'Marcar ejercicio completo'}</button></div></article>`;
     }).join('');
 }
 
@@ -447,7 +556,7 @@ async function loadRecommendations() {
 
 function renderRecommendations(items) {
     const container=$('recommendation-list'); if (!items.length) { container.innerHTML='<div class="empty-state large">Aún no hay recomendaciones para este filtro.</div>'; return; }
-    container.innerHTML=items.map(r=>{const date=new Date(`${r.recommendationDate}T00:00:00`);return `<article class="recommendation-card" data-recommendation="${r.id}"><div class="recommendation-date"><strong>${date.getDate()}</strong><small>${date.toLocaleDateString('es-ES',{month:'short'}).toUpperCase()}</small></div><div><div class="button-row"><h3>${friendly(r.recommendationType)}</h3><span class="status-pill" data-state="${r.status}">${friendly(r.status)}</span></div><p>${escapeHtml(r.reason)}</p><div class="recommendation-deltas">${r.proposedSetsChange!=null?`<span>Series ${signed(r.proposedSetsChange)}</span>`:''}${r.proposedRepsChange!=null?`<span>Reps ${signed(r.proposedRepsChange)}</span>`:''}${r.proposedCardioChangeMinutes!=null?`<span>Cardio ${signed(r.proposedCardioChangeMinutes)} min</span>`:''}</div></div><div class="recommendation-actions">${r.status==='PENDING'?'<button class="button button-primary" data-decision="accept">Aceptar</button><button class="button button-secondary" data-decision="reject">Rechazar</button>':''}</div></article>`}).join('');
+    container.innerHTML=items.map(r=>{const date=new Date(`${r.recommendationDate}T00:00:00`);return `<article class="recommendation-card" data-recommendation="${r.id}"><div class="recommendation-date"><strong>${date.getDate()}</strong><small>${date.toLocaleDateString('es-ES',{month:'short'}).toUpperCase()}</small></div><div><div class="button-row"><h3>${friendly(r.recommendationType)}</h3><span class="status-pill" data-state="${r.status}">${friendly(r.status)}</span></div><p>${escapeHtml(recommendationReasons[r.reason] || r.reason)}</p><div class="recommendation-deltas">${r.proposedSetsChange!=null?`<span>Series ${signed(r.proposedSetsChange)}</span>`:''}${r.proposedRepsChange!=null?`<span>Reps ${signed(r.proposedRepsChange)}</span>`:''}${r.proposedCardioChangeMinutes!=null?`<span>Cardio ${signed(r.proposedCardioChangeMinutes)} min</span>`:''}</div></div><div class="recommendation-actions">${r.status==='PENDING'?'<button class="button button-primary" data-decision="accept">Aceptar</button><button class="button button-secondary" data-decision="reject">Rechazar</button>':''}</div></article>`}).join('');
 }
 const signed = value => Number(value)>0?`+${value}`:value;
 async function generateRecommendation() { if (!requireAuth()) return; try { await api(`/api/users/${state.auth.userId}/training-recommendations/generate`,{method:'POST'});toast('Recomendación generada.');await loadRecommendations();}catch(error){toast(error.message,true);} }
@@ -458,7 +567,7 @@ function confirmAction(title, message) { const dialog=$('confirm-dialog'); $('co
 
 async function loadOverview() {
     if (!state.auth) return;
-    try { const variants = await api('/api/exercise-variants/search?page=0&size=1'); $('metric-exercises').textContent=variants.totalElements; } catch (_) {}
+    try { if (!state.exercises.length) state.exercises = await api('/api/exercises'); $('metric-exercises').textContent=state.exercises.length; } catch (_) {}
     await Promise.allSettled([loadActivePlan(true), loadStats()]);
 }
 
@@ -473,7 +582,9 @@ function bindEvents() {
     $('auth-form').addEventListener('submit',event=>{event.preventDefault();authenticate(false);}); $('register-button').addEventListener('click',()=>authenticate(true)); $('logout-button').addEventListener('click',logout);
     $('health-check').addEventListener('click',healthCheck); $('catalog-search').addEventListener('click',()=>searchCatalog(0)); $('catalog-query').addEventListener('keydown',e=>{if(e.key==='Enter')searchCatalog(0);});
     $('catalog-clear').addEventListener('click',()=>{$('catalog-query').value='';$('catalog-equipment').value='';$('catalog-muscle').value='';$('catalog-stabilizers').checked=false;searchCatalog(0);});
-    $('catalog-prev').addEventListener('click',()=>searchCatalog(state.catalogPage-1)); $('catalog-next').addEventListener('click',()=>searchCatalog(state.catalogPage+1)); $('catalog-results').addEventListener('click',e=>{const item=e.target.closest('[data-variant]');if(item)selectVariant(item.dataset.variant);}); $('map-stabilizers').addEventListener('change',paintActivations);
+    $('catalog-results').addEventListener('click',e=>{const item=e.target.closest('[data-exercise]');if(item)selectExercise(item.dataset.exercise);});
+    $('variant-detail').addEventListener('change',e=>{const field=e.target.closest('[data-variant-config]'), finalChoice=e.target.closest('[data-variant-code]');if(field){state.variantConfiguration[field.dataset.variantConfig]=field.value;state.variantConfiguration.variantCode=null;previewConfiguredVariant();}else if(finalChoice){state.variantConfiguration.variantCode=finalChoice.value;previewConfiguredVariant();}});
+    $('map-stabilizers').addEventListener('change',paintActivations);
     $('add-day').addEventListener('click',()=>addPlanDay()); $('plan-load').addEventListener('click',()=>loadActivePlan()); $('plan-save').addEventListener('click',savePlan);
     $('plan-days').addEventListener('click',e=>{const card=e.target.closest('.day-card');if(!card)return;const di=Number(card.dataset.day);if(e.target.closest('[data-remove-day]')){syncPlanEditor();state.planDays.splice(di,1);renderPlanDays();}else if(e.target.closest('[data-add-plan-exercise]')){syncPlanEditor();state.planDays[di].exercises.push({exerciseVariantCode:'',sets:3,reps:10,restSeconds:90});renderPlanDays();}else if(e.target.closest('[data-remove-exercise]')){syncPlanEditor();state.planDays[di].exercises.splice(Number(e.target.closest('.exercise-editor').dataset.exercise),1);renderPlanDays();}else if(e.target.closest('[data-move]')){syncPlanEditor();const row=e.target.closest('.exercise-editor'),from=Number(row.dataset.exercise),to=from+Number(e.target.dataset.move);if(to>=0&&to<state.planDays[di].exercises.length){const [item]=state.planDays[di].exercises.splice(from,1);state.planDays[di].exercises.splice(to,0,item);renderPlanDays();}}});
     $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('session-refresh').addEventListener('click',loadSessionExercises); $('session-complete').addEventListener('click',()=>finishSession('complete')); $('session-cancel').addEventListener('click',()=>finishSession('cancel')); $('session-delete').addEventListener('click',deleteSession);
