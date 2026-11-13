@@ -1,11 +1,13 @@
 const API = '';
 const STORAGE_KEY = 'fitcore.lab.session.v1';
+const SESSION_STARTED_KEY = 'fitcore.lab.session.startedAt';
 const state = {
     auth: JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'),
     logs: [], exercises: [], variants: [], catalogExercises: [], selectedExercise: null,
     selectedVariant: null, variantConfiguration: {}, activations: [], svg: null,
     activePlan: null, planDays: [], currentSession: null,
-    sessionExercises: [], sessionSets: new Map()
+    sessionExercises: [], sessionSets: new Map(), sessionStartedAt: Number(localStorage.getItem(SESSION_STARTED_KEY)) || null,
+    sessionTimer: null, sessionPicker: {exercise:null, configuration:{}}, sessionActivations: new Map()
 };
 
 const muscleSvgMap = {
@@ -94,7 +96,11 @@ const $ = id => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0, 10);
 const daysAgo = days => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 const friendly = value => value == null ? '—' : (labels[value] || String(value).toLowerCase().replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()));
-const variantValue = (key, value) => key === 'gripType' && value === 'NEUTRAL' ? 'Neutro' : friendly(value);
+const variantValue = (key, value) => {
+    if (key === 'gripType' && value === 'NEUTRAL') return 'Neutro';
+    if (key === 'gripWidth') return {NARROW:'Cerrada', MEDIUM:'Media', WIDE:'Abierta'}[value] || friendly(value);
+    return friendly(value);
+};
 const localizeText = value => String(value ?? '').replaceAll('Chin-up', 'Dominada supina').replaceAll('chin-up', 'dominada supina').replaceAll('pull-up', 'dominada');
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
 const optionalNumber = value => value === '' || value == null ? null : Number(value);
@@ -277,7 +283,7 @@ async function searchCatalog() {
         state.catalogExercises = state.exercises.filter(exercise => allowedExerciseCodes.has(exercise.code));
         $('catalog-count').textContent = `${state.catalogExercises.length} ejercicio${state.catalogExercises.length === 1 ? '':'s'}`;
         $('catalog-page').textContent = `${matchingVariants.length} configuraciones disponibles`;
-        renderCatalog(); $('metric-exercises').textContent = state.exercises.length;
+        renderCatalog(); if (state.currentSession) renderSession(); $('metric-exercises').textContent = state.exercises.length;
     } catch (error) { toast(error.message, true); }
 }
 
@@ -302,8 +308,8 @@ async function selectExercise(code) {
     await previewConfiguredVariant();
 }
 
-function resolveConfiguredVariant() {
-    const variants = state.variants.filter(variant => variant.exerciseCode === state.selectedExercise?.code);
+function resolveVariantForExercise(exercise, configuration) {
+    const variants = state.variants.filter(variant => variant.exerciseCode === exercise?.code);
     let candidates = variants;
     const controls = [];
     variantConfigFields.forEach(field => {
@@ -311,16 +317,22 @@ function resolveConfiguredVariant() {
         const meaningful = allValues.filter(value => !(field.empty || []).includes(value));
         if (!field.always && !meaningful.length) return;
         const availableValues = [...new Set(candidates.map(variant => variant[field.key]).filter(Boolean))];
-        let selected = state.variantConfiguration[field.key];
+        let selected = configuration[field.key];
         if (!availableValues.includes(selected)) selected = availableValues[0];
-        state.variantConfiguration[field.key] = selected;
+        configuration[field.key] = selected;
         controls.push({...field, values:availableValues, selected});
         candidates = candidates.filter(variant => variant[field.key] === selected);
     });
-    let selectedVariant = candidates.find(variant => variant.code === state.variantConfiguration.variantCode) || candidates[0] || variants[0];
-    state.variantConfiguration.variantCode = selectedVariant?.code;
-    state.selectedVariant = selectedVariant;
+    const selectedVariant = candidates.find(variant => variant.code === configuration.variantCode) || candidates[0] || variants[0];
+    configuration.variantCode = selectedVariant?.code;
     return {controls, candidates, selectedVariant};
+}
+
+function resolveConfiguredVariant() {
+    const result = resolveVariantForExercise(state.selectedExercise, state.variantConfiguration);
+    const selectedVariant = result.selectedVariant;
+    state.selectedVariant = selectedVariant;
+    return result;
 }
 
 async function previewConfiguredVariant() {
@@ -365,7 +377,7 @@ function paintActivations() {
 }
 
 function updateVariantDatalist() {
-    $('session-variant').innerHTML = variantOptions('');
+    renderSessionExerciseResults();
 }
 
 function variantOptions(selectedCode) {
@@ -445,20 +457,80 @@ function fillSessionDays() {
 async function startSession() {
     if (!requireAuth()) return;
     const body = {workoutDayId:optionalNumber($('session-day').value), sessionDate:$('session-date').value, sessionCategory:$('session-category').value, sessionIntensity:$('session-intensity').value, durationMinutes:null, notes:$('session-notes').value.trim() || null, estimatedTotalCaloriesBurned:null};
-    try { state.currentSession = await api(`/api/users/${state.auth.userId}/workout-sessions`, {method:'POST', body:JSON.stringify(body)}); localStorage.setItem('fitcore.lab.currentSession', state.currentSession.id); toast('Sesión iniciada.'); await loadSessionExercises(); }
+    try {
+        state.currentSession = await api(`/api/users/${state.auth.userId}/workout-sessions`, {method:'POST', body:JSON.stringify(body)});
+        state.sessionStartedAt = Date.now();
+        localStorage.setItem('fitcore.lab.currentSession', state.currentSession.id);
+        localStorage.setItem(SESSION_STARTED_KEY, state.sessionStartedAt);
+        toast('Sesión iniciada.'); await loadSessionExercises();
+    }
     catch (error) { toast(error.message, true); }
 }
 
 async function restoreSession() {
     const id = localStorage.getItem('fitcore.lab.currentSession'); if (!id || !state.auth) return;
-    try { const session = await api(`/api/users/${state.auth.userId}/workout-sessions/${id}`); if (session.status === 'IN_PROGRESS') { state.currentSession = session; await loadSessionExercises(); } else localStorage.removeItem('fitcore.lab.currentSession'); }
-    catch (_) { localStorage.removeItem('fitcore.lab.currentSession'); }
+    try { const session = await api(`/api/users/${state.auth.userId}/workout-sessions/${id}`); if (session.status === 'IN_PROGRESS') { state.currentSession = session; state.sessionStartedAt ||= Date.now(); localStorage.setItem(SESSION_STARTED_KEY, state.sessionStartedAt); await loadSessionExercises(); } else clearSessionStorage(); }
+    catch (_) { clearSessionStorage(); }
 }
 
 async function addSessionExercise() {
-    if (!state.currentSession) return; const code = $('session-variant').value.trim(); if (!code) return toast('Selecciona un ejercicio y su configuración.', true);
-    try { await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises`, {method:'POST', body:JSON.stringify({workoutExerciseId:null, exerciseVariantCode:code, completed:false, performedSets:0, performedReps:0, performedWeightKg:null, performedDurationMinutes:null, estimatedCaloriesBurned:null, notes:null})}); $('session-variant').value=''; await loadSessionExercises(); toast('Ejercicio añadido.'); }
+    if (!state.currentSession) return;
+    const {selectedVariant} = resolveVariantForExercise(state.sessionPicker.exercise, state.sessionPicker.configuration);
+    if (!selectedVariant) return toast('Selecciona un ejercicio y su configuración.', true);
+    try {
+        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises`, {method:'POST', body:JSON.stringify({workoutExerciseId:null, exerciseVariantCode:selectedVariant.code, completed:false, performedSets:0, performedReps:0, performedWeightKg:null, performedDurationMinutes:null, estimatedCaloriesBurned:null, notes:null})});
+        $('exercise-picker-dialog').close(); state.sessionPicker = {exercise:null, configuration:{}}; await loadSessionExercises(); toast('Ejercicio añadido al entrenamiento.');
+    }
     catch (error) { toast(error.message, true); }
+}
+
+async function openExercisePicker() {
+    if (!state.currentSession) return;
+    try {
+        if (!state.exercises.length || !state.variants.length) [state.exercises, state.variants] = await Promise.all([api('/api/exercises'), api('/api/exercise-variants')]);
+        state.sessionPicker = {exercise:null, configuration:{}};
+        $('session-exercise-query').value = ''; $('session-exercise-equipment').value = ''; $('session-exercise-muscle').value = '';
+        renderSessionExerciseResults(); renderSessionExerciseConfig(); $('exercise-picker-dialog').showModal();
+    } catch (error) { toast(error.message, true); }
+}
+
+function filteredSessionExercises() {
+    const query = $('session-exercise-query')?.value.trim().toLocaleLowerCase('es') || '';
+    const equipment = $('session-exercise-equipment')?.value || '';
+    const muscle = $('session-exercise-muscle')?.value || '';
+    return state.exercises.filter(exercise => {
+        const variants = state.variants.filter(variant => variant.exerciseCode === exercise.code);
+        return (!query || `${exercise.name} ${exercise.description || ''}`.toLocaleLowerCase('es').includes(query))
+            && (!equipment || variants.some(variant => variant.equipment === equipment))
+            && (!muscle || exercise.mainMuscleGroup === muscle);
+    });
+}
+
+function exerciseThumb(exercise, cssClass = 'exercise-thumb') {
+    const variants = state.variants.filter(variant => variant.exerciseCode === exercise?.code);
+    const representative = variants.find(variant => variant.thumbnailUrl || variant.imageUrl) || variants[0];
+    const image = representative?.thumbnailUrl || representative?.imageUrl;
+    return image ? `<img class="${cssClass}" src="${escapeHtml(image)}" alt="${escapeHtml(representative.imageAltText || exercise.name)}">` : `<span class="${cssClass} thumb-placeholder">${escapeHtml((exercise?.name || 'FC').slice(0,2).toUpperCase())}</span>`;
+}
+
+function renderSessionExerciseResults() {
+    const container = $('session-exercise-results'); if (!container) return;
+    const exercises = filteredSessionExercises();
+    $('session-exercise-count').textContent = `${exercises.length} ejercicio${exercises.length === 1 ? '' : 's'}`;
+    container.innerHTML = exercises.length ? exercises.map(exercise => {
+        const count = state.variants.filter(variant => variant.exerciseCode === exercise.code).length;
+        return `<button class="picker-exercise ${state.sessionPicker.exercise?.code === exercise.code ? 'is-selected':''}" data-session-exercise-code="${escapeHtml(exercise.code)}">${exerciseThumb(exercise)}<span><strong>${escapeHtml(exercise.name)}</strong><small>${friendly(exercise.mainMuscleGroup)} · ${count} configuraci${count === 1 ? 'ón':'ones'}</small></span><i>›</i></button>`;
+    }).join('') : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
+}
+
+function renderSessionExerciseConfig() {
+    const container = $('session-exercise-config'); const exercise = state.sessionPicker.exercise;
+    if (!exercise) { container.innerHTML = '<div class="empty-state">Selecciona un ejercicio para configurar cómo vas a realizarlo.</div>'; $('session-add-exercise').disabled = true; return; }
+    const {controls, selectedVariant} = resolveVariantForExercise(exercise, state.sessionPicker.configuration);
+    const visibleControls = controls.filter(control => control.values.length > 1 || ['equipment','attachmentType'].includes(control.key));
+    const fields = visibleControls.map(control => `<label>${control.label}<select data-session-variant-config="${control.key}" ${control.values.length === 1 ? 'disabled':''}>${control.values.map(value => `<option value="${value}" ${value === control.selected ? 'selected':''}>${variantValue(control.key, value)}</option>`).join('')}</select></label>`).join('');
+    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(exercise.name)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(selectedVariant.name)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
+    $('session-add-exercise').disabled = !selectedVariant;
 }
 
 async function loadSessionExercises() {
@@ -471,37 +543,92 @@ async function loadSessionExercises() {
 }
 
 function renderSession() {
-    const active = state.currentSession?.status === 'IN_PROGRESS'; $('session-start').disabled = active; $('session-complete').disabled = !active; $('session-cancel').disabled = !active; $('session-delete').disabled = !active; $('session-add-exercise').disabled = !active;
+    const active = state.currentSession?.status === 'IN_PROGRESS'; $('session-start').disabled = active; $('session-complete').disabled = !active; $('session-cancel').disabled = !active; $('session-delete').disabled = !active; $('open-exercise-picker').disabled = !active; $('session-muscles').disabled = !state.sessionExercises.length;
     $('session-status').textContent = state.currentSession ? friendly(state.currentSession.status) : 'Sin iniciar'; $('session-status').dataset.state = state.currentSession?.status || '';
+    $('session-heading').textContent = active ? ($('session-day').selectedOptions[0]?.textContent || 'Sesión libre') : 'Tu sesión';
+    renderSessionSummary(); manageSessionTimer(active);
     const container = $('session-exercises'); if (!state.sessionExercises.length) { container.innerHTML = `<div class="empty-state large">${active ? 'Añade el primer ejercicio de la sesión.':'Inicia una sesión para registrar ejercicios y series.'}</div>`; return; }
     container.innerHTML = state.sessionExercises.map(exercise => {
-        const sets = state.sessionSets.get(exercise.id) || []; const next = sets.length ? Math.max(...sets.map(s => s.setNumber)) + 1 : 1;
-        return `<article class="session-card" data-session-exercise="${exercise.id}"><div class="session-card-head"><div><h3>${escapeHtml(variantName(exercise.exerciseVariantCode))}</h3><small>${exercise.extra ? 'Ejercicio extra':'Procedente del plan'} · ${sets.length} series</small></div><div class="button-row"><span class="status-pill" data-state="${exercise.completed?'COMPLETED':''}">${exercise.completed?'Completado':'En curso'}</span><button class="text-button danger" data-remove-session-exercise>Quitar</button></div></div><table class="set-table"><thead><tr><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Hecha</th><th></th></tr></thead><tbody>${sets.map(set => `<tr><td>${set.setNumber}</td><td>${formatNumber(set.weight)}</td><td>${set.reps ?? '—'}</td><td>${set.rir ?? '—'}</td><td>${set.rpe ?? '—'}</td><td>${set.completed?'✓':'—'}</td><td><button class="text-button danger" data-delete-set="${set.id}">×</button></td></tr>`).join('')}<tr class="new-set"><td><input data-set-number type="number" min="1" value="${next}" aria-label="Número de serie"></td><td><input data-set-weight type="number" min="0" step="0.25" aria-label="Peso"></td><td><input data-set-reps type="number" min="0" value="10" aria-label="Repeticiones"></td><td><input data-set-rir type="number" min="0" max="10" value="2" aria-label="RIR"></td><td><input data-set-rpe type="number" min="0" max="10" step="0.5" aria-label="RPE"></td><td><input class="set-complete" data-set-complete type="checkbox" checked aria-label="Completada"></td><td><button class="button button-primary" data-add-set>+</button></td></tr></tbody></table><div class="session-card-foot"><small>1RM estimado calculado por el backend</small><button class="text-button" data-complete-exercise>${exercise.completed?'Reabrir':'Marcar ejercicio completo'}</button></div></article>`;
+        const sets = state.sessionSets.get(exercise.id) || []; const next = sets.length ? Math.max(...sets.map(s => s.setNumber)) + 1 : 1; const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode); const base = state.exercises.find(item => item.code === variant?.exerciseCode); const completed = sets.length > 0 && sets.every(set => set.completed); const rest = sessionRestSeconds(exercise); const chips = variantConfigurationChips(variant);
+        const setRows = sets.map(set => `<tr data-set-row="${set.id}" class="${set.completed ? 'is-complete':''}"><td><span class="set-number">${set.setNumber}</span><input data-set-number type="hidden" value="${set.setNumber}"></td><td><input data-set-weight type="number" min="0" step="0.25" value="${set.weight ?? ''}" aria-label="Peso de la serie ${set.setNumber}"></td><td><input data-set-reps type="number" min="0" value="${set.reps ?? ''}" aria-label="Repeticiones de la serie ${set.setNumber}"></td><td><input data-set-rir type="number" min="0" max="10" value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}"></td><td><input data-set-rpe type="number" min="0" max="10" step="0.5" value="${set.rpe ?? ''}" aria-label="RPE de la serie ${set.setNumber}"></td><td><label class="complete-check"><input data-set-complete type="checkbox" ${set.completed ? 'checked':''}><span>✓</span></label></td><td><button class="text-button" data-save-set="${set.id}">Guardar</button><button class="text-button danger" data-delete-set="${set.id}" aria-label="Eliminar serie ${set.setNumber}">×</button></td></tr>`).join('');
+        return `<article class="session-card" data-session-exercise="${exercise.id}"><div class="session-card-head"><div class="session-exercise-identity">${base ? exerciseThumb(base, 'session-exercise-thumb') : '<span class="session-exercise-thumb thumb-placeholder">FC</span>'}<div><div class="session-title-line"><h3>${escapeHtml(base?.name || variantName(exercise.exerciseVariantCode))}</h3><span class="status-pill" data-state="${completed?'COMPLETED':''}">${completed?'Completado':'En curso'}</span></div><div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div><small>${escapeHtml(variant?.name || variantName(exercise.exerciseVariantCode))}</small></div></div><button class="icon-button danger" data-remove-session-exercise aria-label="Quitar ejercicio">×</button></div><div class="exercise-tools"><span>⏱ Descanso recomendado: <strong>${formatDuration(rest)}</strong></span><span>Series registradas: <strong>${sets.length}</strong></span></div><div class="set-table-wrap"><table class="set-table"><thead><tr><th>Serie</th><th>Peso (kg)</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set"><td><input data-set-number type="number" min="1" value="${next}" aria-label="Número de serie"></td><td><input data-set-weight type="number" min="0" step="0.25" aria-label="Peso"></td><td><input data-set-reps type="number" min="0" value="10" aria-label="Repeticiones"></td><td><input data-set-rir type="number" min="0" max="10" value="2" aria-label="RIR"></td><td><input data-set-rpe type="number" min="0" max="10" step="0.5" aria-label="RPE"></td><td><label class="complete-check"><input data-set-complete type="checkbox" checked><span>✓</span></label></td><td><button class="button button-primary add-set-button" data-add-set>+ Añadir serie</button></td></tr></tbody></table></div><div class="session-card-foot"><small>El 1RM estimado se calcula automáticamente al guardar.</small><strong>${sets.filter(set => set.completed).length}/${sets.length || 0} series completadas</strong></div></article>`;
     }).join('');
 }
 
+function variantConfigurationChips(variant) {
+    if (!variant) return [];
+    return [friendly(variant.equipment), ...variantConfigFields.slice(1).filter(field => variant[field.key] && !(field.empty || []).includes(variant[field.key])).slice(0,3).map(field => variantValue(field.key, variant[field.key]))];
+}
+
+function sessionRestSeconds(exercise) {
+    for (const day of state.activePlan?.days || []) { const planned = (day.exercises || []).find(item => item.id === exercise.workoutExerciseId); if (planned) return planned.restSeconds ?? 90; }
+    return 90;
+}
+
+function formatDuration(seconds) { const value = Math.max(0, Number(seconds) || 0); return `${Math.floor(value / 60)}:${String(value % 60).padStart(2,'0')}`; }
+
+function sessionElapsedSeconds() { return state.sessionStartedAt ? Math.max(0, Math.floor((Date.now() - state.sessionStartedAt) / 1000)) : 0; }
+
+function renderSessionSummary() {
+    const sets = [...state.sessionSets.values()].flat(); const completed = sets.filter(set => set.completed);
+    $('session-duration').textContent = formatDuration(sessionElapsedSeconds());
+    $('session-volume').textContent = `${formatNumber(completed.reduce((total, set) => total + Number(set.weight || 0) * Number(set.reps || 0), 0))} kg`;
+    $('session-series').textContent = completed.length;
+}
+
+function manageSessionTimer(active) {
+    if (active && !state.sessionTimer) state.sessionTimer = setInterval(() => { if ($('session-duration')) $('session-duration').textContent = formatDuration(sessionElapsedSeconds()); }, 1000);
+    if (!active && state.sessionTimer) { clearInterval(state.sessionTimer); state.sessionTimer = null; }
+}
+
 async function addSet(card) {
-    const exerciseId = Number(card.dataset.sessionExercise); const body = {setNumber:Number(card.querySelector('[data-set-number]').value), weight:optionalNumber(card.querySelector('[data-set-weight]').value), reps:optionalNumber(card.querySelector('[data-set-reps]').value), rir:optionalNumber(card.querySelector('[data-set-rir]').value), rpe:optionalNumber(card.querySelector('[data-set-rpe]').value), completed:card.querySelector('[data-set-complete]').checked, notes:null};
+    const exerciseId = Number(card.dataset.sessionExercise); const body = setBody(card.querySelector('.new-set'));
     try { await api(`/api/users/${state.auth.userId}/workout-session-exercises/${exerciseId}/sets`, {method:'POST', body:JSON.stringify(body)}); await loadSessionExercises(); toast('Serie registrada.'); }
     catch (error) { toast(error.message, true); }
 }
 
-async function toggleSessionExercise(exerciseId) {
-    const exercise = state.sessionExercises.find(e => e.id === exerciseId); const sets = state.sessionSets.get(exerciseId) || [];
-    const body = {completed:!exercise.completed, performedSets:sets.filter(s=>s.completed).length, performedReps:sets.reduce((sum,s)=>sum+(s.reps||0),0), performedWeightKg:sets.length ? Math.max(...sets.map(s=>Number(s.weight||0))) : null, performedDurationMinutes:exercise.performedDurationMinutes, estimatedCaloriesBurned:exercise.estimatedCaloriesBurned, notes:exercise.notes};
-    try { await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${exerciseId}`, {method:'PUT', body:JSON.stringify(body)}); await loadSessionExercises(); }
+async function updateSet(card, row, setId) {
+    const exerciseId = Number(card.dataset.sessionExercise); const body = setBody(row);
+    try { await api(`/api/users/${state.auth.userId}/workout-session-exercises/${exerciseId}/sets/${setId}`, {method:'PUT', body:JSON.stringify(body)}); await loadSessionExercises(); toast('Serie actualizada.'); }
     catch (error) { toast(error.message, true); }
+}
+
+function setBody(container) { return {setNumber:Number(container.querySelector('[data-set-number]').value), weight:optionalNumber(container.querySelector('[data-set-weight]').value), reps:optionalNumber(container.querySelector('[data-set-reps]').value), rir:optionalNumber(container.querySelector('[data-set-rir]').value), rpe:optionalNumber(container.querySelector('[data-set-rpe]').value), completed:container.querySelector('[data-set-complete]').checked, notes:null}; }
+
+async function showSessionMuscles() {
+    if (!state.sessionExercises.length || !state.svg) return;
+    const dialog = $('session-muscle-dialog'); dialog.showModal(); $('session-muscle-list').innerHTML = '<div class="empty-state">Calculando la distribución…</div>';
+    try {
+        await Promise.all(state.sessionExercises.map(async exercise => { if (!state.sessionActivations.has(exercise.exerciseVariantCode)) state.sessionActivations.set(exercise.exerciseVariantCode, await api(`/api/exercise-variants/${encodeURIComponent(exercise.exerciseVariantCode)}/muscle-activations`)); }));
+        const priority = {SECONDARY:1, PRIMARY:2}; const combined = new Map();
+        state.sessionExercises.forEach(exercise => {
+            const completedSets = (state.sessionSets.get(exercise.id) || []).filter(set => set.completed).length;
+            (state.sessionActivations.get(exercise.exerciseVariantCode) || []).filter(item => item.role !== 'STABILIZER').forEach(item => {
+                const previous = combined.get(item.muscleCode); combined.set(item.muscleCode, {...item, role:!previous || priority[item.role] > priority[previous.role] ? item.role : previous.role, sets:(previous?.sets || 0) + completedSets});
+            });
+        });
+        const clone = state.svg.cloneNode(true); clone.querySelectorAll('[data-fitcore-role]').forEach(node => node.removeAttribute('data-fitcore-role'));
+        [...combined.values()].forEach(item => (muscleSvgMap[item.muscleCode] || []).forEach(id => { const node = clone.querySelector(`[id="${id}"]`); if (node) node.dataset.fitcoreRole = item.role; }));
+        $('session-muscle-map').replaceChildren(clone);
+        const muscles = [...combined.values()].sort((a,b) => priority[b.role] - priority[a.role] || b.sets - a.sets);
+        $('session-muscle-list').innerHTML = muscles.length ? muscles.map(item => `<div class="session-muscle-row"><i class="${item.role.toLowerCase()}"></i><div><strong>${escapeHtml(item.muscleName)}</strong><small>${friendly(item.role)}</small></div><span>${item.sets} series</span></div>`).join('') : '<div class="empty-state">Registra series para ver la distribución.</div>';
+    } catch (error) { $('session-muscle-list').innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`; }
 }
 
 async function finishSession(action) {
     if (!state.currentSession) return;
-    try { state.currentSession = await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/${action}`, {method:'POST'}); localStorage.removeItem('fitcore.lab.currentSession'); renderSession(); toast(action === 'complete' ? 'Entrenamiento completado.':'Sesión cancelada.'); await loadOverview(); }
+    try {
+        if (action === 'complete') await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}`, {method:'PATCH', body:JSON.stringify({sessionDate:null, sessionCategory:null, sessionIntensity:null, durationMinutes:Math.max(1, Math.ceil(sessionElapsedSeconds()/60)), notes:null, estimatedTotalCaloriesBurned:null})});
+        state.currentSession = await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/${action}`, {method:'POST'}); clearSessionStorage(); renderSession(); toast(action === 'complete' ? 'Entrenamiento completado.':'Sesión cancelada.'); await loadOverview();
+    }
     catch (error) { toast(error.message, true); }
 }
 
+function clearSessionStorage() { localStorage.removeItem('fitcore.lab.currentSession'); localStorage.removeItem(SESSION_STARTED_KEY); state.sessionStartedAt = null; }
+
 async function deleteSession() {
     if (!await confirmAction('Eliminar sesión', 'La sesión y sus registros se eliminarán de forma permanente.')) return;
-    try { await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}`, {method:'DELETE'}); state.currentSession=null; state.sessionExercises=[]; state.sessionSets.clear(); localStorage.removeItem('fitcore.lab.currentSession'); renderSession(); toast('Sesión eliminada.'); }
+    try { await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}`, {method:'DELETE'}); state.currentSession=null; state.sessionExercises=[]; state.sessionSets.clear(); clearSessionStorage(); renderSession(); toast('Sesión eliminada.'); }
     catch (error) { toast(error.message, true); }
 }
 
@@ -587,8 +714,12 @@ function bindEvents() {
     $('map-stabilizers').addEventListener('change',paintActivations);
     $('add-day').addEventListener('click',()=>addPlanDay()); $('plan-load').addEventListener('click',()=>loadActivePlan()); $('plan-save').addEventListener('click',savePlan);
     $('plan-days').addEventListener('click',e=>{const card=e.target.closest('.day-card');if(!card)return;const di=Number(card.dataset.day);if(e.target.closest('[data-remove-day]')){syncPlanEditor();state.planDays.splice(di,1);renderPlanDays();}else if(e.target.closest('[data-add-plan-exercise]')){syncPlanEditor();state.planDays[di].exercises.push({exerciseVariantCode:'',sets:3,reps:10,restSeconds:90});renderPlanDays();}else if(e.target.closest('[data-remove-exercise]')){syncPlanEditor();state.planDays[di].exercises.splice(Number(e.target.closest('.exercise-editor').dataset.exercise),1);renderPlanDays();}else if(e.target.closest('[data-move]')){syncPlanEditor();const row=e.target.closest('.exercise-editor'),from=Number(row.dataset.exercise),to=from+Number(e.target.dataset.move);if(to>=0&&to<state.planDays[di].exercises.length){const [item]=state.planDays[di].exercises.splice(from,1);state.planDays[di].exercises.splice(to,0,item);renderPlanDays();}}});
-    $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('session-refresh').addEventListener('click',loadSessionExercises); $('session-complete').addEventListener('click',()=>finishSession('complete')); $('session-cancel').addEventListener('click',()=>finishSession('cancel')); $('session-delete').addEventListener('click',deleteSession);
-    $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-complete-exercise]'))await toggleSessionExercise(id);else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
+    $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener('click',openExercisePicker); $('session-refresh').addEventListener('click',loadSessionExercises); $('session-complete').addEventListener('click',()=>finishSession('complete')); $('session-cancel').addEventListener('click',()=>finishSession('cancel')); $('session-delete').addEventListener('click',deleteSession); $('session-muscles').addEventListener('click',showSessionMuscles);
+    ['session-exercise-query','session-exercise-equipment','session-exercise-muscle'].forEach(id => $(id).addEventListener(id === 'session-exercise-query' ? 'input' : 'change', renderSessionExerciseResults));
+    $('session-exercise-results').addEventListener('click',e=>{const item=e.target.closest('[data-session-exercise-code]');if(!item)return;state.sessionPicker={exercise:state.exercises.find(exercise=>exercise.code===item.dataset.sessionExerciseCode),configuration:{}};renderSessionExerciseResults();renderSessionExerciseConfig();});
+    $('session-exercise-config').addEventListener('change',e=>{const field=e.target.closest('[data-session-variant-config]');if(!field)return;state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;state.sessionPicker.configuration.variantCode=null;renderSessionExerciseConfig();});
+    document.querySelectorAll('[data-close-picker]').forEach(button=>button.addEventListener('click',()=>$('exercise-picker-dialog').close())); document.querySelectorAll('[data-close-muscles]').forEach(button=>button.addEventListener('click',()=>$('session-muscle-dialog').close()));
+    $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
     $('stats-load').addEventListener('click',loadStats); $('goal-form').addEventListener('submit',saveGoal); $('progress-form').addEventListener('submit',saveProgress);
     $('recommendation-generate').addEventListener('click',generateRecommendation); $('recommendation-filter').addEventListener('change',loadRecommendations); $('recommendation-list').addEventListener('click',e=>{const button=e.target.closest('[data-decision]'),card=e.target.closest('[data-recommendation]');if(button&&card)decideRecommendation(card.dataset.recommendation,button.dataset.decision);});
     $('log-clear').addEventListener('click',()=>{state.logs=[];renderLogs();}); $('log-copy').addEventListener('click',async()=>{await navigator.clipboard.writeText(JSON.stringify(state.logs,null,2));toast('Registro copiado.');});
@@ -596,7 +727,7 @@ function bindEvents() {
 
 async function init() {
     $('plan-date').value=today(); $('session-date').value=today(); $('progress-date').value=today(); $('stats-from').value=daysAgo(29); $('stats-to').value=today(); $('goal-target-date').value=daysAgo(-90);
-    fillSelect($('catalog-equipment'),enums.equipment,'Todo'); fillSelect($('catalog-muscle'),enums.muscles,'Todos'); fillSelect($('goal-groups'),enums.muscles); bindEvents(); setAuth(state.auth); addPlanDay(); await Promise.all([loadSvg(),healthCheck()]);
+    fillSelect($('catalog-equipment'),enums.equipment,'Todo'); fillSelect($('catalog-muscle'),enums.muscles,'Todos'); fillSelect($('session-exercise-equipment'),enums.equipment,'Todo el equipamiento'); fillSelect($('session-exercise-muscle'),enums.muscles,'Todos los músculos'); fillSelect($('goal-groups'),enums.muscles); bindEvents(); setAuth(state.auth); addPlanDay(); renderSession(); await Promise.all([loadSvg(),healthCheck()]);
     navigate(location.hash.slice(1) && $(`view-${location.hash.slice(1)}`) ? location.hash.slice(1) : 'overview');
     if (state.auth) await bootstrapUserData();
 }

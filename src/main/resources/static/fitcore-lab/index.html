@@ -118,13 +118,18 @@
                     <label>Día del plan (opcional)<select id="session-day"><option value="">Sesión libre</option></select></label>
                     <label>Notas<textarea id="session-notes" rows="3" placeholder="Sensaciones iniciales"></textarea></label>
                     <button id="session-start" class="button button-primary button-block">Iniciar sesión</button>
-                    <div class="session-actions"><button id="session-complete" class="button button-primary" disabled>Completar</button><button id="session-cancel" class="button button-secondary" disabled>Cancelar</button><button id="session-delete" class="text-button danger" disabled>Eliminar</button></div>
-                    <hr>
-                    <label>Añadir ejercicio<select id="session-variant"><option value="">Selecciona una configuración</option></select></label>
-                    <button id="session-add-exercise" class="button button-secondary button-block" disabled>+ Añadir ejercicio</button>
+                    <div class="session-actions"><button id="session-cancel" class="button button-secondary" disabled>Cancelar</button><button id="session-delete" class="text-button danger" disabled>Eliminar sesión</button></div>
                 </aside>
                 <div class="session-workspace">
-                    <div class="section-heading"><div><p class="eyebrow">REGISTRO</p><h2>Ejercicios realizados</h2></div><button id="session-refresh" class="icon-button" aria-label="Recargar sesión">↻</button></div>
+                    <div class="session-dashboard" id="session-dashboard">
+                        <div class="session-dashboard-title"><p class="eyebrow">ENTRENAMIENTO ACTIVO</p><h2 id="session-heading">Tu sesión</h2></div>
+                        <div class="live-metric"><span>Duración</span><strong id="session-duration">00:00</strong></div>
+                        <div class="live-metric"><span>Volumen</span><strong id="session-volume">0 kg</strong></div>
+                        <div class="live-metric"><span>Series</span><strong id="session-series">0</strong></div>
+                        <button id="session-muscles" class="muscle-summary-button" disabled><span>◐</span><strong>Mapa muscular</strong><small>Primarios y secundarios</small></button>
+                        <button id="session-complete" class="button button-primary finish-session" disabled>Terminar</button>
+                    </div>
+                    <div class="section-heading session-list-heading"><div><p class="eyebrow">REGISTRO</p><h2>Ejercicios realizados</h2><p>Cada serie se guarda en la API y puede editarse durante la sesión.</p></div><div class="button-row"><button id="session-refresh" class="icon-button" aria-label="Recargar sesión">↻</button><button id="open-exercise-picker" class="button button-secondary" disabled>+ Añadir ejercicio</button></div></div>
                     <div id="session-exercises" class="session-exercises"><div class="empty-state large">Inicia una sesión para registrar ejercicios y series.</div></div>
                 </div>
             </div>
@@ -161,6 +166,17 @@
 </div>
 <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 <dialog id="confirm-dialog"><form method="dialog"><p class="eyebrow">CONFIRMACIÓN</p><h2 id="confirm-title">¿Continuar?</h2><p id="confirm-message"></p><div class="button-row"><button value="cancel" class="button button-secondary">Cancelar</button><button value="confirm" class="button button-primary">Confirmar</button></div></form></dialog>
+<dialog id="exercise-picker-dialog" class="exercise-picker-dialog">
+    <div class="dialog-heading"><div><p class="eyebrow">AÑADIR AL ENTRENAMIENTO</p><h2>Elige un ejercicio</h2><p>El ejercicio aparece una sola vez. Después podrás concretar material, agarre y apertura cuando existan variantes.</p></div><button class="icon-button" data-close-picker aria-label="Cerrar">×</button></div>
+    <div class="picker-filters"><label>Buscar<input id="session-exercise-query" type="search" placeholder="Ej. dominadas, press, remo…"></label><label>Equipamiento<select id="session-exercise-equipment"><option value="">Todo el equipamiento</option></select></label><label>Grupo muscular<select id="session-exercise-muscle"><option value="">Todos los músculos</option></select></label></div>
+    <div class="exercise-picker-layout"><div><div class="result-meta"><strong id="session-exercise-count">0 ejercicios</strong><span>Sin variantes duplicadas</span></div><div id="session-exercise-results" class="picker-results"></div></div><aside id="session-exercise-config" class="picker-config"><div class="empty-state">Selecciona un ejercicio para configurar cómo vas a realizarlo.</div></aside></div>
+    <div class="dialog-actions"><button class="button button-secondary" data-close-picker>Cancelar</button><button id="session-add-exercise" class="button button-primary" disabled>Añadir al entrenamiento</button></div>
+</dialog>
+<dialog id="session-muscle-dialog" class="muscle-dialog">
+    <div class="dialog-heading"><div><p class="eyebrow">DISTRIBUCIÓN DE LA SESIÓN</p><h2>Músculos trabajados</h2><p>Vista combinada de músculos primarios y secundarios. Los estabilizadores no se incluyen para mantener la lectura clara.</p></div><button class="icon-button" data-close-muscles aria-label="Cerrar">×</button></div>
+    <div class="muscle-dialog-layout"><div id="session-muscle-map" class="session-muscle-map"><div class="map-loader">Preparando mapa…</div></div><div><div class="map-legend compact"><span><i class="primary"></i>Primario</span><span><i class="secondary"></i>Secundario</span></div><div id="session-muscle-list" class="session-muscle-list"></div></div></div>
+    <div class="dialog-actions"><button class="button button-primary" data-close-muscles>Cerrar</button></div>
+</dialog>
 <script src="./app.js" defer></script>
 </body>
 </html>
