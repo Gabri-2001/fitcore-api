@@ -126,7 +126,10 @@
                         <div class="live-metric"><span>Duración</span><strong id="session-duration">00:00</strong></div>
                         <div class="live-metric"><span>Volumen</span><strong id="session-volume">0 kg</strong></div>
                         <div class="live-metric"><span>Series</span><strong id="session-series">0</strong></div>
-                        <button id="session-muscles" class="muscle-summary-button" disabled><span>◐</span><strong>Mapa muscular</strong><small>Primarios y secundarios</small></button>
+                        <button id="session-muscles" class="muscle-summary-button" disabled>
+                            <span id="session-muscle-mini" class="session-muscle-mini" aria-hidden="true"><span class="mini-map-placeholder">◐</span></span>
+                            <span class="muscle-summary-copy"><strong>Mapa muscular</strong><small>Primarios y secundarios</small></span>
+                        </button>
                         <button id="session-complete" class="button button-primary finish-session" disabled>Terminar</button>
                     </div>
                     <div class="section-heading session-list-heading"><div><p class="eyebrow">REGISTRO</p><h2>Ejercicios realizados</h2><p>Cada serie se guarda en la API y puede editarse durante la sesión.</p></div><div class="button-row"><button id="session-refresh" class="icon-button" aria-label="Recargar sesión">↻</button><button id="open-exercise-picker" class="button button-secondary" disabled>+ Añadir ejercicio</button></div></div>
@@ -190,7 +193,7 @@
 </dialog>
 <dialog id="rpe-dialog" class="rpe-dialog">
     <div class="dialog-heading compact"><div><p class="eyebrow">ESFUERZO PERCIBIDO</p><h2>Seleccionar RPE</h2></div><button type="button" class="icon-button" data-close-rpe aria-label="Cerrar">×</button></div>
-    <div class="rpe-body"><strong id="rpe-score">8</strong><h3 id="rpe-description">Exigente</h3><input id="rpe-value" class="rpe-range" type="range" min="6" max="10" step="0.5" value="8" aria-label="RPE entre 6 y 10"><div class="rpe-ticks"><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div></div>
+    <div class="rpe-body"><strong id="rpe-score">8</strong><h3 id="rpe-description">Exigente</h3><input id="rpe-value" class="rpe-range" type="range" min="0" max="10" step="0.5" value="8" aria-label="RPE entre 0 y 10"><div class="rpe-ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div></div>
     <div class="dialog-actions"><button type="button" class="button button-secondary" data-close-rpe>Cancelar</button><button id="rpe-apply" type="button" class="button button-primary">Aplicar RPE</button></div>
 </dialog>
 <aside id="rest-timer" class="rest-timer" hidden aria-live="polite">
