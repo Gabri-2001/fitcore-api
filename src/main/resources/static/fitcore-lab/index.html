@@ -177,6 +177,28 @@
     <div class="muscle-dialog-layout"><div id="session-muscle-map" class="session-muscle-map"><div class="map-loader">Preparando mapa…</div></div><div><div class="map-legend compact"><span><i class="primary"></i>Primario</span><span><i class="secondary"></i>Secundario</span></div><div id="session-muscle-list" class="session-muscle-list"></div></div></div>
     <div class="dialog-actions"><button class="button button-primary" data-close-muscles>Cerrar</button></div>
 </dialog>
+<dialog id="rest-settings-dialog" class="compact-dialog">
+    <form id="rest-settings-form">
+        <div class="dialog-heading compact"><div><p class="eyebrow">TEMPORIZADOR</p><h2>Configurar descanso</h2><p id="rest-exercise-name"></p></div><button type="button" class="icon-button" data-close-rest aria-label="Cerrar">×</button></div>
+        <div class="rest-settings-body">
+            <div class="rest-time-fields"><label>Minutos<input id="rest-minutes" type="number" min="0" max="60" value="1" required></label><span>:</span><label>Segundos<input id="rest-seconds" type="number" min="0" max="59" value="30" required></label></div>
+            <div class="rest-presets" aria-label="Descansos habituales"><button type="button" data-rest-preset="60">1:00</button><button type="button" data-rest-preset="90">1:30</button><button type="button" data-rest-preset="120">2:00</button><button type="button" data-rest-preset="150">2:30</button><button type="button" data-rest-preset="180">3:00</button></div>
+            <p>El contador se reiniciará automáticamente al marcar una serie como hecha.</p>
+        </div>
+        <div class="dialog-actions"><button type="button" class="button button-secondary" data-close-rest>Cancelar</button><button class="button button-primary" type="submit">Guardar descanso</button></div>
+    </form>
+</dialog>
+<dialog id="rpe-dialog" class="rpe-dialog">
+    <div class="dialog-heading compact"><div><p class="eyebrow">ESFUERZO PERCIBIDO</p><h2>Seleccionar RPE</h2></div><button type="button" class="icon-button" data-close-rpe aria-label="Cerrar">×</button></div>
+    <div class="rpe-body"><strong id="rpe-score">8</strong><h3 id="rpe-description">Exigente</h3><input id="rpe-value" class="rpe-range" type="range" min="6" max="10" step="0.5" value="8" aria-label="RPE entre 6 y 10"><div class="rpe-ticks"><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div></div>
+    <div class="dialog-actions"><button type="button" class="button button-secondary" data-close-rpe>Cancelar</button><button id="rpe-apply" type="button" class="button button-primary">Aplicar RPE</button></div>
+</dialog>
+<aside id="rest-timer" class="rest-timer" hidden aria-live="polite">
+    <div class="rest-timer-progress"></div><div><p class="eyebrow">DESCANSO EN CURSO</p><strong id="rest-timer-exercise">Ejercicio</strong></div><time id="rest-timer-value">1:30</time><div class="rest-timer-actions"><button id="rest-timer-minus" type="button">−15 s</button><button id="rest-timer-toggle" type="button">Pausar</button><button id="rest-timer-plus" type="button">+15 s</button><button id="rest-timer-skip" type="button">Finalizar</button></div>
+</aside>
+<dialog id="rest-finished-dialog" class="rest-finished-dialog">
+    <div class="rest-finished-icon">✓</div><p class="eyebrow">DESCANSO TERMINADO</p><h2>Listo para la siguiente serie</h2><p><strong id="rest-finished-exercise"></strong><br>El tiempo de recuperación ha terminado.</p><button id="rest-finished-close" type="button" class="button button-primary button-block">Continuar entrenamiento</button>
+</dialog>
 <script src="./app.js" defer></script>
 </body>
 </html>

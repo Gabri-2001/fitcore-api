@@ -7,6 +7,8 @@ import com.gabri.fitcoreapi.user.repository.UserRepository;
 import com.gabri.fitcoreapi.workout.domain.WorkoutExercise;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionExercise;
+import com.gabri.fitcoreapi.workout.domain.WorkoutSessionStatus;
+import com.gabri.fitcoreapi.workout.dto.PreviousExercisePerformanceResponse;
 import com.gabri.fitcoreapi.workout.repository.WorkoutSessionExerciseRepository;
 import com.gabri.fitcoreapi.workout.repository.WorkoutSessionRepository;
 import com.gabri.fitcoreapi.workout.repository.WorkoutExerciseRepository;
@@ -51,6 +53,7 @@ public class WorkoutSessionExerciseService {
             Long workoutSessionId,
             Long workoutExerciseId,
             String exerciseVariantCode,
+            Integer requestedRestSeconds,
             boolean completed,
             Integer performedSets,
             Integer performedReps,
@@ -95,6 +98,9 @@ public class WorkoutSessionExerciseService {
         WorkoutSessionExercise sessionExercise = new WorkoutSessionExercise(
                 workoutExercise,
                 variant,
+                requestedRestSeconds != null
+                        ? requestedRestSeconds
+                        : workoutExercise == null ? 90 : workoutExercise.getRestSeconds(),
                 completed,
                 performedSets,
                 performedReps,
@@ -107,6 +113,37 @@ public class WorkoutSessionExerciseService {
         sessionExercise.setWorkoutSession(workoutSession);
 
         return workoutSessionExerciseRepository.save(sessionExercise);
+    }
+
+    public WorkoutSessionExercise updateRestSeconds(
+            Long userId,
+            Long workoutSessionId,
+            Long sessionExerciseId,
+            Integer restSeconds
+    ) {
+        WorkoutSessionExercise exercise = ownedExercise(userId, workoutSessionId, sessionExerciseId);
+        requireEditable(exercise.getWorkoutSession());
+        exercise.updateRestSeconds(restSeconds);
+        return exercise;
+    }
+
+    @Transactional(readOnly = true)
+    public PreviousExercisePerformanceResponse getPreviousPerformance(
+            Long userId,
+            Long workoutSessionId,
+            Long sessionExerciseId
+    ) {
+        WorkoutSessionExercise current = ownedExercise(userId, workoutSessionId, sessionExerciseId);
+        return workoutSessionExerciseRepository
+                .findFirstByWorkoutSessionUserIdAndExerciseVariantIdAndWorkoutSessionStatusAndWorkoutSessionIdNotAndWorkoutSessionSessionDateLessThanEqualOrderByWorkoutSessionSessionDateDescWorkoutSessionCompletedAtDesc(
+                        userId,
+                        current.getExerciseVariant().getId(),
+                        WorkoutSessionStatus.COMPLETED,
+                        workoutSessionId,
+                        current.getWorkoutSession().getSessionDate()
+                )
+                .map(PreviousExercisePerformanceResponse::from)
+                .orElseGet(PreviousExercisePerformanceResponse::empty);
     }
 
     @Transactional(readOnly = true)

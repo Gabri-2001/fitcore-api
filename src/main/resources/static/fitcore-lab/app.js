@@ -7,7 +7,9 @@ const state = {
     selectedVariant: null, variantConfiguration: {}, activations: [], svg: null,
     activePlan: null, planDays: [], currentSession: null,
     sessionExercises: [], sessionSets: new Map(), sessionStartedAt: Number(localStorage.getItem(SESSION_STARTED_KEY)) || null,
-    sessionTimer: null, sessionPicker: {exercise:null, configuration:{}}, sessionActivations: new Map()
+    sessionTimer: null, sessionPicker: {exercise:null, configuration:{}}, sessionActivations: new Map(),
+    sessionPrevious: new Map(), restEditorExerciseId: null, rpeTarget: null,
+    restTimer: {exerciseId:null, exerciseName:'', remaining:0, total:0, running:false, interval:null}
 };
 
 const muscleSvgMap = {
@@ -537,8 +539,16 @@ async function loadSessionExercises() {
     if (!state.currentSession) return renderSession();
     try {
         state.sessionExercises = await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises`);
-        const entries = await Promise.all(state.sessionExercises.map(async exercise => [exercise.id, await api(`/api/users/${state.auth.userId}/workout-session-exercises/${exercise.id}/sets`)]));
-        state.sessionSets = new Map(entries); renderSession();
+        const details = await Promise.all(state.sessionExercises.map(async exercise => {
+            const [sets, previous] = await Promise.all([
+                api(`/api/users/${state.auth.userId}/workout-session-exercises/${exercise.id}/sets`),
+                api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${exercise.id}/previous-performance`)
+            ]);
+            return {id:exercise.id, sets, previous};
+        }));
+        state.sessionSets = new Map(details.map(item => [item.id, item.sets]));
+        state.sessionPrevious = new Map(details.map(item => [item.id, item.previous]));
+        renderSession();
     } catch (error) { toast(error.message, true); }
 }
 
@@ -549,10 +559,59 @@ function renderSession() {
     renderSessionSummary(); manageSessionTimer(active);
     const container = $('session-exercises'); if (!state.sessionExercises.length) { container.innerHTML = `<div class="empty-state large">${active ? 'Añade el primer ejercicio de la sesión.':'Inicia una sesión para registrar ejercicios y series.'}</div>`; return; }
     container.innerHTML = state.sessionExercises.map(exercise => {
-        const sets = state.sessionSets.get(exercise.id) || []; const next = sets.length ? Math.max(...sets.map(s => s.setNumber)) + 1 : 1; const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode); const base = state.exercises.find(item => item.code === variant?.exerciseCode); const completed = sets.length > 0 && sets.every(set => set.completed); const rest = sessionRestSeconds(exercise); const chips = variantConfigurationChips(variant);
-        const setRows = sets.map(set => `<tr data-set-row="${set.id}" class="${set.completed ? 'is-complete':''}"><td><span class="set-number">${set.setNumber}</span><input data-set-number type="hidden" value="${set.setNumber}"></td><td><input data-set-weight type="number" min="0" step="0.25" value="${set.weight ?? ''}" aria-label="Peso de la serie ${set.setNumber}"></td><td><input data-set-reps type="number" min="0" value="${set.reps ?? ''}" aria-label="Repeticiones de la serie ${set.setNumber}"></td><td><input data-set-rir type="number" min="0" max="10" value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}"></td><td><input data-set-rpe type="number" min="0" max="10" step="0.5" value="${set.rpe ?? ''}" aria-label="RPE de la serie ${set.setNumber}"></td><td><label class="complete-check"><input data-set-complete type="checkbox" ${set.completed ? 'checked':''}><span>✓</span></label></td><td><button class="text-button" data-save-set="${set.id}">Guardar</button><button class="text-button danger" data-delete-set="${set.id}" aria-label="Eliminar serie ${set.setNumber}">×</button></td></tr>`).join('');
-        return `<article class="session-card" data-session-exercise="${exercise.id}"><div class="session-card-head"><div class="session-exercise-identity">${base ? exerciseThumb(base, 'session-exercise-thumb') : '<span class="session-exercise-thumb thumb-placeholder">FC</span>'}<div><div class="session-title-line"><h3>${escapeHtml(base?.name || variantName(exercise.exerciseVariantCode))}</h3><span class="status-pill" data-state="${completed?'COMPLETED':''}">${completed?'Completado':'En curso'}</span></div><div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div><small>${escapeHtml(variant?.name || variantName(exercise.exerciseVariantCode))}</small></div></div><button class="icon-button danger" data-remove-session-exercise aria-label="Quitar ejercicio">×</button></div><div class="exercise-tools"><span>⏱ Descanso recomendado: <strong>${formatDuration(rest)}</strong></span><span>Series registradas: <strong>${sets.length}</strong></span></div><div class="set-table-wrap"><table class="set-table"><thead><tr><th>Serie</th><th>Peso (kg)</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set"><td><input data-set-number type="number" min="1" value="${next}" aria-label="Número de serie"></td><td><input data-set-weight type="number" min="0" step="0.25" aria-label="Peso"></td><td><input data-set-reps type="number" min="0" value="10" aria-label="Repeticiones"></td><td><input data-set-rir type="number" min="0" max="10" value="2" aria-label="RIR"></td><td><input data-set-rpe type="number" min="0" max="10" step="0.5" aria-label="RPE"></td><td><label class="complete-check"><input data-set-complete type="checkbox" checked><span>✓</span></label></td><td><button class="button button-primary add-set-button" data-add-set>+ Añadir serie</button></td></tr></tbody></table></div><div class="session-card-foot"><small>El 1RM estimado se calcula automáticamente al guardar.</small><strong>${sets.filter(set => set.completed).length}/${sets.length || 0} series completadas</strong></div></article>`;
+        const sets = state.sessionSets.get(exercise.id) || [];
+        const previous = state.sessionPrevious.get(exercise.id) || {sessionDate:null, sets:[]};
+        const previousByNumber = new Map((previous.sets || []).map(set => [set.setNumber, set]));
+        const next = sets.length ? Math.max(...sets.map(set => set.setNumber)) + 1 : 1;
+        const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
+        const base = state.exercises.find(item => item.code === variant?.exerciseCode);
+        const exerciseName = base?.name || variantName(exercise.exerciseVariantCode);
+        const completed = sets.length > 0 && sets.every(set => set.completed);
+        const rest = sessionRestSeconds(exercise);
+        const chips = variantConfigurationChips(variant);
+        const lastSet = sets.at(-1);
+        const firstSuggestion = previousByNumber.get(next);
+        const suggestedWeight = lastSet?.weight ?? firstSuggestion?.weight ?? '';
+        const suggestedReps = lastSet?.reps ?? firstSuggestion?.reps ?? '';
+        const setRows = sets.map(set => {
+            const prior = previousByNumber.get(set.setNumber);
+            return `<tr data-set-row="${set.id}" class="${set.completed ? 'is-complete':''}">
+                <td><span class="set-number">${set.setNumber}</span><input data-set-number type="hidden" value="${set.setNumber}"></td>
+                <td class="previous-performance">${previousSetLabel(prior)}</td>
+                <td><input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="${set.weight ?? ''}" aria-label="Peso de la serie ${set.setNumber}"></td>
+                <td><input data-set-reps data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${set.reps ?? ''}" aria-label="Repeticiones de la serie ${set.setNumber}"></td>
+                <td><input data-set-rir data-numeric-mode="integer" type="number" inputmode="numeric" min="0" max="10" step="1" value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}"></td>
+                <td>${rpeControl(set.rpe, `RPE de la serie ${set.setNumber}`)}</td>
+                <td><label class="complete-check"><input data-set-complete type="checkbox" ${set.completed ? 'checked':''}><span>✓</span></label></td>
+                <td><button class="text-button" data-save-set="${set.id}">Guardar</button><button class="text-button danger" data-delete-set="${set.id}" aria-label="Eliminar serie ${set.setNumber}">×</button></td>
+            </tr>`;
+        }).join('');
+        return `<article class="session-card" data-session-exercise="${exercise.id}" data-exercise-name="${escapeHtml(exerciseName)}">
+            <div class="session-card-head"><div class="session-exercise-identity">${base ? exerciseThumb(base, 'session-exercise-thumb') : '<span class="session-exercise-thumb thumb-placeholder">FC</span>'}<div><div class="session-title-line"><h3>${escapeHtml(exerciseName)}</h3><span class="status-pill" data-state="${completed?'COMPLETED':''}">${completed?'Completado':'En curso'}</span></div><div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div><small>${escapeHtml(variant?.name || variantName(exercise.exerciseVariantCode))}</small></div></div><button class="icon-button danger" data-remove-session-exercise aria-label="Quitar ejercicio">×</button></div>
+            <div class="exercise-tools"><button class="rest-setting" data-edit-rest><span>⏱ Descanso</span><strong>${formatDuration(rest)}</strong><small>Modificar</small></button><span>Series registradas: <strong>${sets.length}</strong></span><span>Anterior: <strong>${previous.sessionDate ? new Date(`${previous.sessionDate}T00:00:00`).toLocaleDateString('es-ES') : 'Sin registros'}</strong></span></div>
+            <div class="set-table-wrap"><table class="set-table"><thead><tr><th>Serie</th><th>Anterior</th><th>Peso (kg)</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set">
+                <td><span class="set-number">${next}</span><input data-set-number type="hidden" value="${next}"></td>
+                <td class="previous-performance">${previousSetLabel(previousByNumber.get(next))}</td>
+                <td><input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="${suggestedWeight}" aria-label="Peso de la nueva serie"></td>
+                <td><input data-set-reps data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${suggestedReps}" aria-label="Repeticiones de la nueva serie"></td>
+                <td><input data-set-rir data-numeric-mode="integer" type="number" inputmode="numeric" min="0" max="10" step="1" value="${lastSet?.rir ?? 2}" aria-label="RIR de la nueva serie"></td>
+                <td>${rpeControl(null, 'RPE de la nueva serie')}</td><td><span class="pending-set" title="La serie se crea sin completar">Pendiente</span></td>
+                <td><button class="button button-primary add-set-button" data-add-set>+ Añadir serie</button></td>
+            </tr></tbody></table></div><div class="session-card-foot"><small>Al marcar una serie como hecha se guardará y comenzará el descanso.</small><strong>${sets.filter(set => set.completed).length}/${sets.length || 0} series completadas</strong></div>
+        </article>`;
     }).join('');
+}
+
+function previousSetLabel(set) {
+    if (!set || (set.weight == null && set.reps == null)) return '<span aria-label="Sin registro anterior">—</span>';
+    const weight = set.weight == null ? '—' : `${formatNumber(set.weight)} kg`;
+    const reps = set.reps == null ? '—' : set.reps;
+    return `<strong>${weight} × ${reps}</strong>`;
+}
+
+function rpeControl(value, label) {
+    const display = value == null ? 'RPE' : formatNumber(value);
+    return `<button type="button" class="rpe-button ${value == null ? '' : 'has-value'}" data-rpe-picker aria-label="${escapeHtml(label)}">${display}</button><input data-set-rpe type="hidden" value="${value ?? ''}">`;
 }
 
 function variantConfigurationChips(variant) {
@@ -561,8 +620,7 @@ function variantConfigurationChips(variant) {
 }
 
 function sessionRestSeconds(exercise) {
-    for (const day of state.activePlan?.days || []) { const planned = (day.exercises || []).find(item => item.id === exercise.workoutExerciseId); if (planned) return planned.restSeconds ?? 90; }
-    return 90;
+    return exercise.restSeconds ?? 90;
 }
 
 function formatDuration(seconds) { const value = Math.max(0, Number(seconds) || 0); return `${Math.floor(value / 60)}:${String(value % 60).padStart(2,'0')}`; }
@@ -582,18 +640,212 @@ function manageSessionTimer(active) {
 }
 
 async function addSet(card) {
-    const exerciseId = Number(card.dataset.sessionExercise); const body = setBody(card.querySelector('.new-set'));
-    try { await api(`/api/users/${state.auth.userId}/workout-session-exercises/${exerciseId}/sets`, {method:'POST', body:JSON.stringify(body)}); await loadSessionExercises(); toast('Serie registrada.'); }
+    const exerciseId = Number(card.dataset.sessionExercise);
+    try {
+        const currentRows = [...card.querySelectorAll('[data-set-row]')].map(row => ({id:row.dataset.setRow, body:setBody(row)}));
+        const newSet = setBody(card.querySelector('.new-set'));
+        await Promise.all(currentRows.map(set => api(`/api/users/${state.auth.userId}/workout-session-exercises/${exerciseId}/sets/${set.id}`, {method:'PUT', body:JSON.stringify(set.body)})));
+        await api(`/api/users/${state.auth.userId}/workout-session-exercises/${exerciseId}/sets`, {method:'POST', body:JSON.stringify(newSet)});
+        await loadSessionExercises();
+        toast(currentRows.length ? 'Serie añadida y cambios guardados.':'Serie registrada.');
+    }
     catch (error) { toast(error.message, true); }
 }
 
-async function updateSet(card, row, setId) {
+async function updateSet(card, row, setId, startRest = false) {
     const exerciseId = Number(card.dataset.sessionExercise); const body = setBody(row);
-    try { await api(`/api/users/${state.auth.userId}/workout-session-exercises/${exerciseId}/sets/${setId}`, {method:'PUT', body:JSON.stringify(body)}); await loadSessionExercises(); toast('Serie actualizada.'); }
-    catch (error) { toast(error.message, true); }
+    try {
+        await api(`/api/users/${state.auth.userId}/workout-session-exercises/${exerciseId}/sets/${setId}`, {method:'PUT', body:JSON.stringify(body)});
+        const exercise = state.sessionExercises.find(item => item.id === exerciseId);
+        await loadSessionExercises();
+        if (body.completed && startRest && exercise) startRestTimer(exercise, card.dataset.exerciseName);
+        toast(body.completed && startRest ? 'Serie completada. Descanso iniciado.':'Serie actualizada.');
+    }
+    catch (error) { await loadSessionExercises(); toast(error.message, true); }
 }
 
-function setBody(container) { return {setNumber:Number(container.querySelector('[data-set-number]').value), weight:optionalNumber(container.querySelector('[data-set-weight]').value), reps:optionalNumber(container.querySelector('[data-set-reps]').value), rir:optionalNumber(container.querySelector('[data-set-rir]').value), rpe:optionalNumber(container.querySelector('[data-set-rpe]').value), completed:container.querySelector('[data-set-complete]').checked, notes:null}; }
+function setBody(container) {
+    const completion = container.querySelector('[data-set-complete]');
+    return {
+        setNumber:requiredInteger(container.querySelector('[data-set-number]').value, 'El número de serie', 1),
+        weight:validatedNumericValue(container.querySelector('[data-set-weight]'), 'El peso', false, 0),
+        reps:validatedNumericValue(container.querySelector('[data-set-reps]'), 'Las repeticiones', true, 0),
+        rir:validatedNumericValue(container.querySelector('[data-set-rir]'), 'El RIR', true, 0, 10),
+        rpe:optionalNumber(container.querySelector('[data-set-rpe]').value),
+        completed:completion ? completion.checked : false,
+        notes:null
+    };
+}
+
+function requiredInteger(rawValue, label, minimum) {
+    if (!/^\d+$/.test(String(rawValue))) throw new Error(`${label} debe ser un número entero.`);
+    const value = Number(rawValue);
+    if (value < minimum) throw new Error(`${label} debe ser ${minimum} o superior.`);
+    return value;
+}
+
+function validatedNumericValue(input, label, integer, minimum, maximum = null) {
+    const rawValue = input.value.trim();
+    if (rawValue === '') return null;
+    const pattern = integer ? /^\d+$/ : /^\d+(?:\.\d+)?$/;
+    if (!pattern.test(rawValue)) throw new Error(`${label} solo admite ${integer ? 'números enteros' : 'números'}.`);
+    const value = Number(rawValue);
+    if (!Number.isFinite(value) || value < minimum || (maximum != null && value > maximum)) {
+        const range = maximum == null ? `${minimum} o superior` : `entre ${minimum} y ${maximum}`;
+        throw new Error(`${label} debe estar ${range}.`);
+    }
+    return value;
+}
+
+function blockInvalidNumericKey(event) {
+    const input = event.target.closest('[data-numeric-mode]');
+    if (!input || event.ctrlKey || event.metaKey || event.altKey) return;
+    const allowedControlKeys = ['Backspace','Delete','Tab','Enter','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+    if (allowedControlKeys.includes(event.key) || /^\d$/.test(event.key)) return;
+    if (input.dataset.numericMode === 'decimal' && event.key === '.' && !input.value.includes('.')) return;
+    event.preventDefault();
+}
+
+function blockInvalidNumericInsert(event) {
+    const input = event.target.closest('[data-numeric-mode]');
+    if (!input || !event.inputType?.startsWith('insert') || event.data == null) return;
+    const allowed = input.dataset.numericMode === 'decimal' ? /^[0-9.]+$/ : /^\d+$/;
+    if (!allowed.test(event.data)) event.preventDefault();
+}
+
+function blockInvalidNumericPaste(event) {
+    const input = event.target.closest('[data-numeric-mode]');
+    if (!input) return;
+    const pasted = event.clipboardData?.getData('text').trim() || '';
+    const allowed = input.dataset.numericMode === 'decimal' ? /^\d+(?:\.\d+)?$/ : /^\d+$/;
+    if (!allowed.test(pasted)) {
+        event.preventDefault();
+        toast('Ese campo solo admite números.', true);
+    }
+}
+
+function openRestEditor(card) {
+    const exerciseId = Number(card.dataset.sessionExercise);
+    const exercise = state.sessionExercises.find(item => item.id === exerciseId);
+    if (!exercise) return;
+    state.restEditorExerciseId = exerciseId;
+    $('rest-exercise-name').textContent = card.dataset.exerciseName;
+    $('rest-minutes').value = Math.floor(sessionRestSeconds(exercise) / 60);
+    $('rest-seconds').value = sessionRestSeconds(exercise) % 60;
+    $('rest-settings-dialog').showModal();
+}
+
+async function saveRestSettings(event) {
+    event.preventDefault();
+    const minutes = Math.max(0, Number($('rest-minutes').value) || 0);
+    const seconds = Math.max(0, Number($('rest-seconds').value) || 0);
+    const restSeconds = Math.min(3600, minutes * 60 + seconds);
+    try {
+        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${state.restEditorExerciseId}/rest`, {method:'PATCH', body:JSON.stringify({restSeconds})});
+        $('rest-settings-dialog').close();
+        await loadSessionExercises();
+        toast(`Descanso actualizado a ${formatDuration(restSeconds)}.`);
+    } catch (error) { toast(error.message, true); }
+}
+
+function openRpeEditor(button) {
+    state.rpeTarget = button.closest('td');
+    const value = optionalNumber(state.rpeTarget.querySelector('[data-set-rpe]').value) ?? 8;
+    $('rpe-value').value = value;
+    updateRpePreview(value);
+    $('rpe-dialog').showModal();
+}
+
+function updateRpePreview(value) {
+    const numeric = Number(value);
+    $('rpe-score').textContent = formatNumber(numeric);
+    $('rpe-description').textContent = numeric >= 10 ? 'Esfuerzo máximo · no podrías hacer más repeticiones' : numeric >= 9 ? 'Muy exigente · quedaría aproximadamente 1 repetición' : numeric >= 8 ? 'Exigente · quedarían unas 2 repeticiones' : numeric >= 7 ? 'Moderado · quedarían unas 3 repeticiones' : 'Cómodo · quedarían 4 o más repeticiones';
+}
+
+function applyRpeValue() {
+    if (!state.rpeTarget) return $('rpe-dialog').close();
+    const value = Number($('rpe-value').value);
+    state.rpeTarget.querySelector('[data-set-rpe]').value = value;
+    const button = state.rpeTarget.querySelector('[data-rpe-picker]');
+    button.textContent = formatNumber(value);
+    button.classList.add('has-value');
+    $('rpe-dialog').close();
+}
+
+function startRestTimer(exercise, exerciseName) {
+    const duration = sessionRestSeconds(exercise);
+    if (duration <= 0) return toast('Descanso desactivado para este ejercicio.');
+    clearRestTimerInterval();
+    Object.assign(state.restTimer, {exerciseId:exercise.id, exerciseName:exerciseName || 'Ejercicio', remaining:duration, total:duration, running:true});
+    state.restTimer.interval = setInterval(() => {
+        if (!state.restTimer.running) return;
+        state.restTimer.remaining = Math.max(0, state.restTimer.remaining - 1);
+        renderRestTimer();
+        if (state.restTimer.remaining === 0) completeRestTimer();
+    }, 1000);
+    renderRestTimer();
+}
+
+function clearRestTimerInterval() {
+    if (state.restTimer.interval) clearInterval(state.restTimer.interval);
+    state.restTimer.interval = null;
+}
+
+function renderRestTimer() {
+    const panel = $('rest-timer');
+    if (!panel) return;
+    const active = state.restTimer.exerciseId != null;
+    panel.hidden = !active;
+    document.body.classList.toggle('resting', active);
+    if (!active) return;
+    $('rest-timer-exercise').textContent = state.restTimer.exerciseName;
+    $('rest-timer-value').textContent = formatDuration(state.restTimer.remaining);
+    $('rest-timer-toggle').textContent = state.restTimer.running ? 'Pausar' : 'Continuar';
+    const percent = state.restTimer.total ? (state.restTimer.remaining / state.restTimer.total) * 100 : 0;
+    panel.style.setProperty('--rest-progress', `${percent}%`);
+}
+
+function toggleRestTimer() {
+    if (state.restTimer.exerciseId == null) return;
+    state.restTimer.running = !state.restTimer.running;
+    renderRestTimer();
+}
+
+function adjustRestTimer(seconds) {
+    if (state.restTimer.exerciseId == null) return;
+    state.restTimer.remaining = Math.max(0, state.restTimer.remaining + seconds);
+    state.restTimer.total = Math.max(state.restTimer.total, state.restTimer.remaining);
+    renderRestTimer();
+    if (state.restTimer.remaining === 0) completeRestTimer();
+}
+
+function stopRestTimer() {
+    clearRestTimerInterval();
+    Object.assign(state.restTimer, {exerciseId:null, exerciseName:'', remaining:0, total:0, running:false});
+    renderRestTimer();
+}
+
+function completeRestTimer() {
+    clearRestTimerInterval();
+    state.restTimer.running = false;
+    renderRestTimer();
+    $('rest-finished-exercise').textContent = state.restTimer.exerciseName;
+    if (!$('rest-finished-dialog').open) $('rest-finished-dialog').showModal();
+    playRestAlert();
+    if (navigator.vibrate) navigator.vibrate([180, 100, 180]);
+    toast('Descanso terminado. Puedes comenzar la siguiente serie.');
+}
+
+function playRestAlert() {
+    try {
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audio.createOscillator();
+        const gain = audio.createGain();
+        oscillator.frequency.value = 880; gain.gain.value = 0.08;
+        oscillator.connect(gain); gain.connect(audio.destination); oscillator.start();
+        setTimeout(() => { oscillator.stop(); audio.close(); }, 450);
+    } catch (_) {}
+}
 
 async function showSessionMuscles() {
     if (!state.sessionExercises.length || !state.svg) return;
@@ -624,7 +876,7 @@ async function finishSession(action) {
     catch (error) { toast(error.message, true); }
 }
 
-function clearSessionStorage() { localStorage.removeItem('fitcore.lab.currentSession'); localStorage.removeItem(SESSION_STARTED_KEY); state.sessionStartedAt = null; }
+function clearSessionStorage() { localStorage.removeItem('fitcore.lab.currentSession'); localStorage.removeItem(SESSION_STARTED_KEY); state.sessionStartedAt = null; stopRestTimer(); }
 
 async function deleteSession() {
     if (!await confirmAction('Eliminar sesión', 'La sesión y sus registros se eliminarán de forma permanente.')) return;
@@ -719,7 +971,17 @@ function bindEvents() {
     $('session-exercise-results').addEventListener('click',e=>{const item=e.target.closest('[data-session-exercise-code]');if(!item)return;state.sessionPicker={exercise:state.exercises.find(exercise=>exercise.code===item.dataset.sessionExerciseCode),configuration:{}};renderSessionExerciseResults();renderSessionExerciseConfig();});
     $('session-exercise-config').addEventListener('change',e=>{const field=e.target.closest('[data-session-variant-config]');if(!field)return;state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;state.sessionPicker.configuration.variantCode=null;renderSessionExerciseConfig();});
     document.querySelectorAll('[data-close-picker]').forEach(button=>button.addEventListener('click',()=>$('exercise-picker-dialog').close())); document.querySelectorAll('[data-close-muscles]').forEach(button=>button.addEventListener('click',()=>$('session-muscle-dialog').close()));
-    $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
+    document.querySelectorAll('[data-close-rest]').forEach(button=>button.addEventListener('click',()=>$('rest-settings-dialog').close())); document.querySelectorAll('[data-close-rpe]').forEach(button=>button.addEventListener('click',()=>$('rpe-dialog').close()));
+    $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-edit-rest]'))openRestEditor(card);else if(e.target.closest('[data-rpe-picker]'))openRpeEditor(e.target.closest('[data-rpe-picker]'));else if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
+    $('session-exercises').addEventListener('change',async e=>{const completion=e.target.closest('[data-set-complete]');if(!completion)return;const row=completion.closest('[data-set-row]'),card=completion.closest('.session-card');await updateSet(card,row,row.dataset.setRow,completion.checked);});
+    $('session-exercises').addEventListener('keydown',blockInvalidNumericKey);
+    $('session-exercises').addEventListener('beforeinput',blockInvalidNumericInsert);
+    $('session-exercises').addEventListener('paste',blockInvalidNumericPaste);
+    $('rest-settings-form').addEventListener('submit',saveRestSettings);
+    document.querySelectorAll('[data-rest-preset]').forEach(button=>button.addEventListener('click',()=>{const total=Number(button.dataset.restPreset);$('rest-minutes').value=Math.floor(total/60);$('rest-seconds').value=total%60;}));
+    $('rpe-value').addEventListener('input',e=>updateRpePreview(e.target.value)); $('rpe-apply').addEventListener('click',applyRpeValue);
+    $('rest-timer-toggle').addEventListener('click',toggleRestTimer); $('rest-timer-minus').addEventListener('click',()=>adjustRestTimer(-15)); $('rest-timer-plus').addEventListener('click',()=>adjustRestTimer(15)); $('rest-timer-skip').addEventListener('click',completeRestTimer);
+    $('rest-finished-close').addEventListener('click',()=>{ $('rest-finished-dialog').close(); stopRestTimer(); });
     $('stats-load').addEventListener('click',loadStats); $('goal-form').addEventListener('submit',saveGoal); $('progress-form').addEventListener('submit',saveProgress);
     $('recommendation-generate').addEventListener('click',generateRecommendation); $('recommendation-filter').addEventListener('change',loadRecommendations); $('recommendation-list').addEventListener('click',e=>{const button=e.target.closest('[data-decision]'),card=e.target.closest('[data-recommendation]');if(button&&card)decideRecommendation(card.dataset.recommendation,button.dataset.decision);});
     $('log-clear').addEventListener('click',()=>{state.logs=[];renderLogs();}); $('log-copy').addEventListener('click',async()=>{await navigator.clipboard.writeText(JSON.stringify(state.logs,null,2));toast('Registro copiado.');});

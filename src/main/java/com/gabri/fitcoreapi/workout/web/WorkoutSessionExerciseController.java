@@ -3,6 +3,8 @@ package com.gabri.fitcoreapi.workout.web;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionExercise;
 import com.gabri.fitcoreapi.workout.dto.CreateWorkoutSessionExerciseRequest;
 import com.gabri.fitcoreapi.workout.dto.WorkoutSessionExerciseResponse;
+import com.gabri.fitcoreapi.workout.dto.PreviousExercisePerformanceResponse;
+import com.gabri.fitcoreapi.workout.dto.UpdateSessionExerciseRestRequest;
 import com.gabri.fitcoreapi.workout.service.WorkoutSessionExerciseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,6 +44,7 @@ public class WorkoutSessionExerciseController {
                 workoutSessionId,
                 request.getWorkoutExerciseId(),
                 request.getExerciseVariantCode(),
+                request.getRestSeconds(),
                 request.isCompleted(),
                 request.getPerformedSets(),
                 request.getPerformedReps(),
@@ -52,6 +55,29 @@ public class WorkoutSessionExerciseController {
         );
 
         return WorkoutSessionExerciseResponse.from(sessionExercise);
+    }
+
+    @Operation(summary = "Update the rest duration of an exercise in an in-progress session")
+    @PatchMapping("/{sessionExerciseId}/rest")
+    public WorkoutSessionExerciseResponse updateRestSeconds(
+            @PathVariable Long userId,
+            @PathVariable Long workoutSessionId,
+            @PathVariable Long sessionExerciseId,
+            @Valid @RequestBody UpdateSessionExerciseRestRequest request
+    ) {
+        return WorkoutSessionExerciseResponse.from(
+                workoutSessionExerciseService.updateRestSeconds(
+                        userId, workoutSessionId, sessionExerciseId, request.restSeconds()));
+    }
+
+    @Operation(summary = "Get the completed sets from the latest previous session of this exercise variant")
+    @GetMapping("/{sessionExerciseId}/previous-performance")
+    public PreviousExercisePerformanceResponse getPreviousPerformance(
+            @PathVariable Long userId,
+            @PathVariable Long workoutSessionId,
+            @PathVariable Long sessionExerciseId
+    ) {
+        return workoutSessionExerciseService.getPreviousPerformance(userId, workoutSessionId, sessionExerciseId);
     }
 
     @Operation(summary = "Get all performed exercises of a workout session")

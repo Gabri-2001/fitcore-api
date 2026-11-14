@@ -1,6 +1,7 @@
 package com.gabri.fitcoreapi.workout.dto;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
@@ -13,6 +14,10 @@ public class CreateWorkoutSessionExerciseRequest {
     private String exerciseVariantCode;
 
     private boolean completed;
+
+    @Min(0)
+    @Max(3600)
+    private Integer restSeconds;
 
     @Min(value = 0, message = "{validation.workoutSessionExercise.performedSets.min}")
     private Integer performedSets;
@@ -39,6 +44,10 @@ public class CreateWorkoutSessionExerciseRequest {
 
     public boolean isCompleted() {
         return completed;
+    }
+
+    public Integer getRestSeconds() {
+        return restSeconds;
     }
 
     public Integer getPerformedSets() {

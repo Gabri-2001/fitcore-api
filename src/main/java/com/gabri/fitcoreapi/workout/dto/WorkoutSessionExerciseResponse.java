@@ -11,6 +11,7 @@ public class WorkoutSessionExerciseResponse {
     private String exerciseVariantCode;
     private boolean extra;
     private boolean completed;
+    private Integer restSeconds;
     private Integer performedSets;
     private Integer performedReps;
     private BigDecimal performedWeightKg;
@@ -24,6 +25,7 @@ public class WorkoutSessionExerciseResponse {
             String exerciseVariantCode,
             boolean extra,
             boolean completed,
+            Integer restSeconds,
             Integer performedSets,
             Integer performedReps,
             BigDecimal performedWeightKg,
@@ -36,6 +38,7 @@ public class WorkoutSessionExerciseResponse {
         this.exerciseVariantCode = exerciseVariantCode;
         this.extra = extra;
         this.completed = completed;
+        this.restSeconds = restSeconds;
         this.performedSets = performedSets;
         this.performedReps = performedReps;
         this.performedWeightKg = performedWeightKg;
@@ -51,6 +54,7 @@ public class WorkoutSessionExerciseResponse {
                 sessionExercise.getExerciseVariant().getCode(),
                 sessionExercise.isExtra(),
                 sessionExercise.isCompleted(),
+                sessionExercise.getRestSeconds(),
                 sessionExercise.getPerformedSets(),
                 sessionExercise.getPerformedReps(),
                 sessionExercise.getPerformedWeightKg(),
@@ -73,6 +77,10 @@ public class WorkoutSessionExerciseResponse {
 
     public boolean isCompleted() {
         return completed;
+    }
+
+    public Integer getRestSeconds() {
+        return restSeconds;
     }
 
     public Integer getPerformedSets() {

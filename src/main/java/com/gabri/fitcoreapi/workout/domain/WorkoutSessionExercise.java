@@ -34,6 +34,9 @@ public class WorkoutSessionExercise extends BaseEntity {
     @Column(nullable = false)
     private boolean completed;
 
+    @Column(name = "rest_seconds", nullable = false)
+    private Integer restSeconds;
+
     @Column(name = "performed_sets")
     private Integer performedSets;
 
@@ -61,6 +64,7 @@ public class WorkoutSessionExercise extends BaseEntity {
     public WorkoutSessionExercise(
             WorkoutExercise workoutExercise,
             ExerciseVariant exerciseVariant,
+            Integer restSeconds,
             boolean completed,
             Integer performedSets,
             Integer performedReps,
@@ -71,6 +75,7 @@ public class WorkoutSessionExercise extends BaseEntity {
     ) {
         this.workoutExercise = workoutExercise;
         this.exerciseVariant = exerciseVariant;
+        this.restSeconds = restSeconds == null ? 90 : restSeconds;
         this.completed = completed;
         this.performedSets = performedSets;
         this.performedReps = performedReps;
@@ -108,6 +113,17 @@ public class WorkoutSessionExercise extends BaseEntity {
 
     public boolean isCompleted() {
         return completed;
+    }
+
+    public Integer getRestSeconds() {
+        return restSeconds;
+    }
+
+    public void updateRestSeconds(Integer restSeconds) {
+        if (restSeconds == null || restSeconds < 0 || restSeconds > 3600) {
+            throw new IllegalArgumentException("Rest duration must be between 0 and 3600 seconds");
+        }
+        this.restSeconds = restSeconds;
     }
 
     public Integer getPerformedSets() {
