@@ -13,7 +13,7 @@ import java.time.LocalDate;
 public interface WorkoutSessionExerciseRepository extends JpaRepository<WorkoutSessionExercise, Long> {
 
     @EntityGraph(attributePaths = {"exerciseVariant", "workoutExercise"})
-    List<WorkoutSessionExercise> findByWorkoutSession(WorkoutSession workoutSession);
+    List<WorkoutSessionExercise> findByWorkoutSessionOrderByIdAsc(WorkoutSession workoutSession);
 
     @EntityGraph(attributePaths = {"exerciseVariant", "workoutExercise"})
     Optional<WorkoutSessionExercise> findByIdAndWorkoutSessionUserId(Long id, Long userId);

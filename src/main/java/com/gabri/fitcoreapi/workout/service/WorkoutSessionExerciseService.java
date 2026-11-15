@@ -164,7 +164,7 @@ public class WorkoutSessionExerciseService {
             );
         }
 
-        return workoutSessionExerciseRepository.findByWorkoutSession(workoutSession);
+        return workoutSessionExerciseRepository.findByWorkoutSessionOrderByIdAsc(workoutSession);
     }
 
     public WorkoutSessionExercise updateWorkoutSessionExercise(

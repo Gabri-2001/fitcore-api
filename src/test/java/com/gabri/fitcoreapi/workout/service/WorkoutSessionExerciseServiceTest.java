@@ -3,6 +3,7 @@ package com.gabri.fitcoreapi.workout.service;
 import com.gabri.fitcoreapi.common.i18n.MessageResolver;
 import com.gabri.fitcoreapi.exercise.domain.ExerciseVariant;
 import com.gabri.fitcoreapi.exercise.repository.ExerciseVariantRepository;
+import com.gabri.fitcoreapi.user.domain.User;
 import com.gabri.fitcoreapi.user.repository.UserRepository;
 import com.gabri.fitcoreapi.workout.domain.ExerciseSetLog;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
@@ -23,6 +24,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +42,28 @@ class WorkoutSessionExerciseServiceTest {
     @Mock ExerciseVariantRepository variants;
     @Mock MessageResolver messages;
     @InjectMocks WorkoutSessionExerciseService service;
+
+    @Test
+    void shouldReturnSessionExercisesInInsertionOrder() {
+        User user = mock(User.class);
+        WorkoutSession currentSession = session(22L, LocalDate.of(2026, 11, 13));
+        ExerciseVariant variant = mock(ExerciseVariant.class);
+        WorkoutSessionExercise first = exercise(41L, currentSession, variant);
+        WorkoutSessionExercise second = exercise(42L, currentSession, variant);
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+        when(sessions.findById(22L)).thenReturn(Optional.of(currentSession));
+        when(user.getId()).thenReturn(7L);
+        User sessionUser = mock(User.class);
+        when(sessionUser.getId()).thenReturn(7L);
+        ReflectionTestUtils.setField(currentSession, "user", sessionUser);
+        when(sessionExercises.findByWorkoutSessionOrderByIdAsc(currentSession))
+                .thenReturn(List.of(first, second));
+
+        List<WorkoutSessionExercise> result = service.getWorkoutSessionExercises(7L, 22L);
+
+        assertThat(result).containsExactly(first, second);
+        verify(sessionExercises).findByWorkoutSessionOrderByIdAsc(currentSession);
+    }
 
     @Test
     void shouldReturnCompletedSetsFromLatestPreviousSessionBySetNumber() {
