@@ -95,18 +95,56 @@
             </div>
         </section>
 
-        <section class="view" id="view-plans" data-title="Editor de planes" data-eyebrow="PLANIFICACIÓN · VERSIONADO · ORDEN">
-            <div class="section-heading page-heading"><div><p class="eyebrow">PLAN ACTIVO</p><h2>Diseña la semana</h2><p>Guarda un plan nuevo o crea una revisión de la versión activa.</p></div><div class="button-row"><button id="plan-load" class="button button-secondary">Cargar activo</button><button id="plan-save" class="button button-primary">Guardar plan</button></div></div>
-            <div class="plan-layout">
-                <aside class="panel plan-meta">
-                    <label>Nombre<input id="plan-name" value="Mi plan FitCore" maxlength="120"></label>
-                    <label>Descripción<textarea id="plan-description" rows="4" placeholder="Objetivo y enfoque del bloque"></textarea></label>
-                    <label>Fecha efectiva<input id="plan-date" type="date"></label>
-                    <div class="plan-version" id="plan-version"><span>Modo</span><strong>Nuevo plan</strong><small>Se creará la versión 1</small></div>
-                    <button id="add-day" class="button button-secondary button-block">+ Añadir día</button>
-                </aside>
-                <div id="plan-days" class="plan-days"></div>
+        <section class="view" id="view-plans" data-title="Editor de planes" data-eyebrow="PLANES · RUTINAS · ORGANIZACIÓN">
+            <p class="plan-page-intro">Organiza tu rutina de entrenamiento.</p>
+
+            <div class="panel plan-overview">
+                <div class="plan-overview-identity">
+                    <span class="plan-overview-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M7 3v3m10-3v3M4.5 9.5h15M6 5h12a2 2 0 0 1 2 2v12H4V7a2 2 0 0 1 2-2Zm2 8h3v3H8Z"/></svg>
+                    </span>
+                    <div>
+                        <div class="plan-overview-title-line">
+                            <h2 id="plan-summary-title">Mi plan FitCore · 1 día</h2>
+                            <span id="plan-summary-status" class="plan-active-badge">Nuevo plan · Versión 1</span>
+                        </div>
+                        <p id="plan-summary-description">Configura los días y ejercicios de tu próxima rutina.</p>
+                    </div>
+                </div>
+                <div class="plan-overview-actions">
+                    <button id="plan-configure" class="button button-secondary plan-configure-button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8 3.5 2-1-2-3-2.2.4-1.2-1.2.4-2.2-3-2-1 2h-1.8l-1-2-3 2 .4 2.2-1.2 1.2L4 8l-2 3 2 1v1.8l-2 1 2 3 2.2-.4 1.2 1.2L7 21l3 1 1-2h1.8l1 2 3-1-.4-2.2 1.2-1.2 2.2.4 2-3-2-1Z"/></svg>
+                        Configurar plan
+                    </button>
+                    <button id="plan-save" class="button button-primary plan-save-button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>
+                        <span>Guardar plan</span>
+                    </button>
+                </div>
             </div>
+
+            <div id="plan-day-tabs" class="plan-day-tabs" aria-label="Días del plan"></div>
+            <div id="plan-days" class="plan-days"></div>
+
+            <dialog id="plan-settings-dialog" class="compact-dialog plan-settings-dialog" aria-labelledby="plan-settings-title">
+                <form id="plan-settings-form">
+                    <div class="dialog-heading compact">
+                        <div><p class="eyebrow">CONFIGURACIÓN</p><h2 id="plan-settings-title">Datos del plan</h2><p>Define el nombre, el enfoque y la fecha de esta versión.</p></div>
+                        <button type="button" class="icon-button" data-close-plan-settings aria-label="Cerrar">×</button>
+                    </div>
+                    <div class="plan-settings-fields">
+                        <label>Nombre del plan<input id="plan-name" value="Mi plan FitCore" maxlength="120" required></label>
+                        <label>Descripción<textarea id="plan-description" rows="4" placeholder="Objetivo y enfoque del bloque"></textarea></label>
+                        <label>Fecha efectiva<input id="plan-date" type="date" required></label>
+                        <div class="plan-version" id="plan-version"><span>Modo</span><strong>Nuevo plan</strong><small>Se creará la versión 1</small></div>
+                    </div>
+                    <div class="dialog-actions plan-settings-actions">
+                        <button id="plan-load" type="button" class="button button-ghost">Recargar plan activo</button>
+                        <button type="button" class="button button-secondary" data-close-plan-settings>Cancelar</button>
+                        <button type="submit" class="button button-primary">Aplicar cambios</button>
+                    </div>
+                </form>
+            </dialog>
         </section>
 
         <section class="view" id="view-training" data-title="Entrenamiento en curso" data-eyebrow="EJECUCIÓN · SERIES · ESFUERZO">

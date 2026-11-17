@@ -5,7 +5,7 @@ const state = {
     auth: JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'),
     logs: [], exercises: [], variants: [], catalogExercises: [], selectedExercise: null,
     selectedVariant: null, variantConfiguration: {}, activations: [], svg: null,
-    activePlan: null, planDays: [], currentSession: null,
+    activePlan: null, planDays: [], selectedPlanDayIndex: 0, currentSession: null,
     sessionExercises: [], sessionSets: new Map(), sessionStartedAt: Number(localStorage.getItem(SESSION_STARTED_KEY)) || null,
     sessionTimer: null, sessionPicker: {exercise:null, configuration:{}}, sessionActivations: new Map(),
     sessionPrevious: new Map(), restEditorExerciseId: null, rpeTarget: null,
@@ -191,7 +191,7 @@ function setAuth(auth) {
 }
 
 function resetUserData() {
-    state.activePlan = null; state.currentSession = null; state.sessionExercises = []; state.sessionSets.clear();
+    state.activePlan = null; state.planDays = []; state.selectedPlanDayIndex = 0; state.currentSession = null; state.sessionExercises = []; state.sessionSets.clear();
     renderPlanMode(); renderSession();
 }
 
@@ -381,6 +381,7 @@ function paintActivations() {
 
 function updateVariantDatalist() {
     renderSessionExerciseResults();
+    if ($('plan-days')) renderPlanDays();
 }
 
 function variantOptions(selectedCode) {
@@ -393,26 +394,105 @@ function variantName(code) {
 }
 
 function addPlanDay(source = null) {
+    syncPlanEditor();
     state.planDays.push(source ? {
         id: source.id, name:source.name, dayType:source.dayType, exercises:(source.exercises || []).map(x => ({id:x.id, exerciseVariantCode:x.exerciseVariantCode, sets:x.sets, reps:x.reps, restSeconds:x.restSeconds}))
-    } : {name:`Día ${state.planDays.length + 1}`, dayType:'FULL_BODY', exercises:[]});
-    renderPlanDays();
+    } : {name:'Nueva sesión', dayType:'FULL_BODY', exercises:[]});
+    state.selectedPlanDayIndex = state.planDays.length - 1;
+    renderPlanMode();
+}
+
+function planDayIcon(dayType) {
+    const paths = {
+        PUSH:'<path d="M4 9v6m16-6v6M7 7v10m10-10v10M7 12h10"/>',
+        PULL:'<path d="M5 8h11m0 0-3-3m3 3-3 3M19 16H8m0 0 3-3m-3 3 3 3"/>',
+        LEGS:'<path d="M8 3h5l-1 7 4 8-3 3-5-8-2 6H3l2-9Z"/>',
+        LOWER:'<path d="M8 3h5l-1 7 4 8-3 3-5-8-2 6H3l2-9Z"/>',
+        UPPER:'<path d="M5 7 9 4h6l4 3 2 6-3 1-2-4v10H8V10l-2 4-3-1Z"/>',
+        FULL_BODY:'<path d="M12 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm-4 7 4-2 4 2 3 5-2 1-2-3v8h-2v-6h-2v6H9v-8l-2 3-2-1Z"/>',
+        CARDIO:'<path d="M3 13h4l2-5 4 10 2-5h6"/>',
+        MOBILITY:'<path d="M5 15c3-8 11-8 14 0M8 18h8M12 4v4"/>',
+        REST:'<path d="M6 18h12M8 18V9h8v9M9 6h6"/>'
+    };
+    return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[dayType] || paths.FULL_BODY}</svg>`;
+}
+
+function renderPlanHeader() {
+    const days = state.planDays.length;
+    const name = $('plan-name')?.value.trim() || state.activePlan?.name || 'Mi plan FitCore';
+    const description = $('plan-description')?.value.trim() || 'Configura los días y ejercicios de tu próxima rutina.';
+    $('plan-summary-title').textContent = `${name} · ${days} ${days === 1 ? 'día' : 'días'}`;
+    $('plan-summary-description').textContent = description;
+    $('plan-summary-status').textContent = state.activePlan ? `Plan activo · Versión ${state.activePlan.version}` : 'Nuevo plan · Versión 1';
+    $('plan-save').querySelector('span').textContent = state.activePlan ? 'Guardar nueva versión' : 'Guardar plan';
+}
+
+function renderPlanDayTabs() {
+    const container = $('plan-day-tabs');
+    container.innerHTML = state.planDays.map((day, index) => `<button class="plan-day-tab ${index === state.selectedPlanDayIndex ? 'is-selected':''}" data-select-plan-day="${index}" aria-pressed="${index === state.selectedPlanDayIndex}"><span class="plan-day-tab-icon">${planDayIcon(day.dayType)}</span><span><small>Día ${index + 1}</small><strong>${escapeHtml(day.name || friendly(day.dayType))}</strong><em>${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'}</em></span></button>`).join('') + `<button class="plan-day-add" id="add-day" type="button"><span>＋</span><strong>Añadir día</strong></button>`;
 }
 
 function renderPlanDays() {
     const container = $('plan-days');
-    if (!state.planDays.length) { container.innerHTML = '<div class="empty-state large">Añade al menos un día para empezar a diseñar el plan.</div>'; return; }
-    container.innerHTML = state.planDays.map((day, dayIndex) => `<article class="day-card" data-day="${dayIndex}"><div class="day-head"><input value="${escapeHtml(day.name)}" data-day-name aria-label="Nombre del día"><select data-day-type aria-label="Tipo de día">${enums.dayTypes.map(t => `<option value="${t}" ${t===day.dayType?'selected':''}>${friendly(t)}</option>`).join('')}</select><button class="text-button danger" data-remove-day>Eliminar día</button></div><div class="day-exercises">${day.exercises.map((exercise,index) => exerciseEditor(exercise,index)).join('')}</div><div class="day-foot"><small>${day.exercises.length} ejercicio${day.exercises.length===1?'':'s'}</small><button class="button button-secondary" data-add-plan-exercise>+ Ejercicio</button></div></article>`).join('');
+    if (!state.planDays.length) {
+        container.innerHTML = '<div class="empty-state large plan-empty"><strong>Tu plan todavía no tiene días</strong><span>Añade el primero para empezar a organizar tu rutina.</span><button class="button button-primary" data-empty-add-day>+ Añadir día</button></div>';
+        renderPlanDayTabs();
+        renderPlanHeader();
+        return;
+    }
+    state.selectedPlanDayIndex = Math.min(Math.max(0, state.selectedPlanDayIndex), state.planDays.length - 1);
+    const dayIndex = state.selectedPlanDayIndex;
+    const day = state.planDays[dayIndex];
+    const totalSets = day.exercises.reduce((total, exercise) => total + (Number(exercise.sets) || 0), 0);
+    container.innerHTML = `<article class="plan-day-editor" data-day="${dayIndex}">
+        <header class="plan-day-editor-head">
+            <div class="plan-day-title"><span>Día ${dayIndex + 1}</span><input value="${escapeHtml(day.name || '')}" data-day-name aria-label="Nombre del día ${dayIndex + 1}"></div>
+            <div class="plan-day-controls"><label>Tipo de día<select data-day-type>${enums.dayTypes.map(type => `<option value="${type}" ${type === day.dayType ? 'selected':''}>${friendly(type)}</option>`).join('')}</select></label><button class="text-button danger" data-remove-day>Eliminar día</button><button class="button button-primary" data-add-plan-exercise>＋ Añadir ejercicio</button></div>
+        </header>
+        <div class="plan-exercise-table">
+            <div class="plan-exercise-columns" aria-hidden="true"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Descanso</span><span>Acciones</span></div>
+            <div class="day-exercises">${day.exercises.length ? day.exercises.map((exercise,index) => exerciseEditor(exercise,index)).join('') : '<div class="plan-day-no-exercises"><strong>Aún no hay ejercicios en este día</strong><span>Añade uno y elige la configuración exacta que quieres programar.</span></div>'}</div>
+        </div>
+        <footer class="plan-day-summary"><span>${planDayIcon(day.dayType)}<strong>Resumen del día</strong></span><b>${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'} / ${totalSets} series planificadas</b></footer>
+    </article>`;
+    renderPlanDayTabs();
+    renderPlanHeader();
+}
+
+function planStepper(field, value, min, suffix, label) {
+    return `<div class="plan-stepper" data-plan-stepper><button type="button" data-step-field="${field}" data-step="-1" aria-label="Reducir ${label}">−</button><input data-exercise-${field} type="number" min="${min}" value="${Number(value)}" aria-label="${label}"><span>${suffix}</span><button type="button" data-step-field="${field}" data-step="1" aria-label="Aumentar ${label}">＋</button></div>`;
 }
 
 function exerciseEditor(exercise, index) {
-    return `<div class="exercise-editor" data-exercise="${index}"><div class="drag-actions"><button data-move="-1" aria-label="Subir">↑</button><button data-move="1" aria-label="Bajar">↓</button></div><label>Ejercicio y configuración<select data-exercise-code>${variantOptions(exercise.exerciseVariantCode)}</select></label><label>Series<input data-exercise-sets type="number" min="1" value="${exercise.sets || 3}"></label><label>Repeticiones<input data-exercise-reps type="number" min="1" value="${exercise.reps || 10}"></label><label>Descanso (s)<input data-exercise-rest type="number" min="0" value="${exercise.restSeconds ?? 90}"></label><button class="text-button danger remove-exercise" data-remove-exercise>Quitar</button></div>`;
+    const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
+    const base = state.exercises.find(item => item.code === variant?.exerciseCode);
+    const title = variant?.name || 'Selecciona un ejercicio';
+    const details = variant ? variantConfigurationChips(variant).slice(0, 3).join(' · ') : 'Elige una configuración del catálogo';
+    const thumb = base ? exerciseThumb(base, 'plan-exercise-thumb') : '<span class="plan-exercise-thumb thumb-placeholder">FC</span>';
+    return `<div class="exercise-editor" data-exercise="${index}">
+        <div class="plan-order-controls" aria-label="Reordenar ejercicio"><span aria-hidden="true">⠿</span><button type="button" data-move="-1" aria-label="Subir ejercicio">↑</button><button type="button" data-move="1" aria-label="Bajar ejercicio">↓</button></div>
+        <div class="plan-exercise-identity">${thumb}<div><select data-exercise-code aria-label="Ejercicio y configuración">${variantOptions(exercise.exerciseVariantCode)}</select><small>${escapeHtml(details)}</small></div></div>
+        ${planStepper('sets', exercise.sets || 3, 1, '', 'series')}
+        ${planStepper('reps', exercise.reps || 10, 1, '', 'repeticiones')}
+        ${planStepper('rest', exercise.restSeconds ?? 90, 0, 's', 'segundos de descanso')}
+        <button class="plan-row-actions" type="button" data-remove-exercise aria-label="Quitar ${escapeHtml(title)}" title="Quitar ejercicio">•••</button>
+    </div>`;
 }
 
 function syncPlanEditor() {
-    document.querySelectorAll('.day-card').forEach(card => {
-        const d = state.planDays[Number(card.dataset.day)]; d.name = card.querySelector('[data-day-name]').value; d.dayType = card.querySelector('[data-day-type]').value;
-        card.querySelectorAll('.exercise-editor').forEach(row => { const e = d.exercises[Number(row.dataset.exercise)]; e.exerciseVariantCode = row.querySelector('[data-exercise-code]').value.trim(); e.sets = Number(row.querySelector('[data-exercise-sets]').value); e.reps = Number(row.querySelector('[data-exercise-reps]').value); e.restSeconds = Number(row.querySelector('[data-exercise-rest]').value); });
+    const card = document.querySelector('.plan-day-editor');
+    if (!card) return;
+    const day = state.planDays[Number(card.dataset.day)];
+    if (!day) return;
+    day.name = card.querySelector('[data-day-name]').value.trim();
+    day.dayType = card.querySelector('[data-day-type]').value;
+    card.querySelectorAll('.exercise-editor').forEach(row => {
+        const exercise = day.exercises[Number(row.dataset.exercise)];
+        if (!exercise) return;
+        exercise.exerciseVariantCode = row.querySelector('[data-exercise-code]').value.trim();
+        exercise.sets = Number(row.querySelector('[data-exercise-sets]').value);
+        exercise.reps = Number(row.querySelector('[data-exercise-reps]').value);
+        exercise.restSeconds = Number(row.querySelector('[data-exercise-rest]').value);
     });
 }
 
@@ -438,8 +518,9 @@ async function loadActivePlan(silent = false) {
     try {
         const summary = await api(`/api/users/${state.auth.userId}/workout-plans/active`);
         const plan = await api(`/api/users/${state.auth.userId}/workout-plans/${summary.id}/detail`);
-        state.activePlan = plan; $('plan-name').value = plan.name; $('plan-description').value = plan.description || ''; $('plan-date').value = today(); state.planDays = [];
-        (plan.days || []).forEach(day => addPlanDay(day)); renderPlanMode(); fillSessionDays(); $('metric-plan').textContent = `v${plan.version}`;
+        state.activePlan = plan; $('plan-name').value = plan.name; $('plan-description').value = plan.description || ''; $('plan-date').value = today();
+        state.planDays = (plan.days || []).map(day => ({id:day.id, name:day.name, dayType:day.dayType, exercises:(day.exercises || []).map(exercise => ({id:exercise.id, exerciseVariantCode:exercise.exerciseVariantCode, sets:exercise.sets, reps:exercise.reps, restSeconds:exercise.restSeconds}))}));
+        state.selectedPlanDayIndex = 0; renderPlanMode(); fillSessionDays(); $('metric-plan').textContent = `v${plan.version}`;
         if (!silent) toast('Plan activo cargado.');
     } catch (error) {
         if (error.status === 404) { state.activePlan = null; state.planDays = []; addPlanDay(); renderPlanMode(); fillSessionDays(); $('metric-plan').textContent = 'Ninguno'; if (!silent) toast('Aún no existe un plan activo.'); }
@@ -450,6 +531,7 @@ async function loadActivePlan(silent = false) {
 function renderPlanMode() {
     const box = $('plan-version'); if (!box) return;
     box.innerHTML = state.activePlan ? `<span>Modo revisión</span><strong>Versión ${state.activePlan.version}</strong><small>Al guardar se creará la versión ${state.activePlan.version + 1}</small>` : '<span>Modo</span><strong>Nuevo plan</strong><small>Se creará la versión 1</small>';
+    renderPlanDays();
 }
 
 
@@ -1798,8 +1880,75 @@ function bindEvents() {
     $('catalog-results').addEventListener('click',e=>{const item=e.target.closest('[data-exercise]');if(item)selectExercise(item.dataset.exercise);});
     $('variant-detail').addEventListener('change',e=>{const field=e.target.closest('[data-variant-config]'), finalChoice=e.target.closest('[data-variant-code]');if(field){state.variantConfiguration[field.dataset.variantConfig]=field.value;state.variantConfiguration.variantCode=null;previewConfiguredVariant();}else if(finalChoice){state.variantConfiguration.variantCode=finalChoice.value;previewConfiguredVariant();}});
     $('map-stabilizers').addEventListener('change',paintActivations);
-    $('add-day').addEventListener('click',()=>addPlanDay()); $('plan-load').addEventListener('click',()=>loadActivePlan()); $('plan-save').addEventListener('click',savePlan);
-    $('plan-days').addEventListener('click',e=>{const card=e.target.closest('.day-card');if(!card)return;const di=Number(card.dataset.day);if(e.target.closest('[data-remove-day]')){syncPlanEditor();state.planDays.splice(di,1);renderPlanDays();}else if(e.target.closest('[data-add-plan-exercise]')){syncPlanEditor();state.planDays[di].exercises.push({exerciseVariantCode:'',sets:3,reps:10,restSeconds:90});renderPlanDays();}else if(e.target.closest('[data-remove-exercise]')){syncPlanEditor();state.planDays[di].exercises.splice(Number(e.target.closest('.exercise-editor').dataset.exercise),1);renderPlanDays();}else if(e.target.closest('[data-move]')){syncPlanEditor();const row=e.target.closest('.exercise-editor'),from=Number(row.dataset.exercise),to=from+Number(e.target.dataset.move);if(to>=0&&to<state.planDays[di].exercises.length){const [item]=state.planDays[di].exercises.splice(from,1);state.planDays[di].exercises.splice(to,0,item);renderPlanDays();}}});
+
+    $('plan-configure').addEventListener('click', () => $('plan-settings-dialog').showModal());
+    document.querySelectorAll('[data-close-plan-settings]').forEach(button => button.addEventListener('click', () => $('plan-settings-dialog').close()));
+    $('plan-settings-form').addEventListener('submit', event => {
+        event.preventDefault();
+        renderPlanHeader();
+        $('plan-settings-dialog').close();
+        toast('Configuración del plan actualizada.');
+    });
+    $('plan-load').addEventListener('click', async () => {
+        await loadActivePlan();
+        $('plan-settings-dialog').close();
+    });
+    $('plan-save').addEventListener('click', savePlan);
+    $('plan-day-tabs').addEventListener('click', event => {
+        const selected = event.target.closest('[data-select-plan-day]');
+        if (selected) {
+            syncPlanEditor();
+            state.selectedPlanDayIndex = Number(selected.dataset.selectPlanDay);
+            renderPlanDays();
+            return;
+        }
+        if (event.target.closest('#add-day')) addPlanDay();
+    });
+    $('plan-days').addEventListener('click', event => {
+        if (event.target.closest('[data-empty-add-day]')) return addPlanDay();
+        const card = event.target.closest('.plan-day-editor');
+        if (!card) return;
+        const dayIndex = Number(card.dataset.day);
+        const day = state.planDays[dayIndex];
+        if (event.target.closest('[data-remove-day]')) {
+            syncPlanEditor();
+            state.planDays.splice(dayIndex, 1);
+            state.selectedPlanDayIndex = Math.min(dayIndex, state.planDays.length - 1);
+            renderPlanMode();
+        } else if (event.target.closest('[data-add-plan-exercise]')) {
+            syncPlanEditor();
+            day.exercises.push({exerciseVariantCode:'', sets:3, reps:10, restSeconds:90});
+            renderPlanDays();
+        } else if (event.target.closest('[data-remove-exercise]')) {
+            syncPlanEditor();
+            day.exercises.splice(Number(event.target.closest('.exercise-editor').dataset.exercise), 1);
+            renderPlanDays();
+        } else if (event.target.closest('[data-move]')) {
+            syncPlanEditor();
+            const row = event.target.closest('.exercise-editor');
+            const from = Number(row.dataset.exercise);
+            const to = from + Number(event.target.closest('[data-move]').dataset.move);
+            if (to >= 0 && to < day.exercises.length) {
+                const [item] = day.exercises.splice(from, 1);
+                day.exercises.splice(to, 0, item);
+                renderPlanDays();
+            }
+        } else if (event.target.closest('[data-step-field]')) {
+            const button = event.target.closest('[data-step-field]');
+            const row = button.closest('.exercise-editor');
+            const field = button.dataset.stepField;
+            const input = row.querySelector(`[data-exercise-${field}]`);
+            const minimum = Number(input.min || 0);
+            input.value = Math.max(minimum, Number(input.value || 0) + Number(button.dataset.step));
+            syncPlanEditor();
+            renderPlanDays();
+        }
+    });
+    $('plan-days').addEventListener('change', event => {
+        if (!event.target.matches('[data-day-type], [data-exercise-code], [data-exercise-sets], [data-exercise-reps], [data-exercise-rest], [data-day-name]')) return;
+        syncPlanEditor();
+        renderPlanDays();
+    });
 
     /* =====================================
        EVENTOS DE CONFIGURACIÓN DE SESIÓN
