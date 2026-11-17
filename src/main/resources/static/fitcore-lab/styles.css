@@ -95,7 +95,7 @@ input:hover, select:hover, textarea:hover { border-color: #aebdb6; }
 
 .training-layout { display: grid; grid-template-columns: 300px minmax(0,1fr); gap: 22px; align-items: start; }.session-builder { position: sticky; top: 116px; padding: 22px; }.session-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }.session-workspace { min-width: 0; }.session-dashboard { display: grid; grid-template-columns: minmax(150px,1.3fr) repeat(3,minmax(90px,.55fr)) minmax(174px,.8fr) auto; gap: 1px; align-items: stretch; margin-bottom: 22px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--line); box-shadow: var(--shadow); }.session-dashboard > * { background: white; }.session-dashboard-title { display: grid; align-content: center; padding: 18px 20px; }.session-dashboard-title h2 { margin: 5px 0 0; font-size: 19px; }.live-metric { display: grid; align-content: center; gap: 5px; padding: 16px; }.live-metric span { color: var(--muted); font-size: 10px; }.live-metric strong { font-size: 20px; letter-spacing: -.04em; }.muscle-summary-button { position: relative; display: grid; place-items: center; min-width: 0; padding: 7px 9px; overflow: hidden; border: 0; background: white; }.muscle-summary-button:not(:disabled):hover .session-muscle-mini { border-color: rgba(166,242,59,.75); box-shadow: 0 9px 22px rgba(7,45,36,.24), inset 0 0 0 1px rgba(255,255,255,.2); transform: translateY(-1px); }.muscle-summary-button:focus-visible { z-index: 1; outline: 3px solid rgba(166,242,59,.62); outline-offset: -3px; }.session-muscle-mini { position: relative; display: grid; place-items: center; width: 100%; max-width: 164px; height: 96px; overflow: hidden; border: 1px solid rgba(255,255,255,.5); border-radius: 12px; background: radial-gradient(circle at 50% 42%,#b9bfbc 0%,#9ba19e 72%,#8e9491 100%); box-shadow: 0 6px 16px rgba(7,45,36,.18), inset 0 0 0 1px rgba(21,70,58,.12); transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }.session-muscle-mini::after { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 20px rgba(9,43,35,.14); content: ''; pointer-events: none; }.session-muscle-mini svg { display: block; width: 132%; height: 132%; transform: scale(1.12); }.session-muscle-mini [data-fitcore-role="PRIMARY"] { fill: var(--red) !important; filter: drop-shadow(0 0 2px rgba(206,59,54,.48)); }.session-muscle-mini [data-fitcore-role="SECONDARY"] { fill: var(--coral) !important; }.mini-map-placeholder { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--green); background: var(--lime-soft); box-shadow: 0 4px 10px rgba(7,45,36,.16); }.finish-session { margin: 12px; align-self: center; }.session-list-heading { margin-bottom: 15px; }.session-list-heading p:not(.eyebrow) { font-size: 11px; }.session-exercises { display: grid; gap: 17px; }.session-card { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: white; box-shadow: var(--shadow); }.session-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 19px 20px 15px; background: #f8faf7; }.session-exercise-identity { display: grid; grid-template-columns: 58px minmax(0,1fr); align-items: center; gap: 13px; min-width: 0; }.session-exercise-thumb { width: 58px; height: 58px; object-fit: cover; border-radius: 14px; background: #e9eeea; }.session-card-head h3 { margin: 0; font-size: 18px; letter-spacing: -.025em; }.session-card-head small { display: block; margin-top: 5px; overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }.session-title-line { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }.configuration-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }.configuration-chips span { padding: 4px 7px; border-radius: 999px; color: var(--green-2); background: #eaf2ee; font-size: 9px; font-weight: 750; }.exercise-tools { display: flex; gap: 20px; padding: 11px 20px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); background: #fbfcfa; font-size: 10px; }.exercise-tools strong { color: var(--ink); }.set-table-wrap { overflow-x: auto; }.set-table { width: 100%; min-width: 650px; border-collapse: collapse; }.set-table th, .set-table td { padding: 9px 7px; border-top: 1px solid var(--line); text-align: left; font-size: 10px; }.set-table th { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }.set-table th:first-child, .set-table td:first-child { padding-left: 18px; }.set-table th:last-child, .set-table td:last-child { padding-right: 18px; }.set-table input[type="number"] { width: 72px; min-width: 62px; min-height: 38px; padding: 7px; text-align: center; }.set-table tr.is-complete { background: #f6faef; }.set-number { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background: #edf1ee; font-weight: 900; }.complete-check { display: block; position: relative; width: 36px; height: 36px; cursor: pointer; }.complete-check input { position: absolute; width: 1px; height: 1px; opacity: 0; }.complete-check span { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #cad5cf; border-radius: 10px; color: #96a49e; background: white; font-size: 16px; }.complete-check input:checked + span { border-color: var(--green-2); color: white; background: var(--green-2); }.add-set-button { white-space: nowrap; }.session-card-foot { display: flex; justify-content: space-between; gap: 15px; padding: 12px 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; }.session-card-foot strong { color: var(--green-2); }
 
-.exercise-picker-dialog { display: grid; grid-template-rows: auto auto minmax(0,1fr) auto; width: min(1020px, calc(100vw - 34px)); max-width: 1020px; height: min(820px, calc(100vh - 34px)); max-height: min(820px, calc(100vh - 34px)); padding: 0; overflow: hidden; }.dialog-heading { display: flex; justify-content: space-between; gap: 20px; padding: 24px 26px 18px; border-bottom: 1px solid var(--line); }.dialog-heading h2 { margin: 6px 0; }.dialog-heading p:not(.eyebrow) { margin: 0; max-width: 690px; font-size: 11px; }.picker-filters { display: grid; grid-template-columns: minmax(220px,1fr) 220px 220px; gap: 11px; padding: 16px 26px; background: #f7f9f6; }.exercise-picker-layout { display: grid; grid-template-columns: minmax(310px,.85fr) minmax(360px,1.15fr); gap: 20px; min-height: 0; padding: 18px 26px; overflow: auto; }.picker-results { display: grid; align-content: start; gap: 7px; max-height: 440px; margin-top: 10px; padding-right: 5px; overflow: auto; }.picker-exercise { display: grid; grid-template-columns: 44px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 10px; border: 1px solid var(--line); border-radius: 13px; background: white; text-align: left; }.picker-exercise:hover, .picker-exercise.is-selected { border-color: var(--green-2); background: #f1f7f3; }.picker-exercise strong, .picker-exercise small { display: block; }.picker-exercise strong { font-size: 12px; }.picker-exercise small { margin-top: 4px; color: var(--muted); font-size: 9px; }.picker-exercise i { color: var(--green-2); font-size: 20px; font-style: normal; }.picker-config { min-width: 0; padding: 18px; overflow: auto; border: 1px solid var(--line); border-radius: 16px; background: #f8faf7; }.picker-selected { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 14px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--line); }.picker-selected-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 16px; background: #e7ede8; }.picker-selected h3 { margin: 5px 0; font-size: 19px; }.picker-selected small { color: var(--muted); line-height: 1.4; }.picker-variant-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; margin: 16px 0; }.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 26px; border-top: 1px solid var(--line); background: white; }
+.exercise-picker-dialog { grid-template-rows: auto auto minmax(0,1fr) auto; width: min(1020px, calc(100vw - 34px)); max-width: 1020px; height: min(820px, calc(100vh - 34px)); max-height: min(820px, calc(100vh - 34px)); padding: 0; overflow: hidden; }.dialog-heading { display: flex; justify-content: space-between; gap: 20px; padding: 24px 26px 18px; border-bottom: 1px solid var(--line); }.dialog-heading h2 { margin: 6px 0; }.dialog-heading p:not(.eyebrow) { margin: 0; max-width: 690px; font-size: 11px; }.picker-filters { display: grid; grid-template-columns: minmax(220px,1fr) 220px 220px; gap: 11px; padding: 16px 26px; background: #f7f9f6; }.exercise-picker-layout { display: grid; grid-template-columns: minmax(310px,.85fr) minmax(360px,1.15fr); gap: 20px; min-height: 0; padding: 18px 26px; overflow: auto; }.picker-results { display: grid; align-content: start; gap: 7px; max-height: 440px; margin-top: 10px; padding-right: 5px; overflow: auto; }.picker-exercise { display: grid; grid-template-columns: 44px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 10px; border: 1px solid var(--line); border-radius: 13px; background: white; text-align: left; }.picker-exercise:hover, .picker-exercise.is-selected { border-color: var(--green-2); background: #f1f7f3; }.picker-exercise strong, .picker-exercise small { display: block; }.picker-exercise strong { font-size: 12px; }.picker-exercise small { margin-top: 4px; color: var(--muted); font-size: 9px; }.picker-exercise i { color: var(--green-2); font-size: 20px; font-style: normal; }.picker-config { min-width: 0; padding: 18px; overflow: auto; border: 1px solid var(--line); border-radius: 16px; background: #f8faf7; }.picker-selected { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 14px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--line); }.picker-selected-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 16px; background: #e7ede8; }.picker-selected h3 { margin: 5px 0; font-size: 19px; }.picker-selected small { color: var(--muted); line-height: 1.4; }.picker-variant-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; margin: 16px 0; }.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 26px; border-top: 1px solid var(--line); background: white; }
 
 .muscle-dialog { width: min(930px, calc(100vw - 34px)); max-width: 930px; padding: 0; overflow: hidden; }.muscle-dialog-layout { display: grid; grid-template-columns: minmax(420px,1.25fr) minmax(260px,.75fr); min-height: 520px; }.session-muscle-map { display: grid; place-items: center; min-height: 520px; overflow: hidden; background: #a9acaa; }.session-muscle-map svg { width: 100%; height: 100%; max-height: 600px; }.session-muscle-map [data-fitcore-role="PRIMARY"] { fill: var(--red) !important; filter: drop-shadow(0 0 5px rgba(206,59,54,.35)); }.session-muscle-map [data-fitcore-role="SECONDARY"] { fill: var(--coral) !important; }.map-legend.compact { border: 0; }.session-muscle-list { max-height: 455px; padding: 0 18px 18px; overflow: auto; }.session-muscle-row { display: grid; grid-template-columns: 9px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); }.session-muscle-row > i { width: 9px; height: 38px; border-radius: 6px; background: var(--coral); }.session-muscle-row > i.primary { background: var(--red); }.session-muscle-row strong, .session-muscle-row small { display: block; }.session-muscle-row strong { font-size: 11px; }.session-muscle-row small, .session-muscle-row > span { color: var(--muted); font-size: 9px; }
 .set-table { min-width: 820px; }.set-table input[type="number"] { width: 64px; min-width: 58px; }.previous-performance { min-width: 100px; color: var(--muted); white-space: nowrap; }.previous-performance strong { color: #66736d; font-size: 10px; }.pending-set { display: inline-flex; padding: 5px 8px; border-radius: 999px; color: var(--muted); background: #edf1ee; font-size: 9px; font-weight: 800; }.rest-setting { display: grid; grid-template-columns: auto auto; align-items: center; gap: 1px 8px; padding: 0; border: 0; color: var(--muted); background: transparent; text-align: left; }.rest-setting strong { color: var(--green-2); font-size: 13px; }.rest-setting small { grid-column: 1 / -1; color: var(--green-2); font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }.rest-setting:hover strong, .rest-setting:hover small { color: var(--red); }.rpe-button { width: 58px; min-height: 38px; border: 1px solid #cad5cf; border-radius: 10px; color: var(--muted); background: white; font-size: 10px; font-weight: 850; }.rpe-button.has-value { border-color: #f2b02e; color: #71500a; background: #fff8df; font-size: 13px; }.rpe-button.is-auto { border-color: #a7c3b8; color: var(--green-2); background: #edf6f1; }.rpe-button.is-manual.has-value { border-color: #f2b02e; color: #71500a; background: #fff8df; }
@@ -132,3 +132,514 @@ dialog { max-width: 430px; padding: 26px; border: 1px solid var(--line); border-
 
 body.resting .toast-region { bottom: 190px; }
 @media (max-width: 640px) { .rest-timer { right: 12px; bottom: 12px; width: calc(100vw - 24px); }.rest-presets { grid-template-columns: repeat(3,1fr); }body.resting .toast-region { bottom: 202px; } }
+
+
+/* FITCORE - MINIATURA MUSCULAR */
+
+.muscle-summary-button {
+    padding: 9px 12px;
+    background: #f8fbf9;
+}
+
+.session-muscle-mini {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    max-width: 190px;
+    height: 122px;
+    padding: 9px;
+    overflow: hidden;
+
+    border: 1px solid #d7e4dc;
+    border-radius: 14px;
+
+    background: linear-gradient(
+            145deg,
+            #f9fcfa 0%,
+            #eef4f0 100%
+    );
+
+    box-shadow: 0 5px 14px rgba(18, 63, 53, .09);
+}
+
+.session-muscle-mini::after {
+    box-shadow: inset 0 0 0 1px
+    rgba(255, 255, 255, .50);
+}
+
+/* Mostrar ambas figuras enteras */
+.session-muscle-mini svg {
+    display: block;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    min-width: 0;
+    min-height: 0;
+
+    transform: none !important;
+    object-fit: contain;
+    overflow: visible;
+}
+
+/* Efecto al pasar el ratón */
+.muscle-summary-button:not(:disabled):hover
+.session-muscle-mini {
+    border-color: #9cce6b;
+
+    box-shadow: 0 7px 18px
+    rgba(18, 63, 53, .14);
+}
+
+/* Pantallas medianas */
+@media (max-width: 1280px) {
+    .muscle-summary-button {
+        max-width: 226px;
+    }
+}
+
+/* Móviles */
+@media (max-width: 640px) {
+    .muscle-summary-button {
+        max-width: none;
+    }
+
+    .session-muscle-mini {
+        height: 112px;
+    }
+}
+
+
+/* RPE - COLORES DINÁMICOS */
+
+.rpe-button.has-value,
+.rpe-button.is-auto.has-value,
+.rpe-button.is-manual.has-value {
+    background: var(--rpe-color, #fff8df);
+
+    border-color: rgba(16, 37, 31, .30);
+
+    color: #10251f;
+    font-size: 13px;
+    font-weight: 900;
+
+    box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, .25);
+
+    transition:
+            background-color .16s ease,
+            border-color .16s ease,
+            transform .16s ease;
+}
+
+.rpe-button.has-value:hover {
+    border-color: #10251f;
+    transform: translateY(-1px);
+}
+
+
+/* MINIATURA MUSCULAR - FONDO BLANCO */
+
+.muscle-summary-button,
+.muscle-summary-button:disabled {
+    opacity: 1 !important;
+    background: #ffffff !important;
+}
+
+.session-muscle-mini {
+    background: #ffffff !important;
+    background-image: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.session-muscle-mini::after {
+    display: none !important;
+}
+
+.session-muscle-mini svg {
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+    filter: none !important;
+    background: transparent !important;
+}
+
+/* OCULTAR IMAGEN BASE SOLO EN MINIATURA */
+/*
+.session-muscle-mini svg #layer1 image {
+    display: none !important;
+}
+
+ */
+
+
+
+/* =====================================
+   FITCORE - AYUDA CONTEXTUAL EN SERIES
+   ===================================== */
+
+.set-help-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.set-help-icon {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    padding: 0;
+
+    border: 1px solid #b5c9be;
+    border-radius: 50%;
+
+    background: #edf5f0;
+    color: #285747;
+
+    font-size: 11px;
+    font-weight: 850;
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition:
+            background .2s ease,
+            color .2s ease,
+            transform .2s ease;
+}
+
+.set-help-icon:hover {
+    background: #123f35;
+    color: #ffffff;
+    transform: scale(1.08);
+}
+
+.set-help-icon:focus-visible {
+    outline: 2px solid #74ba46;
+    outline-offset: 2px;
+}
+
+/* Ventana de información */
+#training-help-popover {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+
+    width: min(350px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+
+    padding: 18px;
+    overflow-y: auto;
+
+    background: #ffffff;
+    color: #10251f;
+
+    border: 1px solid #dae5dd;
+    border-radius: 16px;
+
+    box-shadow:
+            0 18px 48px rgba(16, 37, 31, .20);
+
+    z-index: 100;
+}
+
+#training-help-popover:not(:popover-open) {
+    display: none;
+}
+
+.training-help-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+
+    margin-bottom: 12px;
+}
+
+.training-help-header strong {
+    font-size: 15px;
+    font-weight: 850;
+    color: #123f35;
+}
+
+#training-help-close {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    min-height: 28px;
+    padding: 0;
+
+    border: 1px solid #dbe2dd;
+    border-radius: 8px;
+
+    background: #f7f9f7;
+    color: #123f35;
+
+    font-size: 20px;
+    cursor: pointer;
+}
+
+#training-help-content p {
+    margin: 0 0 10px;
+    color: #43564f;
+    font-size: 12px;
+    font-weight: 450;
+    line-height: 1.65;
+}
+
+#training-help-content p:last-child {
+    margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+    #training-help-popover {
+        padding: 15px;
+    }
+}
+
+
+
+/* ==========================================
+   FITCORE - CORRECCIÓN DEL SELECTOR
+   ========================================== */
+
+/* El diálogo debe estar oculto si está cerrado */
+#exercise-picker-dialog:not([open]) {
+    display: none !important;
+}
+
+/* Solo mostrarlo cuando se abre */
+#exercise-picker-dialog[open] {
+    display: grid;
+    grid-template-rows:
+        auto auto minmax(0, 1fr) auto;
+}
+
+
+/* ================================================
+   FITCORE - ENTRENAMIENTO CON PANEL COMPACTO
+   ================================================ */
+
+/* 1. OCULTAR PANEL LATERAL DURANTE LA SESIÓN */
+
+#view-training.session-running .training-layout {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+#view-training.session-running .session-builder {
+    display: none !important;
+}
+
+#view-training.session-running .session-workspace {
+    width: 100%;
+    min-width: 0;
+}
+
+
+/* 2. RESUMEN DE LA SESIÓN */
+
+.session-meta-summary {
+    margin: 5px 0 10px;
+
+    color: var(--muted);
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* 3. BOTÓN EDITAR SESIÓN */
+
+.session-dashboard-title .session-edit-button {
+    min-height: 34px;
+
+    width: max-content;
+    max-width: 100%;
+
+    padding: 7px 11px;
+
+    font-size: 11px;
+}
+
+#session-edit-settings[hidden],
+#session-meta-summary[hidden] {
+    display: none !important;
+}
+
+
+/* 4. VENTANA DE CONFIGURACIÓN */
+
+/* Evitar que aparezca cuando esté cerrada */
+#session-settings-dialog:not([open]) {
+    display: none !important;
+}
+
+/* Ventana abierta */
+#session-settings-dialog[open] {
+    width: min(540px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+
+    max-height: calc(100dvh - 24px);
+
+    margin: auto;
+    padding: 0;
+
+    border-radius: 20px;
+
+    overflow-y: auto;
+
+    background: #ffffff;
+}
+
+/* Distribución del formulario */
+#session-settings-dialog form {
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* 5. CAMPOS DE CONFIGURACIÓN */
+
+.session-settings-fields {
+    padding: 20px 24px;
+
+    display: grid;
+    gap: 14px;
+}
+
+.session-settings-fields .field-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+}
+
+/* Día del plan no editable */
+.session-settings-fields input[readonly] {
+    background: #edf1ee;
+    color: #66756e;
+    cursor: default;
+}
+
+/* Texto informativo */
+.session-settings-fields .session-settings-hint {
+    margin: -7px 0 0;
+
+    color: var(--muted);
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* 6. BOTONES DE GUARDADO */
+
+.session-settings-footer {
+    justify-content: flex-end;
+}
+
+
+/* 7. CANCELAR Y ELIMINAR SESIÓN */
+
+.session-settings-danger {
+    display: flex;
+    flex-wrap: wrap;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    padding: 13px 24px 18px;
+
+    border-top: 1px solid var(--line);
+
+    background: #fcfdfb;
+}
+
+.session-settings-danger button:first-child {
+    color: #8f4b20;
+}
+
+
+/* 8. PANEL DE MÉTRICAS A ANCHO COMPLETO */
+
+#view-training.session-running .session-dashboard {
+    grid-template-columns:
+        minmax(235px, 1.5fr)
+        repeat(3, minmax(92px, .55fr))
+        minmax(150px, .75fr)
+        auto;
+}
+
+
+/* 9. PANTALLAS MEDIANAS */
+
+@media (max-width: 1280px) {
+
+    #view-training.session-running .session-dashboard {
+        grid-template-columns:
+            minmax(190px, 1.4fr)
+            repeat(3, minmax(85px, .55fr))
+            auto;
+    }
+
+}
+
+
+/* 10. MÓVILES */
+
+@media (max-width: 640px) {
+
+    #view-training.session-running .session-dashboard {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    #view-training.session-running .session-dashboard-title {
+        grid-column: 1 / -1;
+    }
+
+    .session-settings-fields {
+        padding: 16px;
+    }
+
+    .session-settings-footer,
+    .session-settings-danger {
+        padding-inline: 16px;
+    }
+
+}
+
+
+/* 11. MÓVILES PEQUEÑOS */
+
+@media (max-width: 430px) {
+
+    .session-settings-fields .field-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
+/* 12. CORRECCIÓN DEL SELECTOR DE EJERCICIOS */
+
+/* Cerrado: completamente oculto */
+#exercise-picker-dialog:not([open]) {
+    display: none !important;
+}
+
+/* Abierto: conservar distribución */
+#exercise-picker-dialog[open] {
+    display: grid;
+}

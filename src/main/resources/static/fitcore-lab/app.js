@@ -452,16 +452,66 @@ function renderPlanMode() {
     box.innerHTML = state.activePlan ? `<span>Modo revisión</span><strong>Versión ${state.activePlan.version}</strong><small>Al guardar se creará la versión ${state.activePlan.version + 1}</small>` : '<span>Modo</span><strong>Nuevo plan</strong><small>Se creará la versión 1</small>';
 }
 
+
 function fillSessionDays() {
-    const select = $('session-day'); select.innerHTML = '<option value="">Sesión libre</option>';
-    (state.activePlan?.days || []).forEach(day => select.add(new Option(`${day.dayOrder}. ${day.name}`, day.id)));
+    const select = $('session-day');
+
+    const chosen =
+        state.currentSession?.workoutDayId
+        ?? select.value;
+
+    select.innerHTML =
+        '<option value="">Sesión libre</option>';
+
+    (state.activePlan?.days || []).forEach(day => {
+        select.add(
+            new Option(
+                `${day.dayOrder}. ${day.name}`,
+                day.id
+            )
+        );
+    });
+
+    if (
+        chosen != null &&
+        [...select.options].some(
+            option => option.value === String(chosen)
+        )
+    ) {
+        select.value = String(chosen);
+    }
+
+    if (
+        state.currentSession?.status === 'IN_PROGRESS'
+    ) {
+        syncSessionHeader();
+    }
 }
+
+
+function currentSessionDayLabel() {
+    const id = state.currentSession?.workoutDayId;
+
+    if (id == null || id === '') {
+        return 'Sesión libre';
+    }
+
+    const dayOption = [
+        ...$('session-day').options
+    ].find(
+        option => option.value === String(id)
+    );
+
+    return dayOption?.textContent || 'Día del plan';
+}
+
 
 async function startSession() {
     if (!requireAuth()) return;
     const body = {workoutDayId:optionalNumber($('session-day').value), sessionDate:$('session-date').value, sessionCategory:$('session-category').value, sessionIntensity:$('session-intensity').value, durationMinutes:null, notes:$('session-notes').value.trim() || null, estimatedTotalCaloriesBurned:null};
     try {
         state.currentSession = await api(`/api/users/${state.auth.userId}/workout-sessions`, {method:'POST', body:JSON.stringify(body)});
+        state.currentSession.workoutDayId ??= body.workoutDayId;
         state.sessionStartedAt = Date.now();
         localStorage.setItem('fitcore.lab.currentSession', state.currentSession.id);
         localStorage.setItem(SESSION_STARTED_KEY, state.sessionStartedAt);
@@ -486,6 +536,200 @@ async function addSessionExercise() {
     }
     catch (error) { toast(error.message, true); }
 }
+
+
+function currentSessionMetaLabel() {
+    const session = state.currentSession;
+
+    if (!session) return '';
+
+    const dateValue = String(
+        session.sessionDate ||
+        $('session-date').value ||
+        ''
+    ).slice(0, 10);
+
+    const dateLabel =
+        /^\d{4}-\d{2}-\d{2}$/.test(dateValue)
+            ? dateValue.split('-').reverse().join('/')
+            : 'Sin fecha';
+
+    const category = friendly(
+        session.sessionCategory ||
+        $('session-category').value
+    );
+
+    const intensity = friendly(
+        session.sessionIntensity ||
+        $('session-intensity').value
+    );
+
+    return `${dateLabel} · ${category} · ${intensity}`;
+}
+
+
+function syncSessionHeader() {
+    const active =
+        state.currentSession?.status === 'IN_PROGRESS';
+
+    $('session-heading').textContent = active
+        ? currentSessionDayLabel()
+        : 'Tu sesión';
+
+    $('session-meta-summary').textContent = active
+        ? currentSessionMetaLabel()
+        : '';
+
+    $('session-meta-summary').hidden = !active;
+}
+
+
+function openSessionSettings() {
+    const session = state.currentSession;
+
+    if (session?.status !== 'IN_PROGRESS') {
+        return;
+    }
+
+    // Fecha
+    $('session-edit-date').value = String(
+        session.sessionDate ||
+        $('session-date').value ||
+        ''
+    ).slice(0, 10);
+
+    // Categoría
+    $('session-edit-category').value =
+        session.sessionCategory ||
+        $('session-category').value;
+
+    // Intensidad
+    $('session-edit-intensity').value =
+        session.sessionIntensity ||
+        $('session-intensity').value;
+
+    // Notas
+    $('session-edit-notes').value =
+        session.notes ??
+        $('session-notes').value;
+
+    // Día del plan
+    $('session-edit-day').value =
+        currentSessionDayLabel();
+
+    // Mostrar ventana modal
+    $('session-settings-dialog').showModal();
+}
+
+
+async function saveSessionSettings(event) {
+    event.preventDefault();
+
+    if (
+        state.currentSession?.status !== 'IN_PROGRESS'
+    ) {
+        return;
+    }
+
+    const form = $('session-settings-form');
+
+    if (!form.reportValidity()) {
+        return;
+    }
+
+    // Datos actualizados
+    const updated = {
+        sessionDate: $('session-edit-date').value,
+
+        sessionCategory:
+        $('session-edit-category').value,
+
+        sessionIntensity:
+        $('session-edit-intensity').value,
+
+        durationMinutes: null,
+
+        notes:
+            $('session-edit-notes').value.trim(),
+
+        estimatedTotalCaloriesBurned: null
+    };
+
+    const saveButton = $('session-settings-save');
+
+    saveButton.disabled = true;
+
+    try {
+        // Guardar en el servidor
+        const response = await api(
+            `/api/users/${state.auth.userId}` +
+            `/workout-sessions/${state.currentSession.id}`,
+            {
+                method: 'PATCH',
+                body: JSON.stringify(updated)
+            }
+        );
+
+        // Si la respuesta es 204 o no contiene
+        // datos, conservar los valores enviados.
+        const server =
+            response &&
+            typeof response === 'object'
+                ? response
+                : {};
+
+        // Actualizar estado local
+        state.currentSession = {
+            ...state.currentSession,
+
+            sessionDate:
+                server.sessionDate ??
+                updated.sessionDate,
+
+            sessionCategory:
+                server.sessionCategory ??
+                updated.sessionCategory,
+
+            sessionIntensity:
+                server.sessionIntensity ??
+                updated.sessionIntensity,
+
+            notes:
+                server.notes ??
+                updated.notes
+        };
+
+        // Sincronizar formulario original
+        $('session-date').value =
+            state.currentSession.sessionDate.slice(0, 10);
+
+        $('session-category').value =
+            state.currentSession.sessionCategory;
+
+        $('session-intensity').value =
+            state.currentSession.sessionIntensity;
+
+        $('session-notes').value =
+            state.currentSession.notes ?? '';
+
+        // Actualizar el resumen superior
+        syncSessionHeader();
+
+        // Cerrar configuración
+        $('session-settings-dialog').close();
+
+        toast(
+            'Configuración de la sesión guardada.'
+        );
+
+    } catch (error) {
+        toast(error.message, true);
+
+    } finally {
+        saveButton.disabled = false;
+    }
+}
+
 
 async function openExercisePicker() {
     if (!state.currentSession) return;
@@ -555,10 +799,55 @@ async function loadSessionExercises() {
 }
 
 function renderSession() {
-    const active = state.currentSession?.status === 'IN_PROGRESS'; $('session-start').disabled = active; $('session-complete').disabled = !active; $('session-cancel').disabled = !active; $('session-delete').disabled = !active; $('open-exercise-picker').disabled = !active; $('session-muscles').disabled = !state.sessionExercises.length;
-    $('session-status').textContent = state.currentSession ? friendly(state.currentSession.status) : 'Sin iniciar'; $('session-status').dataset.state = state.currentSession?.status || '';
-    $('session-heading').textContent = active ? ($('session-day').selectedOptions[0]?.textContent || 'Sesión libre') : 'Tu sesión';
-    renderSessionSummary(); manageSessionTimer(active);
+    const active =
+        state.currentSession?.status === 'IN_PROGRESS';
+
+    // Activar diseño compacto
+    $('view-training').classList.toggle(
+        'session-running',
+        active
+    );
+
+    // Mostrar botón de edición
+    $('session-edit-settings').hidden = !active;
+
+    // Cerrar configuración si finaliza la sesión
+    if (
+        !active &&
+        $('session-settings-dialog').open
+    ) {
+        $('session-settings-dialog').close();
+    }
+
+    // Estados de los botones
+    $('session-start').disabled = active;
+
+    $('session-complete').disabled = !active;
+
+    $('session-cancel').disabled = !active;
+
+    $('session-delete').disabled = !active;
+
+    $('open-exercise-picker').disabled = !active;
+
+    $('session-muscles').disabled =
+        !state.sessionExercises.length;
+
+    // Estado de la sesión
+    $('session-status').textContent =
+        state.currentSession
+            ? friendly(state.currentSession.status)
+            : 'Sin iniciar';
+
+    $('session-status').dataset.state =
+        state.currentSession?.status || '';
+
+    // Actualizar cabecera
+    syncSessionHeader();
+
+    // Actualizar métricas y temporizador
+    renderSessionSummary();
+    manageSessionTimer(active);
     const container = $('session-exercises'); if (!state.sessionExercises.length) { container.innerHTML = `<div class="empty-state large">${active ? 'Añade el primer ejercicio de la sesión.':'Inicia una sesión para registrar ejercicios y series.'}</div>`; void renderSessionMiniMap(); return; }
     container.innerHTML = state.sessionExercises.map(exercise => {
         const sets = state.sessionSets.get(exercise.id) || [];
@@ -575,7 +864,7 @@ function renderSession() {
         const firstSuggestion = previousByNumber.get(next);
         const suggestedWeight = lastSet?.weight ?? firstSuggestion?.weight ?? '';
         const suggestedReps = lastSet?.reps ?? firstSuggestion?.reps ?? '';
-        const suggestedRir = lastSet?.rir ?? 2;
+        const suggestedRir = '';
         const setRows = sets.map(set => {
             const prior = previousByNumber.get(set.setNumber);
             const effectiveRpe = set.rpe ?? rpeFromRir(set.rir);
@@ -593,13 +882,53 @@ function renderSession() {
         return `<article class="session-card" data-session-exercise="${exercise.id}" data-exercise-name="${escapeHtml(exerciseName)}">
             <div class="session-card-head"><div class="session-exercise-identity">${base ? exerciseThumb(base, 'session-exercise-thumb') : '<span class="session-exercise-thumb thumb-placeholder">FC</span>'}<div><div class="session-title-line"><h3>${escapeHtml(exerciseName)}</h3><span class="status-pill" data-state="${completed?'COMPLETED':''}">${completed?'Completado':'En curso'}</span></div><div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div><small>${escapeHtml(variant?.name || variantName(exercise.exerciseVariantCode))}</small></div></div><button class="icon-button danger" data-remove-session-exercise aria-label="Quitar ejercicio">×</button></div>
             <div class="exercise-tools"><button class="rest-setting" data-edit-rest><span>⏱ Descanso</span><strong>${formatDuration(rest)}</strong><small>Modificar</small></button><span>Series registradas: <strong>${sets.length}</strong></span><span>Anterior: <strong>${previous.sessionDate ? new Date(`${previous.sessionDate}T00:00:00`).toLocaleDateString('es-ES') : 'Sin registros'}</strong></span></div>
-            <div class="set-table-wrap"><table class="set-table"><thead><tr><th>Serie</th><th>Anterior</th><th>Peso (kg)</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set">
+            <div class="set-table-wrap"><table class="set-table"><thead><tr><th>Serie</th><th>Anterior</th>
+
+<th>
+    <span class="set-help-label">
+        Peso (kg)
+        <button type="button"
+                class="set-help-icon"
+                data-training-help="weight"
+                aria-label="Información sobre el peso">
+            i
+        </button>
+    </span>
+</th>
+
+<th>Reps</th>
+
+<th>
+    <span class="set-help-label">
+        RIR
+        <button type="button"
+                class="set-help-icon"
+                data-training-help="rir"
+                aria-label="¿Qué significa RIR?">
+            i
+        </button>
+    </span>
+</th>
+
+<th>
+    <span class="set-help-label">
+        RPE
+        <button type="button"
+                class="set-help-icon"
+                data-training-help="rpe"
+                aria-label="¿Qué significa RPE?">
+            i
+        </button>
+    </span>
+</th>
+
+            <th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set">
                 <td><span class="set-number">${next}</span><input data-set-number type="hidden" value="${next}"></td>
                 <td class="previous-performance">${previousSetLabel(previousByNumber.get(next))}</td>
                 <td><input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="${suggestedWeight}" aria-label="Peso de la nueva serie"></td>
                 <td><input data-set-reps data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${suggestedReps}" aria-label="Repeticiones de la nueva serie"></td>
                 <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${suggestedRir}" aria-label="RIR de la nueva serie"></td>
-                <td>${rpeControl(rpeFromRir(suggestedRir), 'RPE de la nueva serie', true)}</td><td><span class="pending-set" title="La serie se crea sin completar">Pendiente</span></td>
+                <td>${rpeControl(null, 'RPE de la nueva serie', false)}</td><td><span class="pending-set" title="La serie se crea sin completar">Pendiente</span></td>
                 <td><button class="button button-primary add-set-button" data-add-set>+ Añadir serie</button></td>
             </tr></tbody></table></div><div class="session-card-foot"><small>Al marcar una serie como hecha se guardará y comenzará el descanso.</small><strong>${sets.filter(set => set.completed).length}/${sets.length || 0} series completadas</strong></div>
         </article>`;
@@ -613,11 +942,96 @@ function previousSetLabel(set) {
     return `<strong>${weight} × ${reps}</strong>`;
 }
 
-function rpeControl(value, label, automatic = false) {
-    const display = value == null ? 'RPE' : formatNumber(value);
-    const mode = automatic ? 'automático desde RIR' : 'manual';
-    return `<button type="button" class="rpe-button ${value == null ? '' : 'has-value'} ${automatic ? 'is-auto' : 'is-manual'}" data-rpe-picker aria-label="${escapeHtml(label)}" title="RPE ${mode}">${display}</button><input data-set-rpe type="hidden" value="${value ?? ''}">`;
+
+function rpeColor(value) {
+    if (
+        value === null ||
+        value === '' ||
+        !Number.isFinite(Number(value))
+    ) return '';
+
+    const stops = [
+        [0.00, [55, 190, 104]],  // Verde
+        [0.35, [200, 213, 40]],  // Verde amarillento
+        [0.58, [255, 195, 41]],  // Amarillo
+        [0.80, [255, 122, 37]],  // Naranja
+        [1.00, [239, 53, 48]]    // Rojo
+    ];
+
+    const position = Math.max(
+        0,
+        Math.min(1, Number(value) / 10)
+    );
+
+    for (let i = 1; i < stops.length; i++) {
+        const [end, to] = stops[i];
+
+        if (position <= end) {
+            const [start, from] = stops[i - 1];
+            const fraction =
+                (position - start) / (end - start);
+
+            const rgb = from.map((channel, j) =>
+                Math.round(
+                    channel +
+                    (to[j] - channel) * fraction
+                )
+            );
+
+            return `rgb(${rgb.join(', ')})`;
+        }
+    }
+
+    return 'rgb(239, 53, 48)';
 }
+
+function paintRpeButton(button, value) {
+    if (!button) return;
+
+    const color = rpeColor(value);
+
+    if (color) {
+        button.style.setProperty(
+            '--rpe-color',
+            color
+        );
+    } else {
+        button.style.removeProperty('--rpe-color');
+    }
+}
+
+function rpeControl(value, label, automatic = false) {
+    const display = value == null
+        ? 'RPE'
+        : formatNumber(value);
+
+    const mode = automatic
+        ? 'automático desde RIR'
+        : 'manual';
+
+    const color = rpeColor(value);
+
+    const colorStyle = color
+        ? ` style="--rpe-color: ${color}"`
+        : '';
+
+    return `
+        <button
+            type="button"
+            class="rpe-button ${value == null ? '' : 'has-value'} ${automatic ? 'is-auto' : 'is-manual'}"
+            data-rpe-picker
+            ${colorStyle}
+            aria-label="${escapeHtml(label)}"
+            title="RPE ${mode}"
+        >${display}</button>
+        <input
+            data-set-rpe
+            type="hidden"
+            value="${value ?? ''}"
+        >
+    `;
+}
+
 
 function rpeFromRir(rir) {
     if (rir == null || rir === '') return null;
@@ -639,6 +1053,7 @@ function syncRpeFromRir(input) {
     button.classList.toggle('has-value', value != null);
     button.classList.toggle('is-auto', value != null);
     button.classList.remove('is-manual');
+    paintRpeButton(button, value);
     button.title = value == null ? 'Seleccionar RPE manualmente' : 'RPE automático desde RIR';
 }
 
@@ -655,12 +1070,118 @@ function formatDuration(seconds) { const value = Math.max(0, Number(seconds) || 
 
 function sessionElapsedSeconds() { return state.sessionStartedAt ? Math.max(0, Math.floor((Date.now() - state.sessionStartedAt) / 1000)) : 0; }
 
-function renderSessionSummary() {
-    const sets = [...state.sessionSets.values()].flat(); const completed = sets.filter(set => set.completed);
-    $('session-duration').textContent = formatDuration(sessionElapsedSeconds());
-    $('session-volume').textContent = `${formatNumber(completed.reduce((total, set) => total + Number(set.weight || 0) * Number(set.reps || 0), 0))} kg`;
-    $('session-series').textContent = completed.length;
+
+/* ========================================
+   FITCORE - VOLUMEN DE ENTRENAMIENTO
+   ======================================== */
+
+function calculateSessionVolume() {
+    let volumeGrams = 0;
+    let totalReps = 0;
+    let completedSets = 0;
+    let setsWithoutVolume = 0;
+
+    // Recorrer TODOS los ejercicios de la sesión
+    for (const sets of state.sessionSets.values()) {
+
+        for (const set of sets || []) {
+
+            // Solo cuentan las series completadas
+            if (set.completed !== true) continue;
+
+            completedSets++;
+
+            const reps =
+                set.reps == null || set.reps === ''
+                    ? null
+                    : Number(set.reps);
+
+            const weight =
+                set.weight == null || set.weight === ''
+                    ? null
+                    : Number(set.weight);
+
+            const validReps =
+                reps !== null &&
+                Number.isSafeInteger(reps) &&
+                reps >= 0;
+
+            const validWeight =
+                weight !== null &&
+                Number.isFinite(weight) &&
+                weight >= 0;
+
+            // Contar repeticiones completadas
+            if (validReps) {
+                totalReps += reps;
+            }
+
+            // Calcular el volumen de la serie
+            if (validReps && validWeight) {
+
+                // Convertir a gramos para evitar
+                // errores de precisión decimal
+                const weightGrams = Math.round(
+                    weight * 1000
+                );
+
+                volumeGrams += weightGrams * reps;
+
+            } else {
+                // Serie completada sin datos
+                // suficientes para calcular volumen
+                setsWithoutVolume++;
+            }
+        }
+    }
+
+    return {
+        volumeKg: volumeGrams / 1000,
+        totalReps,
+        completedSets,
+        setsWithoutVolume
+    };
 }
+
+
+/* ACTUALIZAR EL PANEL DE ENTRENAMIENTO */
+
+function renderSessionSummary() {
+
+    const result = calculateSessionVolume();
+
+    // Duración
+    $('session-duration').textContent =
+        formatDuration(sessionElapsedSeconds());
+
+    // Volumen total en kg
+    $('session-volume').textContent =
+        `${result.volumeKg.toLocaleString('es-ES', {
+            maximumFractionDigits: 2
+        })} kg`;
+
+    // Número de series completadas
+    $('session-series').textContent =
+        result.completedSets;
+
+    // Repeticiones totales
+    const repsElement = $('session-volume-reps');
+
+    if (repsElement) {
+        repsElement.textContent =
+            `${result.totalReps} reps` +
+            (result.setsWithoutVolume
+                ? ' · parcial'
+                : '');
+    }
+
+    // Avisar si hay series sin datos de carga
+    $('session-volume').title =
+        result.setsWithoutVolume > 0
+            ? `Volumen parcial: ${result.setsWithoutVolume} serie(s) completada(s) sin peso o repeticiones registrados.`
+            : 'Volumen de carga: suma de peso × repeticiones de todas las series completadas.';
+}
+
 
 function manageSessionTimer(active) {
     if (active && !state.sessionTimer) state.sessionTimer = setInterval(() => { if ($('session-duration')) $('session-duration').textContent = formatDuration(sessionElapsedSeconds()); }, 1000);
@@ -680,17 +1201,133 @@ async function addSet(card) {
     catch (error) { toast(error.message, true); }
 }
 
-async function updateSet(card, row, setId, startRest = false) {
-    const exerciseId = Number(card.dataset.sessionExercise); const body = setBody(row);
+
+async function updateSet(
+    card,
+    row,
+    setId,
+    startRest = false
+) {
+    const exerciseId = Number(
+        card.dataset.sessionExercise
+    );
+
+    const checkbox = row.querySelector(
+        '[data-set-complete]'
+    );
+
+    // Datos originales de las series
+    const originalSets =
+        state.sessionSets.get(exerciseId) || [];
+
+    const previousSet = originalSets.find(
+        set => String(set.id) === String(setId)
+    );
+
+    let saved = false;
+
     try {
-        await api(`/api/users/${state.auth.userId}/workout-session-exercises/${exerciseId}/sets/${setId}`, {method:'PUT', body:JSON.stringify(body)});
-        const exercise = state.sessionExercises.find(item => item.id === exerciseId);
+        // Leer peso, repeticiones, RIR, RPE y Hecha
+        const body = setBody(row);
+
+        // Actualizar temporalmente la serie
+        // para calcular el volumen al instante
+        if (previousSet) {
+
+            const updatedSets = originalSets.map(
+                set =>
+                    String(set.id) === String(setId)
+                        ? { ...set, ...body }
+                        : set
+            );
+
+            state.sessionSets.set(
+                exerciseId,
+                updatedSets
+            );
+
+            // Recalcular inmediatamente
+            renderSessionSummary();
+        }
+
+        row.classList.toggle(
+            'is-complete',
+            body.completed
+        );
+
+        // Evitar clics repetidos mientras se guarda
+        if (checkbox) {
+            checkbox.disabled = true;
+        }
+
+        // Guardar el cambio en la API
+        await api(
+            `/api/users/${state.auth.userId}` +
+            `/workout-session-exercises/${exerciseId}` +
+            `/sets/${setId}`,
+            {
+                method: 'PUT',
+                body: JSON.stringify(body)
+            }
+        );
+
+        saved = true;
+
+        const exercise = state.sessionExercises.find(
+            item => item.id === exerciseId
+        );
+
+        // Iniciar descanso si se acaba de completar
+        if (body.completed && startRest && exercise) {
+            startRestTimer(
+                exercise,
+                card.dataset.exerciseName
+            );
+        }
+
+        // Sincronizar con los datos reales del servidor
         await loadSessionExercises();
-        if (body.completed && startRest && exercise) startRestTimer(exercise, card.dataset.exerciseName);
-        toast(body.completed && startRest ? 'Serie completada. Descanso iniciado.':'Serie actualizada.');
+
+        toast(
+            body.completed && startRest
+                ? 'Serie completada. Volumen actualizado.'
+                : 'Serie actualizada.'
+        );
+
+    } catch (error) {
+
+        // Si falla el guardado, recuperar los datos
+        // que había antes de marcar/desmarcar
+        if (!saved) {
+
+            state.sessionSets.set(
+                exerciseId,
+                originalSets
+            );
+
+            if (checkbox) {
+                checkbox.checked =
+                    previousSet?.completed === true;
+
+                row.classList.toggle(
+                    'is-complete',
+                    checkbox.checked
+                );
+            }
+
+            renderSessionSummary();
+        }
+
+        toast(error.message, true);
+
+    } finally {
+
+        if (checkbox && checkbox.isConnected) {
+            checkbox.disabled = false;
+        }
     }
-    catch (error) { await loadSessionExercises(); toast(error.message, true); }
 }
+
 
 function setBody(container) {
     const completion = container.querySelector('[data-set-complete]');
@@ -800,6 +1437,7 @@ function applyRpeValue() {
     button.classList.add('has-value');
     button.classList.remove('is-auto');
     button.classList.add('is-manual');
+    paintRpeButton(button, value);
     button.title = 'RPE seleccionado manualmente';
     $('rpe-dialog').close();
 }
@@ -896,16 +1534,51 @@ function paintSessionActivations(svg, combined) {
     [...combined.values()].forEach(item => (muscleSvgMap[item.muscleCode] || []).forEach(id => { const node = svg.querySelector(`[id="${id}"]`); if (node) node.dataset.fitcoreRole = item.role; }));
 }
 
+
 async function renderSessionMiniMap() {
     const stage = $('session-muscle-mini');
+
     if (!stage || !state.svg) return;
+
+    // Clonar el mapa anatómico original
     const clone = state.svg.cloneNode(true);
+
+    // Eliminar dimensiones fijas
+    clone.removeAttribute('width');
+    clone.removeAttribute('height');
+
+    // Mantener las proporciones y mostrarlo entero
+    clone.setAttribute(
+        'preserveAspectRatio',
+        'xMidYMid meet'
+    );
+
+    clone.style.width = '100%';
+    clone.style.height = '100%';
+    clone.style.transform = 'none';
+
+    // Limpiar selecciones anteriores del catálogo
+    paintSessionActivations(clone, new Map());
+
+    // Colorear los músculos de la sesión
     if (state.sessionExercises.length) {
-        try { paintSessionActivations(clone, await combinedSessionActivations()); }
-        catch (_) { return; }
+        try {
+            const combined =
+                await combinedSessionActivations();
+
+            paintSessionActivations(clone, combined);
+        } catch (error) {
+            console.warn(
+                'No se pudieron cargar las activaciones:',
+                error
+            );
+        }
     }
+
+    // Insertar miniatura actualizada
     stage.replaceChildren(clone);
 }
+
 
 async function showSessionMuscles() {
     if (!state.sessionExercises.length || !state.svg) return;
@@ -1007,6 +1680,114 @@ async function bootstrapUserData() {
     await Promise.allSettled([searchCatalog(), loadOverview(), restoreSession(), loadRecommendations(), loadProgressHistory()]);
 }
 
+/* INFORMACIÓN DE PESO, RIR Y RPE */
+
+const TRAINING_HELP = {
+    weight: {
+        title: '¿Qué peso debo introducir?',
+        paragraphs: [
+            'Registra el peso total externo utilizado en cada repetición.',
+
+            'MANCUERNAS: Si utilizas dos mancuernas de 15 kg al mismo tiempo, introduce 30 kg.',
+
+            'BARRAS: Suma el peso de la barra y todos los discos. Ejemplo: barra de 20 kg + dos discos de 15 kg = 50 kg.',
+
+            'EJERCICIOS UNILATERALES: Si utilizas una sola mancuerna, registra su peso y las repeticiones realizadas por ambos lados en total.',
+
+            'MÁQUINAS: Introduce la carga indicada en la máquina. Procura comparar el progreso usando la misma máquina.'
+        ]
+    },
+
+    rir: {
+        title: '¿Qué es el RIR?',
+        paragraphs: [
+            'RIR significa Repeticiones en Reserva.',
+
+            'Indica cuántas repeticiones más crees que podrías hacer al terminar la serie, manteniendo una técnica correcta.',
+
+            'RIR 0: No podrías hacer otra repetición completa.',
+
+            'RIR 2: Podrías hacer aproximadamente 2 más.',
+
+            'RIR 4: Podrías hacer aproximadamente 4 más.',
+
+            'Cuanto menor sea el RIR, más cerca estarás del fallo muscular.'
+        ]
+    },
+
+    rpe: {
+        title: '¿Qué es el RPE?',
+        paragraphs: [
+            'RPE significa Índice de Esfuerzo Percibido.',
+
+            'Se utiliza para expresar lo exigente que ha sido una serie. En FitCore se representa de 0 a 10.',
+
+            'RPE 10: Esfuerzo máximo; no podrías completar otra repetición.',
+
+            'RPE 9: Podrías hacer aproximadamente 1 repetición más.',
+
+            'RPE 8: Podrías hacer aproximadamente 2 repeticiones más.',
+
+            'RPE 7: Podrías hacer aproximadamente 3 repeticiones más.',
+
+            'En ejercicios de fuerza, FitCore estima RPE = 10 - RIR. Es una aproximación, especialmente útil en las series más exigentes.'
+        ]
+    }
+};
+
+function showTrainingHelp(button) {
+    const popover = $('training-help-popover');
+    const topic = button.dataset.trainingHelp;
+    const info = TRAINING_HELP[topic];
+
+    if (!popover || !info) return;
+
+    const wasSameOpen =
+        popover.matches(':popover-open') &&
+        popover.dataset.topic === topic;
+
+    if (popover.matches(':popover-open')) {
+        popover.hidePopover();
+    }
+
+    if (wasSameOpen) return;
+
+    $('training-help-title').textContent = info.title;
+
+    const paragraphs = info.paragraphs.map(text => {
+        const p = document.createElement('p');
+        p.textContent = text;
+        return p;
+    });
+
+    $('training-help-content').replaceChildren(...paragraphs);
+
+    popover.dataset.topic = topic;
+    popover.showPopover();
+
+    // Posicionar sobre la tabla, sin que se recorte
+    const rect = button.getBoundingClientRect();
+    const size = popover.getBoundingClientRect();
+
+    const left = Math.max(
+        12,
+        Math.min(
+            rect.left + rect.width / 2 - size.width / 2,
+            window.innerWidth - size.width - 12
+        )
+    );
+
+    let top = rect.bottom + 10;
+
+    if (top + size.height > window.innerHeight - 12) {
+        top = rect.top - size.height - 10;
+    }
+
+    popover.style.left = `${left}px`;
+    popover.style.top = `${Math.max(12, top)}px`;
+}
+
+
 function bindEvents() {
     document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.go)));
     document.querySelectorAll('.nav-item').forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.view)));
@@ -1019,6 +1800,57 @@ function bindEvents() {
     $('map-stabilizers').addEventListener('change',paintActivations);
     $('add-day').addEventListener('click',()=>addPlanDay()); $('plan-load').addEventListener('click',()=>loadActivePlan()); $('plan-save').addEventListener('click',savePlan);
     $('plan-days').addEventListener('click',e=>{const card=e.target.closest('.day-card');if(!card)return;const di=Number(card.dataset.day);if(e.target.closest('[data-remove-day]')){syncPlanEditor();state.planDays.splice(di,1);renderPlanDays();}else if(e.target.closest('[data-add-plan-exercise]')){syncPlanEditor();state.planDays[di].exercises.push({exerciseVariantCode:'',sets:3,reps:10,restSeconds:90});renderPlanDays();}else if(e.target.closest('[data-remove-exercise]')){syncPlanEditor();state.planDays[di].exercises.splice(Number(e.target.closest('.exercise-editor').dataset.exercise),1);renderPlanDays();}else if(e.target.closest('[data-move]')){syncPlanEditor();const row=e.target.closest('.exercise-editor'),from=Number(row.dataset.exercise),to=from+Number(e.target.dataset.move);if(to>=0&&to<state.planDays[di].exercises.length){const [item]=state.planDays[di].exercises.splice(from,1);state.planDays[di].exercises.splice(to,0,item);renderPlanDays();}}});
+
+    /* =====================================
+       EVENTOS DE CONFIGURACIÓN DE SESIÓN
+       ===================================== */
+
+// Abrir ventana
+    $('session-edit-settings').addEventListener(
+        'click',
+        openSessionSettings
+    );
+
+// Guardar configuración
+    $('session-settings-form').addEventListener(
+        'submit',
+        saveSessionSettings
+    );
+
+// Cerrar desde X o botón Cerrar
+    [
+        'session-settings-close',
+        'session-settings-dismiss'
+    ].forEach(id => {
+
+        $(id).addEventListener('click', () => {
+            $('session-settings-dialog').close();
+        });
+
+    });
+
+// Cancelar entrenamiento
+    $('session-settings-cancel-workout').addEventListener(
+        'click',
+        async () => {
+
+            const confirmed = await confirmAction(
+                'Cancelar sesión',
+                'Se cancelará el entrenamiento en curso. ¿Quieres continuar?'
+            );
+
+            if (!confirmed) return;
+
+            await finishSession('cancel');
+        }
+    );
+
+// Eliminar entrenamiento
+    $('session-settings-delete-workout').addEventListener(
+        'click',
+        deleteSession
+    );
+
     $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener('click',openExercisePicker); $('session-refresh').addEventListener('click',loadSessionExercises); $('session-complete').addEventListener('click',()=>finishSession('complete')); $('session-cancel').addEventListener('click',()=>finishSession('cancel')); $('session-delete').addEventListener('click',deleteSession); $('session-muscles').addEventListener('click',showSessionMuscles);
     ['session-exercise-query','session-exercise-equipment','session-exercise-muscle'].forEach(id => $(id).addEventListener(id === 'session-exercise-query' ? 'input' : 'change', renderSessionExerciseResults));
     $('session-exercise-results').addEventListener('click',e=>{const item=e.target.closest('[data-session-exercise-code]');if(!item)return;state.sessionPicker={exercise:state.exercises.find(exercise=>exercise.code===item.dataset.sessionExerciseCode),configuration:{}};renderSessionExerciseResults();renderSessionExerciseConfig();});
@@ -1039,6 +1871,24 @@ function bindEvents() {
     $('stats-load').addEventListener('click',loadStats); $('goal-form').addEventListener('submit',saveGoal); $('progress-form').addEventListener('submit',saveProgress);
     $('recommendation-generate').addEventListener('click',generateRecommendation); $('recommendation-filter').addEventListener('change',loadRecommendations); $('recommendation-list').addEventListener('click',e=>{const button=e.target.closest('[data-decision]'),card=e.target.closest('[data-recommendation]');if(button&&card)decideRecommendation(card.dataset.recommendation,button.dataset.decision);});
     $('log-clear').addEventListener('click',()=>{state.logs=[];renderLogs();}); $('log-copy').addEventListener('click',async()=>{await navigator.clipboard.writeText(JSON.stringify(state.logs,null,2));toast('Registro copiado.');});
+
+    /* Abrir información al pulsar los iconos */
+    $('session-exercises').addEventListener('click', event => {
+        const button = event.target.closest(
+            '[data-training-help]'
+        );
+
+        if (!button) return;
+
+        event.preventDefault();
+        showTrainingHelp(button);
+    });
+
+    /* Cerrar la ventana de información */
+    $('training-help-close').addEventListener('click', () => {
+        $('training-help-popover').hidePopover();
+    });
+
 }
 
 async function init() {

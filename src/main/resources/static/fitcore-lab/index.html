@@ -110,7 +110,7 @@
         </section>
 
         <section class="view" id="view-training" data-title="Entrenamiento en curso" data-eyebrow="EJECUCIÓN · SERIES · ESFUERZO">
-            <div class="training-layout">
+            <div class="training-layout" id="training-layout">
                 <aside class="panel session-builder">
                     <div class="section-heading"><div><p class="eyebrow">SESIÓN REAL</p><h2>Configurar</h2></div><span class="status-pill" id="session-status">Sin iniciar</span></div>
                     <label>Fecha<input id="session-date" type="date"></label>
@@ -122,9 +122,37 @@
                 </aside>
                 <div class="session-workspace">
                     <div class="session-dashboard" id="session-dashboard">
-                        <div class="session-dashboard-title"><p class="eyebrow">ENTRENAMIENTO ACTIVO</p><h2 id="session-heading">Tu sesión</h2></div>
+
+                        <div class="session-dashboard-title">
+                            <p class="eyebrow">ENTRENAMIENTO ACTIVO</p>
+
+                            <h2 id="session-heading">Tu sesión</h2>
+
+                            <p
+                                    id="session-meta-summary"
+                                    class="session-meta-summary"
+                                    hidden>
+                            </p>
+
+                            <button
+                                    id="session-edit-settings"
+                                    type="button"
+                                    class="button button-secondary session-edit-button"
+                                    hidden
+                                    aria-haspopup="dialog"
+                                    aria-controls="session-settings-dialog">
+                                ✎ Editar sesión
+                            </button>
+                        </div>
+
                         <div class="live-metric"><span>Duración</span><strong id="session-duration">00:00</strong></div>
-                        <div class="live-metric"><span>Volumen</span><strong id="session-volume">0 kg</strong></div>
+
+                        <div class="live-metric">
+                            <span>Volumen</span>
+                            <strong id="session-volume">0 kg</strong>
+                            <small id="session-volume-reps">0 reps</small>
+                        </div>
+
                         <div class="live-metric"><span>Series</span><strong id="session-series">0</strong></div>
                         <button id="session-muscles" class="muscle-summary-button" aria-label="Ver mapa muscular de la sesión" title="Ver músculos trabajados" disabled>
                             <span id="session-muscle-mini" class="session-muscle-mini" aria-hidden="true"><span class="mini-map-placeholder">◐</span></span>
@@ -168,6 +196,193 @@
 </div>
 <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 <dialog id="confirm-dialog"><form method="dialog"><p class="eyebrow">CONFIRMACIÓN</p><h2 id="confirm-title">¿Continuar?</h2><p id="confirm-message"></p><div class="button-row"><button value="cancel" class="button button-secondary">Cancelar</button><button value="confirm" class="button button-primary">Confirmar</button></div></form></dialog>
+
+
+<!-- =====================================
+     FITCORE - EDITAR SESIÓN
+     ===================================== -->
+
+<dialog
+        id="session-settings-dialog"
+        class="session-settings-dialog"
+        aria-labelledby="session-settings-title">
+
+    <form id="session-settings-form">
+
+        <!-- CABECERA -->
+        <div class="dialog-heading compact">
+
+            <div>
+                <p class="eyebrow">
+                    CONFIGURACIÓN DE LA SESIÓN
+                </p>
+
+                <h2 id="session-settings-title">
+                    Editar sesión
+                </h2>
+
+                <p>
+                    Ajusta los datos de la sesión
+                    sin salir del entrenamiento.
+                </p>
+            </div>
+
+            <button
+                    type="button"
+                    class="icon-button"
+                    id="session-settings-close"
+                    aria-label="Cerrar configuración">
+                ×
+            </button>
+
+        </div>
+
+        <!-- CAMPOS -->
+        <div class="session-settings-fields">
+
+            <label>
+                Fecha
+                <input
+                        id="session-edit-date"
+                        type="date"
+                        required>
+            </label>
+
+            <div class="field-grid">
+
+                <label>
+                    Categoría
+                    <select
+                            id="session-edit-category"
+                            required>
+
+                        <option value="HYPERTROPHY">
+                            Hipertrofia
+                        </option>
+
+                        <option value="STRENGTH">
+                            Fuerza
+                        </option>
+
+                        <option value="ENDURANCE">
+                            Resistencia
+                        </option>
+
+                        <option value="CARDIO">
+                            Cardio
+                        </option>
+
+                        <option value="MOBILITY">
+                            Movilidad
+                        </option>
+
+                        <option value="MIXED">
+                            Mixto
+                        </option>
+
+                    </select>
+                </label>
+
+                <label>
+                    Intensidad
+                    <select
+                            id="session-edit-intensity"
+                            required>
+
+                        <option value="MODERATE">
+                            Moderada
+                        </option>
+
+                        <option value="LOW">
+                            Baja
+                        </option>
+
+                        <option value="HIGH">
+                            Alta
+                        </option>
+
+                        <option value="VERY_HIGH">
+                            Muy alta
+                        </option>
+
+                    </select>
+                </label>
+
+            </div>
+
+            <label>
+                Día del plan
+                <input
+                        id="session-edit-day"
+                        type="text"
+                        readonly
+                        aria-describedby="session-edit-day-info">
+            </label>
+
+            <p
+                    class="session-settings-hint"
+                    id="session-edit-day-info">
+
+                El día del plan se asigna al iniciar
+                la sesión y no se modifica
+                desde este formulario.
+
+            </p>
+
+            <label>
+                Notas
+                <textarea
+                        id="session-edit-notes"
+                        rows="3"
+                        placeholder="Sensaciones o comentarios">
+                </textarea>
+            </label>
+
+        </div>
+
+        <!-- GUARDAR -->
+        <div class="dialog-actions session-settings-footer">
+
+            <button
+                    type="button"
+                    class="button button-secondary"
+                    id="session-settings-dismiss">
+                Cerrar
+            </button>
+
+            <button
+                    type="submit"
+                    class="button button-primary"
+                    id="session-settings-save">
+                Guardar cambios
+            </button>
+
+        </div>
+
+        <!-- ACCIONES DE SESIÓN -->
+        <div class="session-settings-danger">
+
+            <button
+                    type="button"
+                    class="text-button"
+                    id="session-settings-cancel-workout">
+                Cancelar sesión
+            </button>
+
+            <button
+                    type="button"
+                    class="text-button danger"
+                    id="session-settings-delete-workout">
+                Eliminar sesión
+            </button>
+
+        </div>
+
+    </form>
+
+</dialog>
+
+
 <dialog id="exercise-picker-dialog" class="exercise-picker-dialog">
     <div class="dialog-heading"><div><p class="eyebrow">AÑADIR AL ENTRENAMIENTO</p><h2>Elige un ejercicio</h2><p>El ejercicio aparece una sola vez. Después podrás concretar material, agarre y apertura cuando existan variantes.</p></div><button class="icon-button" data-close-picker aria-label="Cerrar">×</button></div>
     <div class="picker-filters"><label>Buscar<input id="session-exercise-query" type="search" placeholder="Ej. dominadas, press, remo…"></label><label>Equipamiento<select id="session-exercise-equipment"><option value="">Todo el equipamiento</option></select></label><label>Grupo muscular<select id="session-exercise-muscle"><option value="">Todos los músculos</option></select></label></div>
@@ -202,5 +417,27 @@
     <div class="rest-finished-icon">✓</div><p class="eyebrow">DESCANSO TERMINADO</p><h2>Listo para la siguiente serie</h2><p><strong id="rest-finished-exercise"></strong><br>El tiempo de recuperación ha terminado.</p><button id="rest-finished-close" type="button" class="button button-primary button-block">Continuar entrenamiento</button>
 </dialog>
 <script src="./app.js" defer></script>
+
+
+<!-- AYUDA DE PESO, RIR Y RPE -->
+<div id="training-help-popover"
+     popover="auto"
+     role="dialog"
+     aria-labelledby="training-help-title">
+
+    <div class="training-help-header">
+        <strong id="training-help-title"></strong>
+
+        <button type="button"
+                id="training-help-close"
+                aria-label="Cerrar información">
+            &times;
+        </button>
+    </div>
+
+    <div id="training-help-content"></div>
+</div>
+
+
 </body>
 </html>
