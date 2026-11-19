@@ -8,6 +8,9 @@ const state = {
     activePlan: null, planDays: [], selectedPlanDayIndex: 0, currentSession: null,
     sessionExercises: [], sessionSets: new Map(), sessionStartedAt: Number(localStorage.getItem(SESSION_STARTED_KEY)) || null,
     sessionTimer: null, sessionPicker: {exercise:null, configuration:{}}, sessionActivations: new Map(),
+    pickerMode: 'session', planPickerDayIndex: null, planPickerAction: 'add',
+    planPickerExerciseIndex: null, planPickerExerciseCode: null,
+    planAdvancedConfig: null,
     sessionPrevious: new Map(), restEditorExerciseId: null, rpeTarget: null,
     restTimer: {exerciseId:null, exerciseName:'', remaining:0, total:0, running:false, interval:null}
 };
@@ -220,6 +223,9 @@ function navigate(view) {
     history.replaceState(null, '', `#${view}`); window.scrollTo({top:0, behavior:'smooth'});
     if (view === 'catalog' && state.auth && !state.variants.length) searchCatalog();
     if (view === 'progress' && state.auth) loadProgressDashboard();
+    if (view === 'plans' && state.svg) {
+        void renderPlanMusclePreview();
+    }
     if (view === 'recommendations' && state.auth) loadRecommendations();
 }
 
@@ -243,6 +249,15 @@ async function loadSvg() {
         const missing = [...new Set(Object.values(muscleSvgMap).flat().filter(id => !state.svg.getElementById(id)))];
         $('map-diagnostic').textContent = missing.length ? `${missing.length} regiones SVG no encontradas` : `${Object.keys(muscleSvgMap).length} músculos mapeados`;
         await renderSessionMiniMap();
+
+
+        void renderPlanMusclePreview();
+
+        if ($('plan-muscle-dialog')?.open) {
+            void renderPlanMuscleDialog();
+        }
+
+
     } catch (error) { $('map-stage').innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`; }
 }
 
@@ -312,7 +327,7 @@ async function selectExercise(code) {
 }
 
 function resolveVariantForExercise(exercise, configuration) {
-    const variants = state.variants.filter(variant => variant.exerciseCode === exercise?.code);
+    const variants = orderedVariantsForExercise(exercise);
     let candidates = variants;
     const controls = [];
     variantConfigFields.forEach(field => {
@@ -329,6 +344,21 @@ function resolveVariantForExercise(exercise, configuration) {
     const selectedVariant = candidates.find(variant => variant.code === configuration.variantCode) || candidates[0] || variants[0];
     configuration.variantCode = selectedVariant?.code;
     return {controls, candidates, selectedVariant};
+}
+
+function orderedVariantsForExercise(exercise) {
+    return state.variants
+        .filter(variant => variant.exerciseCode === exercise?.code)
+        .sort((left, right) => String(left.code).localeCompare(String(right.code), 'en'));
+}
+
+function defaultVariantForExercise(exercise) {
+    const variants = orderedVariantsForExercise(exercise);
+    return variants.find(variant =>
+        variant.isDefault === true ||
+        variant.defaultVariant === true ||
+        variant.default === true
+    ) || variants[0] || null;
 }
 
 function resolveConfiguredVariant() {
@@ -363,7 +393,7 @@ function renderVariantDetail() {
         <div class="variant-configurator">${controlHtml}${finalChoice}</div>
         <div class="resolved-variant"><span>Configuración resultante</span><strong>${escapeHtml(v.name)}</strong><small>${escapeHtml(localizeText(v.focusDescription || 'Sin descripción técnica.'))}</small></div>
         <dl class="detail-list"><div><dt>Enfoque principal</dt><dd>${friendly(v.primaryFocus)}</dd></div>${v.secondaryFocus ? `<div><dt>Enfoque secundario</dt><dd>${friendly(v.secondaryFocus)}</dd></div>`:''}<div><dt>Evidencia</dt><dd>${friendly(v.focusEvidenceType)} · ${friendly(v.focusEvidenceLevel)}</dd></div><div><dt>Uso habitual</dt><dd>${friendly(v.practicality)}</dd></div></dl>
-        <div class="section-heading"><div><p class="eyebrow">ACTIVACIONES</p><h2>${activations.length ? `${activations.length} músculos`:'Cargando…'}</h2></div></div><div class="activation-list">${activations.map(a => `<div class="activation"><div><strong>${escapeHtml(a.muscleName)}</strong><span>${friendly(a.role)} · nivel ${a.activationLevel}/5</span></div><small>Confianza ${friendly(a.confidence).toLowerCase()} · ${friendly(a.evidenceType)}</small><span class="activation-bar"><i style="width:${a.activationLevel * 20}%"></i></span></div>`).join('')}</div>`;
+        <section class="activation-section"><div class="activation-section-heading"><div><p class="eyebrow">ACTIVACIONES</p><h2>${activations.length ? `${activations.length} músculos`:'Cargando…'}</h2></div>${activations.length ? '<span>Ordenadas por participación</span>' : ''}</div><div class="activation-list">${activations.map(a => `<article class="activation" data-role="${escapeHtml(a.role)}"><div class="activation-head"><div class="activation-muscle"><i aria-hidden="true"></i><strong>${escapeHtml(a.muscleName)}</strong></div><span class="activation-role">${friendly(a.role)}</span></div><div class="activation-metrics"><span><b>${a.activationLevel}/5</b> nivel</span><span>Confianza <b>${friendly(a.confidence).toLowerCase()}</b></span></div><span class="activation-bar" role="meter" aria-label="Nivel de activación de ${escapeHtml(a.muscleName)}" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${a.activationLevel}"><i style="width:${a.activationLevel * 20}%"></i></span><small class="activation-evidence">${friendly(a.evidenceType)}</small></article>`).join('')}</div></section>`;
     $('map-title').textContent = v.name; $('map-subtitle').textContent = `${friendly(v.equipment)} · ${variantValue('gripType', v.gripType)} · ${friendly(v.gripWidth)}`;
 }
 
@@ -402,6 +432,49 @@ function addPlanDay(source = null) {
     renderPlanMode();
 }
 
+
+function openPlanNewDayDialog() {
+    syncPlanEditor();
+
+    $('plan-new-day-name').value =
+        `Día ${state.planDays.length + 1}`;
+
+    $('plan-new-day-type').value = 'FULL_BODY';
+
+    $('plan-new-day-dialog').showModal();
+    $('plan-new-day-name').focus();
+}
+
+function submitPlanNewDay(event) {
+    event.preventDefault();
+
+    const name =
+        $('plan-new-day-name').value.trim();
+
+    const dayType =
+        $('plan-new-day-type').value;
+
+    if (!name || !enums.dayTypes.includes(dayType)) {
+        return toast(
+            'Indica un nombre y un tipo de día válido.',
+            true
+        );
+    }
+
+    addPlanDay({
+        name,
+        dayType,
+        exercises: []
+    });
+
+    $('plan-new-day-dialog').close();
+
+    toast(
+        `Día «${name}» añadido al plan. Recuerda guardar el plan.`
+    );
+}
+
+
 function planDayIcon(dayType) {
     const paths = {
         PUSH:'<path d="M4 9v6m16-6v6M7 7v10m10-10v10M7 12h10"/>',
@@ -427,10 +500,49 @@ function renderPlanHeader() {
     $('plan-save').querySelector('span').textContent = state.activePlan ? 'Guardar nueva versión' : 'Guardar plan';
 }
 
+
 function renderPlanDayTabs() {
     const container = $('plan-day-tabs');
-    container.innerHTML = state.planDays.map((day, index) => `<button class="plan-day-tab ${index === state.selectedPlanDayIndex ? 'is-selected':''}" data-select-plan-day="${index}" aria-pressed="${index === state.selectedPlanDayIndex}"><span class="plan-day-tab-icon">${planDayIcon(day.dayType)}</span><span><small>Día ${index + 1}</small><strong>${escapeHtml(day.name || friendly(day.dayType))}</strong><em>${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'}</em></span></button>`).join('') + `<button class="plan-day-add" id="add-day" type="button"><span>＋</span><strong>Añadir día</strong></button>`;
+
+    container.innerHTML = state.planDays.map((day, index) => `
+        <button
+            type="button"
+            class="plan-day-tab ${index === state.selectedPlanDayIndex ? 'is-selected' : ''}"
+            data-select-plan-day="${index}"
+            aria-pressed="${index === state.selectedPlanDayIndex}">
+
+            <span class="plan-day-tab-icon">
+                ${planDayIcon(day.dayType)}
+            </span>
+
+            <span class="plan-day-tab-text">
+                <small>Día ${index + 1}</small>
+                <strong>
+                    ${escapeHtml(day.name || friendly(day.dayType))}
+                </strong>
+                <em>
+                    ${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'}
+                </em>
+            </span>
+
+            <span
+                class="plan-day-grip"
+                aria-hidden="true"
+                title="Arrastrar para ordenar los días">
+                ⠿
+            </span>
+        </button>
+    `).join('') + `
+        <button
+            class="plan-day-add"
+            id="add-day"
+            type="button">
+            <span>＋</span>
+            <strong>Añadir día</strong>
+        </button>
+    `;
 }
+
 
 function renderPlanDays() {
     const container = $('plan-days');
@@ -446,18 +558,417 @@ function renderPlanDays() {
     const totalSets = day.exercises.reduce((total, exercise) => total + (Number(exercise.sets) || 0), 0);
     container.innerHTML = `<article class="plan-day-editor" data-day="${dayIndex}">
         <header class="plan-day-editor-head">
-            <div class="plan-day-title"><span>Día ${dayIndex + 1}</span><input value="${escapeHtml(day.name || '')}" data-day-name aria-label="Nombre del día ${dayIndex + 1}"></div>
-            <div class="plan-day-controls"><label>Tipo de día<select data-day-type>${enums.dayTypes.map(type => `<option value="${type}" ${type === day.dayType ? 'selected':''}>${friendly(type)}</option>`).join('')}</select></label><button class="text-button danger" data-remove-day>Eliminar día</button><button class="button button-primary" data-add-plan-exercise>＋ Añadir ejercicio</button></div>
+
+<div class="plan-day-title">
+
+    <span>Día ${dayIndex + 1}</span>
+
+    <h3>
+        ${escapeHtml(day.name || friendly(day.dayType))}
+    </h3>
+
+    <span class="plan-day-type-badge">
+        ${planDayIcon(day.dayType)}
+        ${escapeHtml(friendly(day.dayType))}
+    </span>
+
+</div>
+
+
+<!-- MAPA MUSCULAR HORIZONTAL -->
+<div class="plan-day-muscle-area">
+
+    <button
+        type="button"
+        class="plan-day-muscle-button"
+        id="plan-day-muscle-open"
+        aria-label="Ver análisis muscular del día"
+        aria-haspopup="dialog"
+        aria-controls="plan-muscle-dialog">
+
+        <!-- IZQUIERDA: CUERPOS ANATÓMICOS -->
+        <span
+            id="plan-day-muscle-mini"
+            class="plan-day-muscle-mini"
+            aria-hidden="true">
+            ◉
+        </span>
+
+        <!-- DERECHA: MÚSCULOS TRABAJADOS -->
+        <span class="plan-day-muscle-copy">
+
+            <strong class="plan-day-muscle-title">
+                Músculos trabajados
+            </strong>
+
+            <span
+                id="plan-day-muscle-list"
+                class="plan-day-muscle-list"
+                aria-hidden="true">
+                <span class="plan-day-muscle-empty">
+                    Sin ejercicios
+                </span>
+            </span>
+
+            <small id="plan-day-muscle-caption">
+                0 músculos previstos
+            </small>
+
+        </span>
+
+    </button>
+
+</div>
+
+<!-- BOTONES A LA DERECHA -->
+<div class="plan-day-controls">
+
+    <button
+        type="button"
+        class="button button-secondary"
+        data-configure-plan-day>
+        ⚙ Configurar día
+    </button>
+
+    <button
+        type="button"
+        class="button button-primary"
+        data-add-plan-exercise>
+        ＋ Añadir ejercicio
+    </button>
+
+</div>
+
+
         </header>
         <div class="plan-exercise-table">
             <div class="plan-exercise-columns" aria-hidden="true"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Descanso</span><span>Acciones</span></div>
-            <div class="day-exercises">${day.exercises.length ? day.exercises.map((exercise,index) => exerciseEditor(exercise,index)).join('') : '<div class="plan-day-no-exercises"><strong>Aún no hay ejercicios en este día</strong><span>Añade uno y elige la configuración exacta que quieres programar.</span></div>'}</div>
+            <div class="day-exercises">${day.exercises.length ? day.exercises.map((exercise,index) => exerciseEditor(exercise,index)).join('') : '<div class="plan-day-no-exercises"><strong>Aún no hay ejercicios en este día</strong><span>Añade un ejercicio y ajusta después su configuración técnica si lo necesitas.</span></div>'}</div>
         </div>
         <footer class="plan-day-summary"><span>${planDayIcon(day.dayType)}<strong>Resumen del día</strong></span><b>${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'} / ${totalSets} series planificadas</b></footer>
     </article>`;
     renderPlanDayTabs();
     renderPlanHeader();
+    void renderPlanMusclePreview();
 }
+
+
+/* =============================================
+   FITCORE - DRAG AND DROP DE PLANES
+   ============================================= */
+
+let planDragState = null;
+let suppressPlanDragClickUntil = 0;
+
+
+// Detectar cuándo empieza un arrastre
+function startPlanDrag(event) {
+    if (
+        event.pointerType === 'mouse' &&
+        event.button !== 0
+    ) return;
+
+    const grip = event.target.closest(
+        '.plan-day-grip, .plan-exercise-grip'
+    );
+
+    if (!grip || !grip.closest('#view-plans')) return;
+    if (planDragState) return;
+
+    const isDay = grip.classList.contains(
+        'plan-day-grip'
+    );
+
+    const item = grip.closest(
+        isDay ? '.plan-day-tab' : '.exercise-editor'
+    );
+
+    const list = item?.parentElement;
+
+    if (!item || !list) return;
+
+    event.preventDefault();
+
+    planDragState = {
+        pointerId: event.pointerId,
+        isDay,
+        item,
+        list,
+        startX: event.clientX,
+        startY: event.clientY,
+        active: false,
+        ghost: null,
+        dayIndex: state.selectedPlanDayIndex
+    };
+
+    window.addEventListener(
+        'pointermove',
+        movePlanDrag,
+        { passive: false }
+    );
+
+    window.addEventListener(
+        'pointerup',
+        finishPlanDrag
+    );
+
+    window.addEventListener(
+        'pointercancel',
+        cancelPlanDrag
+    );
+}
+
+
+// Mover el elemento mientras se arrastra
+function movePlanDrag(event) {
+    const drag = planDragState;
+
+    if (!drag || event.pointerId !== drag.pointerId) {
+        return;
+    }
+
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+
+    if (!drag.active) {
+        if (Math.hypot(dx, dy) < 6) return;
+
+        // Guardar los campos antes de cambiar el DOM
+        syncPlanEditor();
+
+        const rect = drag.item.getBoundingClientRect();
+        const ghost = drag.item.cloneNode(true);
+
+        ghost.classList.add('plan-drag-ghost');
+        ghost.setAttribute('aria-hidden', 'true');
+        ghost.tabIndex = -1;
+
+        Object.assign(ghost.style, {
+            position: 'fixed',
+            left: `${rect.left}px`,
+            top: `${rect.top}px`,
+            width: `${rect.width}px`,
+            height: `${rect.height}px`,
+            margin: '0',
+            pointerEvents: 'none',
+            zIndex: '99999'
+        });
+
+        document.body.appendChild(ghost);
+
+        drag.ghost = ghost;
+        drag.item.classList.add(
+            'plan-drag-placeholder'
+        );
+
+        drag.active = true;
+
+        document.body.classList.add(
+            'plan-is-dragging'
+        );
+    }
+
+    event.preventDefault();
+
+    drag.ghost.style.transform =
+        `translate3d(${dx}px, ${dy}px, 0)`;
+
+    // Desplazamiento automático
+    if (drag.isDay) {
+        const bounds =
+            drag.list.getBoundingClientRect();
+
+        if (event.clientX < bounds.left + 45) {
+            drag.list.scrollLeft -= 15;
+        }
+
+        if (event.clientX > bounds.right - 45) {
+            drag.list.scrollLeft += 15;
+        }
+
+    } else {
+        if (event.clientY < 65) {
+            window.scrollBy(0, -14);
+        }
+
+        if (
+            event.clientY >
+            window.innerHeight - 65
+        ) {
+            window.scrollBy(0, 14);
+        }
+    }
+
+    // Localizar el elemento sobre el que soltaremos
+    const selector = drag.isDay
+        ? '.plan-day-tab'
+        : '.exercise-editor';
+
+    const over = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+    )?.closest(selector);
+
+    if (
+        !over ||
+        over === drag.item ||
+        over.parentElement !== drag.list
+    ) return;
+
+    const rect = over.getBoundingClientRect();
+
+    const before = drag.isDay
+        ? event.clientX < rect.left + rect.width / 2
+        : event.clientY < rect.top + rect.height / 2;
+
+    drag.list.insertBefore(
+        drag.item,
+        before ? over : over.nextSibling
+    );
+}
+
+
+// Limpiar el estado del arrastre
+function cleanupPlanDrag() {
+    const drag = planDragState;
+
+    if (!drag) return;
+
+    drag.ghost?.remove();
+
+    drag.item.classList.remove(
+        'plan-drag-placeholder'
+    );
+
+    document.body.classList.remove(
+        'plan-is-dragging'
+    );
+
+    planDragState = null;
+
+    window.removeEventListener(
+        'pointermove',
+        movePlanDrag
+    );
+
+    window.removeEventListener(
+        'pointerup',
+        finishPlanDrag
+    );
+
+    window.removeEventListener(
+        'pointercancel',
+        cancelPlanDrag
+    );
+}
+
+
+// Aplicar el nuevo orden al soltar
+function finishPlanDrag(event) {
+    const drag = planDragState;
+
+    if (!drag || event.pointerId !== drag.pointerId) {
+        return;
+    }
+
+    cleanupPlanDrag();
+
+    if (!drag.active) return;
+
+    suppressPlanDragClickUntil =
+        performance.now() + 350;
+
+    // Obtener el orden nuevo desde el DOM
+    const selector = drag.isDay
+        ? '.plan-day-tab'
+        : '.exercise-editor';
+
+    const attribute = drag.isDay
+        ? 'selectPlanDay'
+        : 'exercise';
+
+    const order = [
+        ...drag.list.querySelectorAll(
+            `:scope > ${selector}`
+        )
+    ].map(element =>
+        Number(element.dataset[attribute])
+    );
+
+    const changed = order.some(
+        (oldIndex, newIndex) => oldIndex !== newIndex
+    );
+
+    if (changed) {
+        if (drag.isDay) {
+
+            // Reordenar días
+            const original = [...state.planDays];
+
+            const selectedDay =
+                original[state.selectedPlanDayIndex];
+
+            state.planDays = order.map(
+                index => original[index]
+            );
+
+            // Mantener seleccionado el mismo día
+            state.selectedPlanDayIndex =
+                state.planDays.indexOf(selectedDay);
+
+        } else {
+
+            // Reordenar ejercicios del día
+            const day =
+                state.planDays[drag.dayIndex];
+
+            const original = [...day.exercises];
+
+            day.exercises = order.map(
+                index => original[index]
+            );
+        }
+
+        toast(
+            'Orden actualizado. Pulsa «Guardar plan» para conservarlo.'
+        );
+    }
+
+    // Actualizar la interfaz
+    renderPlanMode();
+}
+
+
+// Cancelar el arrastre
+function cancelPlanDrag(event) {
+    if (
+        !planDragState ||
+        event.pointerId !== planDragState.pointerId
+    ) return;
+
+    cleanupPlanDrag();
+
+    renderPlanMode();
+}
+
+
+// Evitar clics accidentales después de arrastrar
+function suppressClickAfterPlanDrag(event) {
+    if (
+        performance.now() >=
+        suppressPlanDragClickUntil
+    ) return;
+
+    if (!event.target.closest(
+        '.plan-day-tab, .exercise-editor'
+    )) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    suppressPlanDragClickUntil = 0;
+}
+
 
 function planStepper(field, value, min, suffix, label) {
     return `<div class="plan-stepper" data-plan-stepper><button type="button" data-step-field="${field}" data-step="-1" aria-label="Reducir ${label}">−</button><input data-exercise-${field} type="number" min="${min}" value="${Number(value)}" aria-label="${label}"><span>${suffix}</span><button type="button" data-step-field="${field}" data-step="1" aria-label="Aumentar ${label}">＋</button></div>`;
@@ -469,14 +980,92 @@ function exerciseEditor(exercise, index) {
     const title = variant?.name || 'Selecciona un ejercicio';
     const details = variant ? variantConfigurationChips(variant).slice(0, 3).join(' · ') : 'Elige una configuración del catálogo';
     const thumb = base ? exerciseThumb(base, 'plan-exercise-thumb') : '<span class="plan-exercise-thumb thumb-placeholder">FC</span>';
+    const menuId = `plan-exercise-actions-${state.selectedPlanDayIndex}-${index}`;
     return `<div class="exercise-editor" data-exercise="${index}">
-        <div class="plan-order-controls" aria-label="Reordenar ejercicio"><span aria-hidden="true">⠿</span><button type="button" data-move="-1" aria-label="Subir ejercicio">↑</button><button type="button" data-move="1" aria-label="Bajar ejercicio">↓</button></div>
-        <div class="plan-exercise-identity">${thumb}<div><select data-exercise-code aria-label="Ejercicio y configuración">${variantOptions(exercise.exerciseVariantCode)}</select><small>${escapeHtml(details)}</small></div></div>
+
+<div class="plan-order-controls" aria-label="Reordenar ejercicio">
+    <span
+        class="plan-exercise-grip"
+        aria-hidden="true"
+        title="Arrastrar para ordenar ejercicios">
+        ⠿
+    </span>
+<button type="button" data-move="-1" aria-label="Subir ejercicio">↑</button><button type="button" data-move="1" aria-label="Bajar ejercicio">↓</button></div>
+        <div class="plan-exercise-identity">${thumb}<div><input data-exercise-code type="hidden" value="${escapeHtml(exercise.exerciseVariantCode || '')}"><strong class="plan-exercise-name">${escapeHtml(title)}</strong><small>${escapeHtml(details)}</small></div></div>
         ${planStepper('sets', exercise.sets || 3, 1, '', 'series')}
         ${planStepper('reps', exercise.reps || 10, 1, '', 'repeticiones')}
         ${planStepper('rest', exercise.restSeconds ?? 90, 0, 's', 'segundos de descanso')}
-        <button class="plan-row-actions" type="button" data-remove-exercise aria-label="Quitar ${escapeHtml(title)}" title="Quitar ejercicio">•••</button>
+        <div class="plan-row-menu">
+            <button class="plan-row-actions" type="button" data-plan-row-menu-toggle aria-haspopup="menu" aria-expanded="false" aria-controls="${menuId}" aria-label="Acciones para ${escapeHtml(title)}">•••</button>
+            <div class="plan-row-action-menu" id="${menuId}" role="menu" hidden>
+                <button type="button" role="menuitem" data-plan-exercise-action="replace"><span aria-hidden="true">⇄</span><span><strong>Intercambiar ejercicio</strong><small>Elegir otro ejercicio del catálogo</small></span></button>
+                <button type="button" role="menuitem" data-plan-exercise-action="configure"><span aria-hidden="true">⚙</span><span><strong>Modificar configuración</strong><small>Cambiar agarre, material o apertura</small></span></button>
+                <button type="button" role="menuitem" class="is-danger" data-plan-exercise-action="delete"><span aria-hidden="true">×</span><span><strong>Eliminar ejercicio</strong><small>Quitar del día de entrenamiento</small></span></button>
+            </div>
+        </div>
     </div>`;
+}
+
+function closePlanRowMenus({restoreFocus = false} = {}) {
+    document.querySelectorAll('.plan-row-action-menu:not([hidden])').forEach(menu => {
+        menu.hidden = true;
+        menu.removeAttribute('style');
+        const trigger = menu.closest('.plan-row-menu')?.querySelector('[data-plan-row-menu-toggle]');
+        trigger?.setAttribute('aria-expanded', 'false');
+        if (restoreFocus) trigger?.focus();
+    });
+}
+
+function togglePlanRowMenu(button) {
+    const menu = button.closest('.plan-row-menu')?.querySelector('.plan-row-action-menu');
+    if (!menu) return;
+
+    const shouldOpen = menu.hidden;
+    closePlanRowMenus();
+    if (!shouldOpen) return;
+
+    menu.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+
+    const triggerRect = button.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const left = Math.max(12, Math.min(window.innerWidth - menuRect.width - 12, triggerRect.right - menuRect.width));
+    const fitsBelow = triggerRect.bottom + menuRect.height + 10 <= window.innerHeight;
+    const top = fitsBelow
+        ? triggerRect.bottom + 7
+        : Math.max(12, triggerRect.top - menuRect.height - 7);
+
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    menu.querySelector('[role="menuitem"]')?.focus();
+}
+
+function configurationFromVariant(variant) {
+    if (!variant) return {};
+    const configuration = {variantCode: variant.code};
+    variantConfigFields.forEach(field => {
+        if (variant[field.key] != null) configuration[field.key] = variant[field.key];
+    });
+    return configuration;
+}
+
+async function removePlanExercise(dayIndex, exerciseIndex) {
+    syncPlanEditor();
+    const day = state.planDays[dayIndex];
+    const exercise = day?.exercises[exerciseIndex];
+    if (!exercise) return;
+
+    const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
+    const confirmed = await confirmAction(
+        'Eliminar ejercicio',
+        `¿Quieres quitar «${variant?.name || 'este ejercicio'}» del día?`
+    );
+    if (!confirmed) return;
+
+    day.exercises.splice(exerciseIndex, 1);
+    state.selectedPlanDayIndex = dayIndex;
+    renderPlanMode();
+    toast('Ejercicio eliminado del borrador. Guarda el plan para conservar el cambio.');
 }
 
 function syncPlanEditor() {
@@ -484,8 +1073,6 @@ function syncPlanEditor() {
     if (!card) return;
     const day = state.planDays[Number(card.dataset.day)];
     if (!day) return;
-    day.name = card.querySelector('[data-day-name]').value.trim();
-    day.dayType = card.querySelector('[data-day-type]').value;
     card.querySelectorAll('.exercise-editor').forEach(row => {
         const exercise = day.exercises[Number(row.dataset.exercise)];
         if (!exercise) return;
@@ -495,6 +1082,215 @@ function syncPlanEditor() {
         exercise.restSeconds = Number(row.querySelector('[data-exercise-rest]').value);
     });
 }
+
+
+/* ==========================================
+   FITCORE - CONFIGURACIÓN DE DÍAS
+   ========================================== */
+
+// Abrir la configuración del día seleccionado
+function openPlanEditDayDialog() {
+    syncPlanEditor();
+
+    const day =
+        state.planDays[state.selectedPlanDayIndex];
+
+    if (!day) return;
+
+    $('plan-edit-day-number').textContent =
+        `DÍA ${state.selectedPlanDayIndex + 1}`;
+
+    $('plan-edit-day-name').value = day.name || '';
+
+    // Crear las opciones visuales con sus iconos SVG
+    $('plan-edit-day-types').innerHTML =
+        enums.dayTypes.map(type => `
+
+            <label class="plan-edit-type-card">
+
+                <input
+                    type="radio"
+                    name="plan-edit-day-type"
+                    value="${type}"
+                    ${day.dayType === type ? 'checked' : ''}>
+
+                <span class="plan-edit-type-content">
+                    ${planDayIcon(type)}
+
+                    <span>
+                        ${escapeHtml(friendly(type))}
+                    </span>
+                </span>
+
+            </label>
+
+        `).join('');
+
+    // Deshabilitar movimientos imposibles
+    $('plan-edit-move-up').disabled =
+        state.selectedPlanDayIndex === 0;
+
+    $('plan-edit-move-down').disabled =
+        state.selectedPlanDayIndex ===
+        state.planDays.length - 1;
+
+    $('plan-edit-day-dialog').showModal();
+}
+
+
+// Aplicar los valores al borrador del plan
+function applyPlanEditDraft() {
+    const day =
+        state.planDays[state.selectedPlanDayIndex];
+
+    if (!day) return false;
+
+    const nameInput = $('plan-edit-day-name');
+
+    const typeInput = document.querySelector(
+        'input[name="plan-edit-day-type"]:checked'
+    );
+
+    if (!nameInput.value.trim()) {
+        nameInput.setCustomValidity(
+            'Introduce un nombre para el día.'
+        );
+
+        nameInput.reportValidity();
+        nameInput.setCustomValidity('');
+
+        return false;
+    }
+
+    if (
+        !typeInput ||
+        !enums.dayTypes.includes(typeInput.value)
+    ) {
+        toast(
+            'Selecciona el tipo de entrenamiento.',
+            true
+        );
+        return false;
+    }
+
+    day.name = nameInput.value.trim();
+    day.dayType = typeInput.value;
+
+    return true;
+}
+
+
+// Aplicar los cambios del formulario
+function savePlanEditDay(event) {
+    event.preventDefault();
+
+    if (!applyPlanEditDraft()) return;
+
+    $('plan-edit-day-dialog').close();
+
+    renderPlanMode();
+
+    toast(
+        'Día actualizado en el borrador. ' +
+        'Guarda el plan para conservar los cambios.'
+    );
+}
+
+
+// Duplicar el día seleccionado
+function duplicateSelectedPlanDay() {
+    if (!applyPlanEditDraft()) return;
+
+    const day =
+        state.planDays[state.selectedPlanDayIndex];
+
+    const copy = {
+        name: `${day.name} (copia)`,
+        dayType: day.dayType,
+
+        // Copiar los ejercicios sin reutilizar
+        // los identificadores de base de datos
+        exercises: day.exercises.map(exercise => ({
+            exerciseVariantCode:
+            exercise.exerciseVariantCode,
+
+            sets: exercise.sets,
+            reps: exercise.reps,
+            restSeconds: exercise.restSeconds
+        }))
+    };
+
+    $('plan-edit-day-dialog').close();
+
+    // La función existente selecciona
+    // automáticamente el nuevo día
+    addPlanDay(copy);
+
+    toast(
+        'Día duplicado. Guarda el plan cuando termines.'
+    );
+}
+
+
+// Cambiar la posición del día
+function moveSelectedPlanDay(direction) {
+    if (!applyPlanEditDraft()) return;
+
+    const from = state.selectedPlanDayIndex;
+    const to = from + direction;
+
+    if (to < 0 || to >= state.planDays.length) {
+        return;
+    }
+
+    const [day] = state.planDays.splice(from, 1);
+
+    state.planDays.splice(to, 0, day);
+
+    // Mantener seleccionado el día trasladado
+    state.selectedPlanDayIndex = to;
+
+    $('plan-edit-day-dialog').close();
+
+    renderPlanMode();
+
+    toast('Orden actualizado en el borrador.');
+}
+
+
+// Eliminar un día con confirmación
+async function deleteSelectedPlanDay() {
+    const index = state.selectedPlanDayIndex;
+    const day = state.planDays[index];
+
+    if (!day) return;
+
+    $('plan-edit-day-dialog').close();
+
+    const confirmed = await confirmAction(
+        'Eliminar día',
+        `¿Eliminar «${day.name}» y sus ` +
+        `${day.exercises.length} ejercicios ` +
+        `del borrador del plan?`
+    );
+
+    if (!confirmed) return;
+
+    state.planDays.splice(index, 1);
+
+    state.selectedPlanDayIndex = Math.max(
+        0,
+        Math.min(index, state.planDays.length - 1)
+    );
+
+    renderPlanMode();
+
+    toast(
+        'Día eliminado del borrador. ' +
+        'Guarda el plan para conservar el cambio.'
+    );
+}
+
 
 function planPayload() {
     syncPlanEditor();
@@ -519,7 +1315,36 @@ async function loadActivePlan(silent = false) {
         const summary = await api(`/api/users/${state.auth.userId}/workout-plans/active`);
         const plan = await api(`/api/users/${state.auth.userId}/workout-plans/${summary.id}/detail`);
         state.activePlan = plan; $('plan-name').value = plan.name; $('plan-description').value = plan.description || ''; $('plan-date').value = today();
-        state.planDays = (plan.days || []).map(day => ({id:day.id, name:day.name, dayType:day.dayType, exercises:(day.exercises || []).map(exercise => ({id:exercise.id, exerciseVariantCode:exercise.exerciseVariantCode, sets:exercise.sets, reps:exercise.reps, restSeconds:exercise.restSeconds}))}));
+
+        state.planDays = [...(plan.days || [])]
+            .sort(
+                (a, b) =>
+                    (a.dayOrder ?? 0) -
+                    (b.dayOrder ?? 0)
+            )
+            .map(day => ({
+                id: day.id,
+                name: day.name,
+                dayType: day.dayType,
+
+                exercises: [...(day.exercises || [])]
+                    .sort(
+                        (a, b) =>
+                            (a.exerciseOrder ?? 0) -
+                            (b.exerciseOrder ?? 0)
+                    )
+                    .map(exercise => ({
+                        id: exercise.id,
+
+                        exerciseVariantCode:
+                        exercise.exerciseVariantCode,
+
+                        sets: exercise.sets,
+                        reps: exercise.reps,
+                        restSeconds: exercise.restSeconds
+                    }))
+            }));
+
         state.selectedPlanDayIndex = 0; renderPlanMode(); fillSessionDays(); $('metric-plan').textContent = `v${plan.version}`;
         if (!silent) toast('Plan activo cargado.');
     } catch (error) {
@@ -527,6 +1352,670 @@ async function loadActivePlan(silent = false) {
         else if (!silent) toast(error.message, true);
     }
 }
+
+
+/* ========================================
+   FITCORE - ANÁLISIS MUSCULAR DE PLANES
+   ======================================== */
+
+const planActivationCache = new Map();
+
+let planMusclePreviewVersion = 0;
+let planMuscleDialogVersion = 0;
+let planMuscleScope = 'day';
+
+
+// Obtener las activaciones de una variante
+async function getPlanVariantActivations(code) {
+    if (!code) {
+        return { rows: [], failed: true };
+    }
+
+    if (!planActivationCache.has(code)) {
+        const request = api(
+            `/api/exercise-variants/` +
+            `${encodeURIComponent(code)}/muscle-activations`
+        )
+            .then(rows => ({
+                rows: Array.isArray(rows) ? rows : [],
+                failed: false
+            }))
+            .catch(error => {
+                planActivationCache.delete(code);
+                console.warn(
+                    'Activaciones del plan no disponibles:',
+                    code, error
+                );
+                return { rows: [], failed: true };
+            });
+
+        planActivationCache.set(code, request);
+    }
+
+    return planActivationCache.get(code);
+}
+
+
+// Combinar los músculos de un día o de todo el plan
+async function calculatePlanMuscles(
+    scope = 'day',
+    dayIndex = state.selectedPlanDayIndex
+) {
+    const days = scope === 'week'
+        ? state.planDays
+        : [state.planDays[dayIndex]].filter(Boolean);
+
+    const exercises = days.flatMap(day =>
+        (day.exercises || []).map(exercise => ({
+            code: exercise.exerciseVariantCode,
+            sets: Math.max(
+                0,
+                Number(exercise.sets) || 0
+            )
+        }))
+    ).filter(exercise =>
+        exercise.code && exercise.sets > 0
+    );
+
+    const responses = await Promise.all(
+        exercises.map(exercise =>
+            getPlanVariantActivations(exercise.code)
+        )
+    );
+
+    const muscles = new Map();
+    let failed = 0;
+
+    exercises.forEach((exercise, index) => {
+        const result = responses[index];
+
+        if (result.failed) {
+            failed++;
+            return;
+        }
+
+        const perExercise = new Map();
+        const priority = {
+            PRIMARY: 2,
+            SECONDARY: 1
+        };
+
+        // Evitar músculos duplicados en un ejercicio
+        result.rows.forEach(item => {
+            if (
+                !muscleSvgMap[item.muscleCode] ||
+                !priority[item.role]
+            ) return;
+
+            const previous = perExercise.get(
+                item.muscleCode
+            );
+
+            if (
+                !previous ||
+                priority[item.role] >
+                priority[previous.role]
+            ) {
+                perExercise.set(item.muscleCode, item);
+            }
+        });
+
+        perExercise.forEach(item => {
+            const previous = muscles.get(
+                item.muscleCode
+            ) || {
+                code: item.muscleCode,
+                name: item.muscleName ||
+                    friendly(item.muscleCode),
+                primarySets: 0,
+                secondarySets: 0
+            };
+
+            if (item.role === 'PRIMARY') {
+                previous.primarySets += exercise.sets;
+            } else {
+                previous.secondarySets += exercise.sets;
+            }
+
+            muscles.set(item.muscleCode, previous);
+        });
+    });
+
+    const data = [...muscles.values()].map(item => ({
+        ...item,
+
+        estimatedSets:
+            item.primarySets +
+            item.secondarySets * 0.5,
+
+        role: item.primarySets > 0
+            ? 'PRIMARY'
+            : 'SECONDARY'
+
+    })).sort((a, b) =>
+        b.estimatedSets - a.estimatedSets ||
+        a.name.localeCompare(b.name, 'es')
+    );
+
+    return {
+        data,
+        failed,
+        exerciseCount: exercises.length,
+        plannedSets: exercises.reduce(
+            (sum, item) => sum + item.sets,
+            0
+        )
+    };
+}
+
+
+// Clonar el SVG original y colorear sus regiones
+function makePlanMuscleSvg(result, scope) {
+    if (!state.svg) return null;
+
+    const svg = state.svg.cloneNode(true);
+
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+
+    svg.setAttribute(
+        'preserveAspectRatio',
+        'xMidYMid meet'
+    );
+
+    svg.removeAttribute('role');
+    svg.setAttribute('aria-hidden', 'true');
+
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.style.transform = 'none';
+    svg.style.filter = 'none';
+
+    // Limpiar los colores del Catálogo
+    svg.querySelectorAll(
+        '[data-fitcore-role], [data-plan-muscle-level]'
+    ).forEach(node => {
+        node.removeAttribute('data-fitcore-role');
+        node.removeAttribute('data-plan-muscle-level');
+    });
+
+    const maxValue = Math.max(
+        0,
+        ...result.data.map(item => item.estimatedSets)
+    );
+
+    result.data.forEach(item => {
+        const proportion = maxValue > 0
+            ? item.estimatedSets / maxValue
+            : 0;
+
+        const level = proportion >= 0.67
+            ? 'high'
+            : proportion >= 0.34
+                ? 'medium'
+                : 'low';
+
+        (muscleSvgMap[item.code] || []).forEach(id => {
+            const node = svg.querySelector(
+                `[id="${id}"]`
+            );
+
+            if (!node) return;
+
+            if (scope === 'week') {
+                node.dataset.planMuscleLevel = level;
+            } else {
+                node.dataset.fitcoreRole = item.role;
+            }
+        });
+    });
+
+    return svg;
+}
+
+
+
+/* ==========================================
+   FITCORE - REDONDEAR FONDO SVG MINIATURA
+   ========================================== */
+
+let planMiniClipCounter = 0;
+
+function roundPlanMuscleBackground(svg) {
+    if (!svg?.isConnected) return;
+
+    // Localizar la imagen anatómica incrustada
+    const image = svg.querySelector('#layer1 image');
+
+    if (!image) {
+        console.warn(
+            'FitCore: no se encontró la imagen base del SVG.'
+        );
+        return;
+    }
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    let bounds;
+
+    try {
+        bounds = image.getBBox();
+    } catch (error) {
+        console.warn('No se pudo medir la imagen:', error);
+        return;
+    }
+
+    if (bounds.width <= 0 || bounds.height <= 0) {
+        return;
+    }
+
+    // Buscar o crear defs en este clon
+    let defs = svg.querySelector(':scope > defs');
+
+    if (!defs) {
+        defs = document.createElementNS(SVG_NS, 'defs');
+        svg.insertBefore(defs, svg.firstChild);
+    }
+
+    // Identificador único para evitar conflictos
+    const clipId = `fitcore-plan-clip-${++planMiniClipCounter}`;
+
+    const clipPath = document.createElementNS(
+        SVG_NS,
+        'clipPath'
+    );
+
+    clipPath.setAttribute('id', clipId);
+
+    clipPath.setAttribute(
+        'clipPathUnits',
+        'userSpaceOnUse'
+    );
+
+    const rect = document.createElementNS(
+        SVG_NS,
+        'rect'
+    );
+
+    // Misma posición y dimensiones que la imagen
+    rect.setAttribute('x', bounds.x);
+    rect.setAttribute('y', bounds.y);
+
+    rect.setAttribute('width', bounds.width);
+    rect.setAttribute('height', bounds.height);
+
+    // Redondeo proporcional al tamaño original
+    const radius = Math.min(
+        bounds.width,
+        bounds.height
+    ) * 0.085;
+
+    rect.setAttribute('rx', radius);
+    rect.setAttribute('ry', radius);
+
+    clipPath.appendChild(rect);
+    defs.appendChild(clipPath);
+
+    // Recortar únicamente la imagen incrustada
+    image.setAttribute(
+        'clip-path',
+        `url(#${clipId})`
+    );
+}
+
+
+
+/* ENCUADRE AUTOMÁTICO DE LA MINIATURA */
+
+function fitPlanDayMuscleSvg(svg, stage) {
+    if (!svg?.isConnected || !stage?.isConnected || !svg.getScreenCTM()) {
+        return;
+    }
+
+    const rootMatrix = svg.getScreenCTM();
+
+    let inverse;
+
+    try {
+        inverse = rootMatrix.inverse();
+    } catch (_) {
+        return;
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    // Usar solo las regiones musculares reales
+    const ids = new Set(
+        Object.values(muscleSvgMap).flat()
+    );
+
+    for (const id of ids) {
+        const node = svg.getElementById(id);
+
+        if (!node?.getBBox || !node.getScreenCTM()) continue;
+
+        let rect;
+        let matrix;
+
+        try {
+            rect = node.getBBox();
+            matrix = inverse.multiply(node.getScreenCTM());
+        } catch (_) {
+            continue;
+        }
+
+        if (!rect.width || !rect.height) continue;
+
+        const points = [
+            [rect.x, rect.y],
+            [rect.x + rect.width, rect.y],
+            [rect.x, rect.y + rect.height],
+            [rect.x + rect.width, rect.y + rect.height]
+        ];
+
+        for (const [x, y] of points) {
+            const point = new DOMPoint(x, y).matrixTransform(matrix);
+
+            if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
+
+            minX = Math.min(minX, point.x);
+            minY = Math.min(minY, point.y);
+            maxX = Math.max(maxX, point.x);
+            maxY = Math.max(maxY, point.y);
+        }
+    }
+
+    if (![minX, minY, maxX, maxY].every(Number.isFinite)) {
+        return;
+    }
+
+    let bodyWidth = maxX - minX;
+    let bodyHeight = maxY - minY;
+
+    if (bodyWidth <= 0 || bodyHeight <= 0) return;
+
+// Márgenes ajustados para que no se corte la cabeza
+// ni los pies, ya que el cálculo parte solo de músculos.
+    let padX = bodyWidth * 0.05;
+    let padTop = bodyHeight * 0.16;
+    let padBottom = bodyHeight * 0.09;
+
+    let viewX = minX - padX;
+    let viewY = minY - padTop;
+    let viewWidth = bodyWidth + padX * 2;
+    let viewHeight = bodyHeight + padTop + padBottom;
+
+    // Ajustar el viewBox al ratio del contenedor
+    const stageRect = stage.getBoundingClientRect();
+    const stageRatio =
+        stageRect.width > 0 && stageRect.height > 0
+            ? stageRect.width / stageRect.height
+            : viewWidth / viewHeight;
+
+    const viewRatio = viewWidth / viewHeight;
+
+    if (viewRatio > stageRatio) {
+        // El cuerpo es relativamente más ancho:
+        // ampliar altura para llenar mejor el contenedor
+        const targetHeight = viewWidth / stageRatio;
+        const extraHeight = targetHeight - viewHeight;
+
+        viewY -= extraHeight / 2;
+        viewHeight = targetHeight;
+    } else {
+        // El cuerpo es relativamente más alto:
+        // ampliar anchura para llenar mejor el contenedor
+        const targetWidth = viewHeight * stageRatio;
+        const extraWidth = targetWidth - viewWidth;
+
+        viewX -= extraWidth / 2;
+        viewWidth = targetWidth;
+    }
+
+    svg.setAttribute(
+        'viewBox',
+        [viewX, viewY, viewWidth, viewHeight].join(' ')
+    );
+
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+}
+
+
+
+
+async function renderPlanMusclePreview() {
+    const version = ++planMusclePreviewVersion;
+
+    const stage = $('plan-day-muscle-mini');
+    const caption = $('plan-day-muscle-caption');
+    const list = $('plan-day-muscle-list');
+
+    if (!stage || !caption || !list) return;
+
+    if (!state.svg) {
+        caption.textContent = 'Cargando mapa…';
+        list.textContent = 'Preparando anatomía…';
+        return;
+    }
+
+    const selectedIndex = state.selectedPlanDayIndex;
+
+    const result = await calculatePlanMuscles(
+        'day',
+        selectedIndex
+    );
+
+    if (
+        version !== planMusclePreviewVersion ||
+        !stage.isConnected
+    ) return;
+
+    // Mantener el SVG original con sus activaciones
+    const svg = makePlanMuscleSvg(result, 'day');
+
+
+
+    if (svg) {
+        stage.replaceChildren(svg);
+
+        requestAnimationFrame(() => {
+            if (
+                stage.isConnected &&
+                stage.contains(svg)
+            ) {
+                // 1. Encuadrar y centrar el cuerpo
+                fitPlanDayMuscleSvg(svg, stage);
+
+                // 2. Redondear el fondo interno
+                roundPlanMuscleBackground(svg);
+            }
+        });
+    }
+
+
+
+    // Mostrar los 3 músculos más relevantes
+    const topMuscles = result.data.slice(0, 3);
+
+    list.innerHTML = topMuscles.length
+        ? topMuscles.map(muscle => `
+            <span class="plan-day-muscle-row">
+                <i
+                    class="plan-day-muscle-dot"
+                    aria-hidden="true">
+                </i>
+
+                <span title="${escapeHtml(muscle.name)}">
+                    ${escapeHtml(muscle.name)}
+                </span>
+            </span>
+        `).join('')
+        : `
+            <span class="plan-day-muscle-empty">
+                Añade ejercicios para ver los músculos
+            </span>
+        `;
+
+    caption.textContent = result.failed
+        ? `${result.data.length} músculos · datos parciales`
+        : `${result.data.length} músculos previstos`;
+}
+
+
+
+
+/* ========================================
+   VENTANA DE ANÁLISIS MUSCULAR
+   ======================================== */
+
+function openPlanMuscleDialog(scope = 'day') {
+    syncPlanEditor();
+
+    planMuscleScope = scope;
+
+    const selector = $('plan-muscle-day-select');
+
+    selector.replaceChildren(
+        ...state.planDays.map((day, index) =>
+            new Option(
+                `Día ${index + 1} · ${day.name}`,
+                String(index)
+            )
+        )
+    );
+
+    selector.value = String(
+        Math.min(
+            state.selectedPlanDayIndex,
+            Math.max(state.planDays.length - 1, 0)
+        )
+    );
+
+    $('plan-muscle-dialog').showModal();
+
+    void renderPlanMuscleDialog();
+}
+
+
+async function renderPlanMuscleDialog() {
+    const version = ++planMuscleDialogVersion;
+
+    const scope = planMuscleScope;
+
+    const index = Number(
+        $('plan-muscle-day-select').value || 0
+    );
+
+    const dialog = $('plan-muscle-dialog');
+
+    if (!dialog.open) return;
+
+    dialog.querySelectorAll(
+        '[data-plan-muscle-scope]'
+    ).forEach(button => {
+        button.setAttribute(
+            'aria-pressed',
+            String(
+                button.dataset.planMuscleScope === scope
+            )
+        );
+    });
+
+    $('plan-muscle-day-picker').hidden =
+        scope === 'week';
+
+    $('plan-muscle-analysis-title').textContent =
+        scope === 'week'
+            ? 'Distribución de la semana del plan'
+            : `Distribución del día ${index + 1}`;
+
+    $('plan-muscle-analysis-list').textContent =
+        'Calculando músculos previstos…';
+
+    const result = await calculatePlanMuscles(
+        scope,
+        index
+    );
+
+    if (
+        version !== planMuscleDialogVersion ||
+        !dialog.open
+    ) return;
+
+    const svg = makePlanMuscleSvg(result, scope);
+
+    if (svg) {
+        $('plan-muscle-map').replaceChildren(svg);
+    } else {
+        $('plan-muscle-map').textContent =
+            'No se pudo cargar el mapa anatómico.';
+    }
+
+    $('plan-muscle-analysis-summary').textContent =
+        `${result.exerciseCount} ejercicios · ` +
+        `${result.plannedSets} series programadas · ` +
+        `${result.data.length} músculos identificados` +
+        (result.failed
+            ? ` · ${result.failed} ejercicios sin datos`
+            : '');
+
+    $('plan-muscle-legend').innerHTML =
+        scope === 'week'
+            ? `<span><i class="low"></i>Baja</span>
+               <span><i class="medium"></i>Media</span>
+               <span><i class="high"></i>Alta</span>
+               <small>Participación relativa</small>`
+            : `<span><i class="primary"></i>Principal</span>
+               <span><i class="secondary"></i>Secundario</span>`;
+
+    const list = $('plan-muscle-analysis-list');
+
+    if (!result.data.length) {
+        list.innerHTML = `
+            <p class="plan-muscle-empty">
+                Añade ejercicios al plan para visualizar
+                los músculos previstos.
+            </p>`;
+        return;
+    }
+
+    const max = Math.max(
+        ...result.data.map(item => item.estimatedSets)
+    );
+
+    list.innerHTML = result.data.map(item => `
+        <div class="plan-muscle-item">
+
+            <div class="plan-muscle-item-top">
+                <strong>${escapeHtml(item.name)}</strong>
+
+                <span>
+                    ${formatNumber(item.estimatedSets)}
+                    series eq.
+                </span>
+            </div>
+
+            <div class="plan-muscle-track">
+                <i style="width:${
+        Math.round(
+            item.estimatedSets / max * 100
+        )
+    }%"></i>
+            </div>
+
+            <small>
+                ${item.primarySets} principales ·
+                ${item.secondarySets} secundarias
+            </small>
+
+        </div>
+    `).join('');
+}
+
+
 
 function renderPlanMode() {
     const box = $('plan-version'); if (!box) return;
@@ -608,16 +2097,165 @@ async function restoreSession() {
     catch (_) { clearSessionStorage(); }
 }
 
+
 async function addSessionExercise() {
-    if (!state.currentSession) return;
-    const {selectedVariant} = resolveVariantForExercise(state.sessionPicker.exercise, state.sessionPicker.configuration);
-    if (!selectedVariant) return toast('Selecciona un ejercicio y su configuración.', true);
-    try {
-        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises`, {method:'POST', body:JSON.stringify({workoutExerciseId:null, exerciseVariantCode:selectedVariant.code, completed:false, performedSets:0, performedReps:0, performedWeightKg:null, performedDurationMinutes:null, estimatedCaloriesBurned:null, notes:null})});
-        $('exercise-picker-dialog').close(); state.sessionPicker = {exercise:null, configuration:{}}; await loadSessionExercises(); toast('Ejercicio añadido al entrenamiento.');
+
+    const {selectedVariant} =
+        resolveVariantForExercise(
+            state.sessionPicker.exercise,
+            state.sessionPicker.configuration
+        );
+
+    if (!selectedVariant) {
+        return toast(
+            'Selecciona un ejercicio y su configuración.',
+            true
+        );
     }
-    catch (error) { toast(error.message, true); }
+
+    // ===================================
+    // MODO PLANES
+    // ===================================
+
+    if (state.pickerMode === 'plan') {
+
+        const day =
+            state.planDays[state.planPickerDayIndex];
+
+        if (!day) {
+            return toast(
+                'No se ha encontrado el día del plan.',
+                true
+            );
+        }
+
+        if (state.planPickerAction === 'replace') {
+            const exercise = day.exercises[state.planPickerExerciseIndex];
+            if (!exercise) {
+                return toast('No se ha encontrado el ejercicio que quieres modificar.', true);
+            }
+
+            exercise.exerciseVariantCode = selectedVariant.code;
+
+            $('exercise-picker-dialog').close();
+            state.sessionPicker = {exercise: null, configuration: {}};
+            state.selectedPlanDayIndex = state.planPickerDayIndex;
+
+            state.planPickerAction = 'add';
+            state.planPickerExerciseIndex = null;
+            state.planPickerExerciseCode = null;
+            renderPlanMode();
+            toast('Ejercicio intercambiado. Se han conservado sus objetivos de series, repeticiones y descanso. Guarda el plan para conservar el cambio.');
+            return;
+        }
+
+        const readPositiveInteger = (id, minimum) => {
+            const input = $(id);
+            const value = Number(input.value);
+
+            if (
+                !input.checkValidity() ||
+                !Number.isSafeInteger(value) ||
+                value < minimum
+            ) {
+                throw new Error(
+                    'Revisa los valores de series, repeticiones y descanso.'
+                );
+            }
+
+            return value;
+        };
+
+        let sets;
+        let reps;
+        let restSeconds;
+
+        try {
+            sets = readPositiveInteger(
+                'plan-picker-sets', 1
+            );
+
+            reps = readPositiveInteger(
+                'plan-picker-reps', 1
+            );
+
+            restSeconds = readPositiveInteger(
+                'plan-picker-rest', 0
+            );
+
+        } catch (error) {
+            return toast(error.message, true);
+        }
+
+        // Añadir al borrador del plan
+        day.exercises.push({
+            exerciseVariantCode: selectedVariant.code,
+            sets,
+            reps,
+            restSeconds
+        });
+
+        $('exercise-picker-dialog').close();
+
+        state.sessionPicker = {
+            exercise: null,
+            configuration: {}
+        };
+
+        state.selectedPlanDayIndex =
+            state.planPickerDayIndex;
+
+        renderPlanMode();
+
+        toast(
+            'Ejercicio añadido al día. Guarda el plan cuando termines.'
+        );
+
+        return;
+    }
+
+    // ===================================
+    // MODO ENTRENAMIENTO
+    // ===================================
+
+    if (!state.currentSession) return;
+
+    try {
+        await api(
+            `/api/users/${state.auth.userId}` +
+            `/workout-sessions/${state.currentSession.id}/exercises`,
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    workoutExerciseId: null,
+                    exerciseVariantCode: selectedVariant.code,
+                    completed: false,
+                    performedSets: 0,
+                    performedReps: 0,
+                    performedWeightKg: null,
+                    performedDurationMinutes: null,
+                    estimatedCaloriesBurned: null,
+                    notes: null
+                })
+            }
+        );
+
+        $('exercise-picker-dialog').close();
+
+        state.sessionPicker = {
+            exercise: null,
+            configuration: {}
+        };
+
+        await loadSessionExercises();
+
+        toast('Ejercicio añadido al entrenamiento.');
+
+    } catch (error) {
+        toast(error.message, true);
+    }
 }
+
 
 
 function currentSessionMetaLabel() {
@@ -813,15 +2451,123 @@ async function saveSessionSettings(event) {
 }
 
 
-async function openExercisePicker() {
-    if (!state.currentSession) return;
+
+async function openExercisePicker(mode = 'session', options = {}) {
+
+    const action = mode === 'plan' ? (options.action || 'add') : 'add';
+    const exerciseIndex = Number.isInteger(options.exerciseIndex)
+        ? options.exerciseIndex
+        : null;
+
+    if (mode === 'session' && !state.currentSession) {
+        return;
+    }
+
+    if (mode === 'plan') {
+        syncPlanEditor();
+
+        if (!state.planDays[state.selectedPlanDayIndex]) {
+            return;
+        }
+    }
+
     try {
-        if (!state.exercises.length || !state.variants.length) [state.exercises, state.variants] = await Promise.all([api('/api/exercises'), api('/api/exercise-variants')]);
-        state.sessionPicker = {exercise:null, configuration:{}};
-        $('session-exercise-query').value = ''; $('session-exercise-equipment').value = ''; $('session-exercise-muscle').value = '';
-        renderSessionExerciseResults(); renderSessionExerciseConfig(); $('exercise-picker-dialog').showModal();
-    } catch (error) { toast(error.message, true); }
+        if (!state.exercises.length || !state.variants.length) {
+            [state.exercises, state.variants] =
+                await Promise.all([
+                    api('/api/exercises'),
+                    api('/api/exercise-variants')
+                ]);
+        }
+
+        // Distinguir el destino del ejercicio
+        state.pickerMode = mode;
+        state.planPickerAction = action;
+
+        state.planPickerDayIndex =
+            mode === 'plan'
+                ? state.selectedPlanDayIndex
+                : null;
+
+        state.planPickerExerciseIndex =
+            mode === 'plan' ? exerciseIndex : null;
+
+        const planExercise =
+            mode === 'plan' && exerciseIndex != null
+                ? state.planDays[state.planPickerDayIndex]?.exercises[exerciseIndex]
+                : null;
+
+        if (mode === 'plan' && action !== 'add' && !planExercise) {
+            return toast('No se ha encontrado el ejercicio del plan.', true);
+        }
+
+        const currentVariant = planExercise
+            ? state.variants.find(variant => variant.code === planExercise.exerciseVariantCode)
+            : null;
+
+        const currentExercise = currentVariant
+            ? state.exercises.find(exercise => exercise.code === currentVariant.exerciseCode)
+            : null;
+
+        state.planPickerExerciseCode = null;
+
+        state.sessionPicker = {
+            exercise: action === 'add' ? null : currentExercise || null,
+            configuration: action === 'add' ? {} : configurationFromVariant(currentVariant)
+        };
+
+        // Reiniciar filtros
+        $('session-exercise-query').value = '';
+        $('session-exercise-equipment').value = '';
+        $('session-exercise-muscle').value = '';
+
+        // Adaptar la ventana
+        const pickerCopy = mode !== 'plan'
+            ? {
+                eyebrow: 'AÑADIR AL ENTRENAMIENTO',
+                title: 'Elige un ejercicio',
+                description: 'Elige el ejercicio y configura el material, agarre y demás variantes.',
+                action: 'Añadir al entrenamiento'
+            }
+            : action === 'replace'
+                ? {
+                    eyebrow: 'INTERCAMBIAR EJERCICIO',
+                    title: 'Elige el sustituto',
+                    description: 'Selecciona otro ejercicio. FitCore aplicará una configuración válida y conservará las series, repeticiones y el descanso.',
+                    action: 'Intercambiar ejercicio'
+                }
+                : {
+                        eyebrow: 'AÑADIR AL PLAN',
+                        title: 'Elige un ejercicio',
+                        description: 'Elige el ejercicio y sus objetivos. Después podrás ajustar su configuración técnica desde el menú de acciones.',
+                        action: 'Añadir al día'
+                    };
+
+        $('exercise-picker-eyebrow').textContent = pickerCopy.eyebrow;
+        $('exercise-picker-title').textContent = pickerCopy.title;
+        $('exercise-picker-description').textContent = pickerCopy.description;
+        $('session-add-exercise').textContent = pickerCopy.action;
+
+        // Campos exclusivos de Planes
+        $('plan-picker-fields').hidden =
+            mode !== 'plan' || action !== 'add';
+
+        // Valores iniciales de planificación
+        $('plan-picker-sets').value = '3';
+        $('plan-picker-reps').value = '10';
+        $('plan-picker-rest').value = '90';
+
+        renderSessionExerciseResults();
+        renderSessionExerciseConfig();
+
+        $('exercise-picker-dialog').showModal();
+        $('session-exercise-query').focus();
+
+    } catch (error) {
+        toast(error.message, true);
+    }
 }
+
 
 function filteredSessionExercises() {
     const query = $('session-exercise-query')?.value.trim().toLocaleLowerCase('es') || '';
@@ -847,19 +2593,293 @@ function renderSessionExerciseResults() {
     const exercises = filteredSessionExercises();
     $('session-exercise-count').textContent = `${exercises.length} ejercicio${exercises.length === 1 ? '' : 's'}`;
     container.innerHTML = exercises.length ? exercises.map(exercise => {
-        const count = state.variants.filter(variant => variant.exerciseCode === exercise.code).length;
-        return `<button class="picker-exercise ${state.sessionPicker.exercise?.code === exercise.code ? 'is-selected':''}" data-session-exercise-code="${escapeHtml(exercise.code)}">${exerciseThumb(exercise)}<span><strong>${escapeHtml(exercise.name)}</strong><small>${friendly(exercise.mainMuscleGroup)} · ${count} configuraci${count === 1 ? 'ón':'ones'}</small></span><i>›</i></button>`;
+        const variants = orderedVariantsForExercise(exercise);
+        const representative = defaultVariantForExercise(exercise);
+        const detail = state.pickerMode === 'plan'
+            ? `${friendly(exercise.mainMuscleGroup)} · ${friendly(representative?.equipment)}`
+            : `${friendly(exercise.mainMuscleGroup)} · ${variants.length} configuraci${variants.length === 1 ? 'ón':'ones'}`;
+        return `<button class="picker-exercise ${state.sessionPicker.exercise?.code === exercise.code ? 'is-selected':''}" data-session-exercise-code="${escapeHtml(exercise.code)}">${exerciseThumb(exercise)}<span><strong>${escapeHtml(exercise.name)}</strong><small>${escapeHtml(detail)}</small></span><i>›</i></button>`;
     }).join('') : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
 }
 
 function renderSessionExerciseConfig() {
     const container = $('session-exercise-config'); const exercise = state.sessionPicker.exercise;
-    if (!exercise) { container.innerHTML = '<div class="empty-state">Selecciona un ejercicio para configurar cómo vas a realizarlo.</div>'; $('session-add-exercise').disabled = true; return; }
+    if (!exercise) {
+        const copy = state.pickerMode === 'plan'
+            ? 'Selecciona un ejercicio. FitCore elegirá una configuración válida que podrás ajustar más adelante.'
+            : 'Selecciona un ejercicio para configurar cómo vas a realizarlo.';
+        container.innerHTML = `<div class="empty-state">${copy}</div>`;
+        $('session-add-exercise').disabled = true;
+        return;
+    }
+
+    if (state.pickerMode === 'plan') {
+        renderPlanSimpleExerciseConfig(container, exercise);
+        return;
+    }
+
     const {controls, selectedVariant} = resolveVariantForExercise(exercise, state.sessionPicker.configuration);
     const visibleControls = controls.filter(control => control.values.length > 1 || ['equipment','attachmentType'].includes(control.key));
     const fields = visibleControls.map(control => `<label>${control.label}<select data-session-variant-config="${control.key}" ${control.values.length === 1 ? 'disabled':''}>${control.values.map(value => `<option value="${value}" ${value === control.selected ? 'selected':''}>${variantValue(control.key, value)}</option>`).join('')}</select></label>`).join('');
     container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(exercise.name)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(selectedVariant.name)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
     $('session-add-exercise').disabled = !selectedVariant;
+}
+
+function renderPlanSimpleExerciseConfig(container, exercise) {
+    const variants = orderedVariantsForExercise(exercise);
+    const requestedCode = state.sessionPicker.configuration?.variantCode;
+    const selectedVariant = variants.find(variant => variant.code === requestedCode)
+        || defaultVariantForExercise(exercise);
+
+    state.sessionPicker.configuration = configurationFromVariant(selectedVariant);
+    const chips = selectedVariant ? variantConfigurationChips(selectedVariant).slice(0, 4) : [];
+
+    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">EJERCICIO SELECCIONADO</p><h3>${escapeHtml(exercise.name)}</h3><small>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</small></div></div>
+        <div class="plan-simple-selection">
+            <span class="plan-simple-label">Configuración inicial</span>
+            <strong>${escapeHtml(selectedVariant?.name || 'Sin configuración disponible')}</strong>
+            ${chips.length ? `<div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
+            <p>Se aplicará automáticamente una combinación válida. Podrás cambiar agarre, apertura, material y demás opciones desde <b>Acciones → Modificar configuración</b>.</p>
+        </div>`;
+    $('session-add-exercise').disabled = !selectedVariant;
+}
+
+async function openPlanAdvancedConfigDialog(dayIndex, exerciseIndex) {
+    syncPlanEditor();
+
+    try {
+        if (!state.exercises.length || !state.variants.length) {
+            [state.exercises, state.variants] = await Promise.all([
+                api('/api/exercises'),
+                api('/api/exercise-variants')
+            ]);
+        }
+
+        const planExercise = state.planDays[dayIndex]?.exercises[exerciseIndex];
+        const variant = state.variants.find(item => item.code === planExercise?.exerciseVariantCode);
+        const exercise = state.exercises.find(item => item.code === variant?.exerciseCode);
+        if (!planExercise || !variant || !exercise) {
+            return toast('No se ha encontrado la configuración del ejercicio.', true);
+        }
+
+        state.planAdvancedConfig = {
+            dayIndex,
+            exerciseIndex,
+            exerciseCode: exercise.code,
+            originalVariantCode: variant.code,
+            configuration: configurationFromVariant(variant)
+        };
+
+        renderPlanAdvancedConfig();
+        $('plan-advanced-config-dialog').showModal();
+        $('plan-advanced-config-body').querySelector('select:not(:disabled)')?.focus();
+    } catch (error) {
+        toast(error.message, true);
+    }
+}
+
+
+/* Campos principales del configurador de Planes */
+const planPrimaryVariantKeys = new Set([
+    'equipment',
+    'gripType',
+    'gripWidth',
+    'benchAngle'
+]);
+
+function renderPlanAdvancedConfig() {
+    const draft = state.planAdvancedConfig;
+    if (!draft) return;
+
+    const exercise = state.exercises.find(
+        item => item.code === draft.exerciseCode
+    );
+
+    const identity = $('plan-advanced-identity');
+    const fieldsContainer = $('plan-advanced-fields');
+    const resultContainer = $('plan-advanced-result');
+
+    if (
+        !exercise ||
+        !identity ||
+        !fieldsContainer ||
+        !resultContainer
+    ) return;
+
+    // Conservar el estado del apartado desplegable
+    const previousDetails = fieldsContainer.querySelector(
+        '.plan-advanced-more'
+    );
+
+    if (previousDetails) {
+        draft.moreOpen = previousDetails.open;
+    }
+
+    const {
+        controls,
+        candidates,
+        selectedVariant
+    } = resolveVariantForExercise(
+        exercise,
+        draft.configuration
+    );
+
+    // Información compacta del ejercicio
+    identity.innerHTML = `
+        ${exerciseThumb(exercise, 'plan-advanced-thumb')}
+
+        <div>
+            <p class="eyebrow">EJERCICIO</p>
+            <h3>${escapeHtml(exercise.name)}</h3>
+            <p>${escapeHtml(
+        exercise.description ||
+        'Personaliza su ejecución.'
+    )}</p>
+        </div>
+    `;
+
+    // Solo mostrar controles con dos o más
+    // valores significativos disponibles
+    const editable = controls.filter(control => {
+        const meaningfulValues = control.values.filter(
+            value => !(control.empty || []).includes(value)
+        );
+
+        return meaningfulValues.length >= 2;
+    });
+
+    const primary = editable.filter(
+        control => planPrimaryVariantKeys.has(control.key)
+    );
+
+    const additional = editable.filter(
+        control => !planPrimaryVariantKeys.has(control.key)
+    );
+
+    // Reutilizar el mismo generador de campos
+    const fieldHtml = control => `
+        <label>
+            ${escapeHtml(control.label)}
+
+            <select
+                data-plan-advanced-field="${escapeHtml(control.key)}">
+
+                ${control.values.map(value => `
+                    <option
+                        value="${escapeHtml(value)}"
+                        ${value === control.selected ? 'selected' : ''}>
+                        ${escapeHtml(
+        variantValue(control.key, value)
+    )}
+                    </option>
+                `).join('')}
+
+            </select>
+        </label>
+    `;
+
+    fieldsContainer.innerHTML = `
+
+        ${primary.length
+        ? primary.map(fieldHtml).join('')
+        : `
+                <p class="plan-advanced-no-fields">
+                    Este ejercicio no tiene ajustes
+                    principales alternativos.
+                </p>
+            `
+    }
+
+        ${additional.length ? `
+            <details
+                class="plan-advanced-more"
+                ${draft.moreOpen ? 'open' : ''}>
+
+                <summary>
+                    Más ajustes técnicos
+                    <small>(${additional.length})</small>
+                </summary>
+
+                <p>
+                    Opciones menos habituales que permiten
+                    identificar otras variantes válidas.
+                </p>
+
+                <div class="plan-advanced-extra-fields">
+                    ${additional.map(fieldHtml).join('')}
+                </div>
+
+            </details>
+        ` : ''}
+
+        ${candidates.length > 1 ? `
+            <label class="plan-advanced-exact-choice">
+                Variante concreta
+
+                <select data-plan-advanced-variant-code>
+                    ${candidates.map(variant => `
+                        <option
+                            value="${escapeHtml(variant.code)}"
+                            ${variant.code === selectedVariant?.code
+        ? 'selected'
+        : ''}>
+                            ${escapeHtml(variant.name)}
+                        </option>
+                    `).join('')}
+                </select>
+            </label>
+        ` : ''}
+    `;
+
+    // Resumen de la variante resultante
+    resultContainer.innerHTML = selectedVariant
+        ? `
+            <span>Configuración resultante</span>
+
+            <strong>
+                ${escapeHtml(selectedVariant.name)}
+            </strong>
+
+            <small>
+                ${escapeHtml(localizeText(
+            selectedVariant.focusDescription ||
+            'Combinación válida del catálogo.'
+        ))}
+            </small>
+        `
+        : `
+            <span>Configuración resultante</span>
+            <strong>Sin combinación válida</strong>
+        `;
+
+    $('plan-advanced-save').disabled = !selectedVariant;
+}
+
+
+function closePlanAdvancedConfig() {
+    const dialog = $('plan-advanced-config-dialog');
+    if (dialog.open) dialog.close();
+    state.planAdvancedConfig = null;
+}
+
+function savePlanAdvancedConfig(event) {
+    event.preventDefault();
+    const draft = state.planAdvancedConfig;
+    if (!draft) return;
+
+    const exercise = state.exercises.find(item => item.code === draft.exerciseCode);
+    const {selectedVariant} = resolveVariantForExercise(exercise, draft.configuration);
+    const planExercise = state.planDays[draft.dayIndex]?.exercises[draft.exerciseIndex];
+
+    if (!selectedVariant || !planExercise || selectedVariant.exerciseCode !== exercise?.code) {
+        return toast('No se ha podido resolver una configuración válida.', true);
+    }
+
+    planExercise.exerciseVariantCode = selectedVariant.code;
+    state.selectedPlanDayIndex = draft.dayIndex;
+    closePlanAdvancedConfig();
+    renderPlanMode();
+    toast('Configuración actualizada. Se han conservado las series, repeticiones, descanso y orden. Guarda el plan para conservar el cambio.');
 }
 
 async function loadSessionExercises() {
@@ -1871,6 +3891,22 @@ function showTrainingHelp(button) {
 
 
 function bindEvents() {
+
+
+// Activar arrastre de días y ejercicios
+    document.addEventListener(
+        'pointerdown',
+        startPlanDrag
+    );
+
+// Evitar selección accidental al terminar de arrastrar
+    document.addEventListener(
+        'click',
+        suppressClickAfterPlanDrag,
+        true
+    );
+
+
     document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.go)));
     document.querySelectorAll('.nav-item').forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.view)));
     $('menu-button').addEventListener('click',()=>{const sidebar=document.querySelector('.sidebar');sidebar.classList.toggle('is-open');$('menu-button').setAttribute('aria-expanded',String(sidebar.classList.contains('is-open')));});
@@ -1882,6 +3918,61 @@ function bindEvents() {
     $('map-stabilizers').addEventListener('change',paintActivations);
 
     $('plan-configure').addEventListener('click', () => $('plan-settings-dialog').showModal());
+
+
+// Guardar cambios del día
+    $('plan-edit-day-form').addEventListener(
+        'submit',
+        savePlanEditDay
+    );
+
+// Cerrar la ventana
+    document.querySelectorAll('[data-close-edit-day]')
+        .forEach(button => {
+
+            button.addEventListener('click', () => {
+                $('plan-edit-day-dialog').close();
+            });
+
+        });
+
+// Duplicar
+    $('plan-edit-duplicate').addEventListener(
+        'click',
+        duplicateSelectedPlanDay
+    );
+
+// Mover antes
+    $('plan-edit-move-up').addEventListener(
+        'click',
+        () => moveSelectedPlanDay(-1)
+    );
+
+// Mover después
+    $('plan-edit-move-down').addEventListener(
+        'click',
+        () => moveSelectedPlanDay(1)
+    );
+
+// Eliminar con confirmación
+    $('plan-edit-delete').addEventListener(
+        'click',
+        () => void deleteSelectedPlanDay()
+    );
+
+
+    $('plan-new-day-form').addEventListener(
+        'submit',
+        submitPlanNewDay
+    );
+
+    document.querySelectorAll('[data-close-new-day]')
+        .forEach(button => {
+            button.addEventListener('click', () => {
+                $('plan-new-day-dialog').close();
+            });
+        });
+
     document.querySelectorAll('[data-close-plan-settings]').forEach(button => button.addEventListener('click', () => $('plan-settings-dialog').close()));
     $('plan-settings-form').addEventListener('submit', event => {
         event.preventDefault();
@@ -1893,6 +3984,49 @@ function bindEvents() {
         await loadActivePlan();
         $('plan-settings-dialog').close();
     });
+
+
+    $('plan-week-muscles').addEventListener(
+        'click',
+        () => openPlanMuscleDialog('week')
+    );
+
+    $('plan-muscle-dialog')
+        .querySelectorAll('[data-close-plan-muscles]')
+        .forEach(button => {
+            button.addEventListener('click', () => {
+                $('plan-muscle-dialog').close();
+            });
+        });
+
+    $('plan-muscle-dialog').addEventListener(
+        'close',
+        () => {
+            planMuscleDialogVersion++;
+        }
+    );
+
+    $('plan-muscle-dialog').addEventListener(
+        'click',
+        event => {
+            const choice = event.target.closest(
+                '[data-plan-muscle-scope]'
+            );
+
+            if (!choice) return;
+
+            planMuscleScope = choice.dataset.planMuscleScope;
+
+            void renderPlanMuscleDialog();
+        }
+    );
+
+    $('plan-muscle-day-select').addEventListener(
+        'change',
+        () => void renderPlanMuscleDialog()
+    );
+
+
     $('plan-save').addEventListener('click', savePlan);
     $('plan-day-tabs').addEventListener('click', event => {
         const selected = event.target.closest('[data-select-plan-day]');
@@ -1902,27 +4036,54 @@ function bindEvents() {
             renderPlanDays();
             return;
         }
-        if (event.target.closest('#add-day')) addPlanDay();
+        if (event.target.closest('#add-day')) {
+            openPlanNewDayDialog();
+        }
     });
     $('plan-days').addEventListener('click', event => {
-        if (event.target.closest('[data-empty-add-day]')) return addPlanDay();
+
+
+        if (event.target.closest('#plan-day-muscle-open')) {
+            openPlanMuscleDialog('day');
+            return;
+        }
+
+
+        if (event.target.closest('[data-empty-add-day]')) {
+            return openPlanNewDayDialog();
+        }
         const card = event.target.closest('.plan-day-editor');
         if (!card) return;
         const dayIndex = Number(card.dataset.day);
         const day = state.planDays[dayIndex];
-        if (event.target.closest('[data-remove-day]')) {
+        const menuToggle = event.target.closest('[data-plan-row-menu-toggle]');
+        const menuAction = event.target.closest('[data-plan-exercise-action]');
+
+        if (menuToggle) {
+            togglePlanRowMenu(menuToggle);
+            return;
+        } else if (menuAction) {
+            const exerciseIndex = Number(menuAction.closest('.exercise-editor').dataset.exercise);
+            const action = menuAction.dataset.planExerciseAction;
+            closePlanRowMenus();
             syncPlanEditor();
-            state.planDays.splice(dayIndex, 1);
-            state.selectedPlanDayIndex = Math.min(dayIndex, state.planDays.length - 1);
-            renderPlanMode();
+            state.selectedPlanDayIndex = dayIndex;
+
+            if (action === 'delete') {
+                void removePlanExercise(dayIndex, exerciseIndex);
+            } else if (action === 'configure') {
+                void openPlanAdvancedConfigDialog(dayIndex, exerciseIndex);
+            } else {
+                void openExercisePicker('plan', {action, exerciseIndex});
+            }
+            return;
+        } else if (event.target.closest('[data-configure-plan-day]')) {
+            syncPlanEditor();
+            state.selectedPlanDayIndex = dayIndex;
+            openPlanEditDayDialog();
+            return;
         } else if (event.target.closest('[data-add-plan-exercise]')) {
-            syncPlanEditor();
-            day.exercises.push({exerciseVariantCode:'', sets:3, reps:10, restSeconds:90});
-            renderPlanDays();
-        } else if (event.target.closest('[data-remove-exercise]')) {
-            syncPlanEditor();
-            day.exercises.splice(Number(event.target.closest('.exercise-editor').dataset.exercise), 1);
-            renderPlanDays();
+            void openExercisePicker('plan');
         } else if (event.target.closest('[data-move]')) {
             syncPlanEditor();
             const row = event.target.closest('.exercise-editor');
@@ -1945,10 +4106,27 @@ function bindEvents() {
         }
     });
     $('plan-days').addEventListener('change', event => {
-        if (!event.target.matches('[data-day-type], [data-exercise-code], [data-exercise-sets], [data-exercise-reps], [data-exercise-rest], [data-day-name]')) return;
+        if (!event.target.matches(
+            '[data-exercise-code], ' +
+            '[data-exercise-sets], ' +
+            '[data-exercise-reps], ' +
+            '[data-exercise-rest]'
+        )) return;
         syncPlanEditor();
         renderPlanDays();
     });
+
+    document.addEventListener('click', event => {
+        if (!event.target.closest('.plan-row-menu')) closePlanRowMenus();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && document.querySelector('.plan-row-action-menu:not([hidden])')) {
+            event.preventDefault();
+            closePlanRowMenus({restoreFocus: true});
+        }
+    });
+    window.addEventListener('resize', () => closePlanRowMenus());
+    window.addEventListener('scroll', () => closePlanRowMenus(), true);
 
     /* =====================================
        EVENTOS DE CONFIGURACIÓN DE SESIÓN
@@ -2000,10 +4178,44 @@ function bindEvents() {
         deleteSession
     );
 
-    $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener('click',openExercisePicker); $('session-refresh').addEventListener('click',loadSessionExercises); $('session-complete').addEventListener('click',()=>finishSession('complete')); $('session-cancel').addEventListener('click',()=>finishSession('cancel')); $('session-delete').addEventListener('click',deleteSession); $('session-muscles').addEventListener('click',showSessionMuscles);
+    $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener(
+        'click',
+        () => openExercisePicker('session')
+    ); $('session-refresh').addEventListener('click',loadSessionExercises); $('session-complete').addEventListener('click',()=>finishSession('complete')); $('session-cancel').addEventListener('click',()=>finishSession('cancel')); $('session-delete').addEventListener('click',deleteSession); $('session-muscles').addEventListener('click',showSessionMuscles);
     ['session-exercise-query','session-exercise-equipment','session-exercise-muscle'].forEach(id => $(id).addEventListener(id === 'session-exercise-query' ? 'input' : 'change', renderSessionExerciseResults));
-    $('session-exercise-results').addEventListener('click',e=>{const item=e.target.closest('[data-session-exercise-code]');if(!item)return;state.sessionPicker={exercise:state.exercises.find(exercise=>exercise.code===item.dataset.sessionExerciseCode),configuration:{}};renderSessionExerciseResults();renderSessionExerciseConfig();});
+    $('session-exercise-results').addEventListener('click', event => {
+        const item = event.target.closest('[data-session-exercise-code]');
+        if (!item) return;
+        const exercise = state.exercises.find(candidate => candidate.code === item.dataset.sessionExerciseCode);
+        const configuration = state.sessionPicker.exercise?.code === exercise?.code
+            ? state.sessionPicker.configuration
+            : state.pickerMode === 'plan'
+                ? configurationFromVariant(defaultVariantForExercise(exercise))
+                : {};
+        state.sessionPicker = {exercise, configuration};
+        renderSessionExerciseResults();
+        renderSessionExerciseConfig();
+    });
     $('session-exercise-config').addEventListener('change',e=>{const field=e.target.closest('[data-session-variant-config]');if(!field)return;state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;state.sessionPicker.configuration.variantCode=null;renderSessionExerciseConfig();});
+    $('plan-advanced-config-form').addEventListener('submit', savePlanAdvancedConfig);
+    $('plan-advanced-config-body').addEventListener('change', event => {
+        const field = event.target.closest('[data-plan-advanced-field]');
+        const finalChoice = event.target.closest('[data-plan-advanced-variant-code]');
+        if (!state.planAdvancedConfig) return;
+
+        if (field) {
+            state.planAdvancedConfig.configuration[field.dataset.planAdvancedField] = field.value;
+            state.planAdvancedConfig.configuration.variantCode = null;
+            renderPlanAdvancedConfig();
+        } else if (finalChoice) {
+            state.planAdvancedConfig.configuration.variantCode = finalChoice.value;
+            renderPlanAdvancedConfig();
+        }
+    });
+    document.querySelectorAll('[data-close-plan-advanced]').forEach(button => button.addEventListener('click', closePlanAdvancedConfig));
+    $('plan-advanced-config-dialog').addEventListener('close', () => {
+        state.planAdvancedConfig = null;
+    });
     document.querySelectorAll('[data-close-picker]').forEach(button=>button.addEventListener('click',()=>$('exercise-picker-dialog').close())); document.querySelectorAll('[data-close-muscles]').forEach(button=>button.addEventListener('click',()=>$('session-muscle-dialog').close()));
     document.querySelectorAll('[data-close-rest]').forEach(button=>button.addEventListener('click',()=>$('rest-settings-dialog').close())); document.querySelectorAll('[data-close-rpe]').forEach(button=>button.addEventListener('click',()=>$('rpe-dialog').close()));
     $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-edit-rest]'))openRestEditor(card);else if(e.target.closest('[data-rpe-picker]'))openRpeEditor(e.target.closest('[data-rpe-picker]'));else if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});

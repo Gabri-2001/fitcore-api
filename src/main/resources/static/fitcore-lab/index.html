@@ -112,6 +112,16 @@
                     </div>
                 </div>
                 <div class="plan-overview-actions">
+
+                    <button
+                            type="button"
+                            id="plan-week-muscles"
+                            class="button button-secondary"
+                            aria-haspopup="dialog"
+                            aria-controls="plan-muscle-dialog">
+                        ◉ Análisis semanal
+                    </button>
+
                     <button id="plan-configure" class="button button-secondary plan-configure-button">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8 3.5 2-1-2-3-2.2.4-1.2-1.2.4-2.2-3-2-1 2h-1.8l-1-2-3 2 .4 2.2-1.2 1.2L4 8l-2 3 2 1v1.8l-2 1 2 3 2.2-.4 1.2 1.2L7 21l3 1 1-2h1.8l1 2 3-1-.4-2.2 1.2-1.2 2.2.4 2-3-2-1Z"/></svg>
                         Configurar plan
@@ -145,6 +155,300 @@
                     </div>
                 </form>
             </dialog>
+
+            <!-- MODAL: AÑADIR DÍA AL PLAN -->
+            <dialog
+                    id="plan-new-day-dialog"
+                    class="compact-dialog plan-new-day-dialog"
+                    aria-labelledby="plan-new-day-title">
+
+                <form id="plan-new-day-form">
+
+                    <div class="dialog-heading compact">
+                        <div>
+                            <p class="eyebrow">
+                                PLANIFICACIÓN SEMANAL
+                            </p>
+                            <h2 id="plan-new-day-title">
+                                Añadir día
+                            </h2>
+                            <p>
+                                Elige un nombre y el tipo de entrenamiento.
+                            </p>
+                        </div>
+
+                        <button type="button"
+                                class="icon-button"
+                                data-close-new-day
+                                aria-label="Cerrar">
+                            ×
+                        </button>
+                    </div>
+
+                    <div class="plan-new-day-fields">
+
+                        <label>
+                            Nombre del día
+                            <input
+                                    id="plan-new-day-name"
+                                    type="text"
+                                    maxlength="80"
+                                    placeholder="Ej. Día de tirón"
+                                    required>
+                        </label>
+
+                        <label>
+                            Tipo de entrenamiento
+                            <select id="plan-new-day-type" required>
+                                <option value="FULL_BODY">Cuerpo completo</option>
+                                <option value="PUSH">Empuje</option>
+                                <option value="PULL">Tirón</option>
+                                <option value="LEGS">Piernas</option>
+                                <option value="UPPER">Tren superior</option>
+                                <option value="LOWER">Tren inferior</option>
+                                <option value="CARDIO">Cardio</option>
+                                <option value="MOBILITY">Movilidad</option>
+                                <option value="REST">Descanso</option>
+                            </select>
+                        </label>
+
+                    </div>
+
+                    <div class="dialog-actions">
+                        <button type="button"
+                                class="button button-secondary"
+                                data-close-new-day>
+                            Cancelar
+                        </button>
+
+                        <button type="submit"
+                                class="button button-primary">
+                            Crear día
+                        </button>
+                    </div>
+
+                </form>
+            </dialog>
+
+
+            <!-- CONFIGURACIÓN DE UN DÍA DEL PLAN -->
+            <dialog
+                    id="plan-edit-day-dialog"
+                    class="compact-dialog plan-edit-day-dialog"
+                    aria-labelledby="plan-edit-day-title">
+
+                <form id="plan-edit-day-form">
+
+                    <div class="dialog-heading compact">
+                        <div>
+                            <p class="eyebrow" id="plan-edit-day-number">
+                                DÍA 1
+                            </p>
+                            <h2 id="plan-edit-day-title">
+                                Configurar día
+                            </h2>
+                            <p>
+                                Personaliza el día y organiza
+                                su posición en la rutina.
+                            </p>
+                        </div>
+
+                        <button
+                                type="button"
+                                class="icon-button"
+                                data-close-edit-day
+                                aria-label="Cerrar">
+                            ×
+                        </button>
+                    </div>
+
+                    <div class="plan-edit-day-fields">
+
+                        <label>
+                            Nombre del día
+                            <input
+                                    id="plan-edit-day-name"
+                                    type="text"
+                                    maxlength="80"
+                                    required
+                                    placeholder="Ej. Piernas y glúteos">
+                        </label>
+
+                        <fieldset class="plan-edit-type-fieldset">
+                            <legend>Tipo de entrenamiento</legend>
+
+                            <div
+                                    id="plan-edit-day-types"
+                                    class="plan-edit-type-grid">
+                            </div>
+                        </fieldset>
+
+                    </div>
+
+                    <!-- ADMINISTRACIÓN -->
+                    <div class="plan-edit-day-management">
+
+                        <strong>Administración del día</strong>
+
+                        <div class="plan-edit-management-actions">
+
+                            <button
+                                    type="button"
+                                    id="plan-edit-duplicate"
+                                    class="button button-secondary">
+                                Duplicar día
+                            </button>
+
+                            <button
+                                    type="button"
+                                    id="plan-edit-move-up"
+                                    class="button button-secondary">
+                                ← Mover antes
+                            </button>
+
+                            <button
+                                    type="button"
+                                    id="plan-edit-move-down"
+                                    class="button button-secondary">
+                                Mover después →
+                            </button>
+
+                        </div>
+
+                        <button
+                                type="button"
+                                id="plan-edit-delete"
+                                class="text-button danger">
+                            Eliminar día
+                        </button>
+
+                    </div>
+
+                    <div class="dialog-actions">
+
+                        <button
+                                type="button"
+                                class="button button-secondary"
+                                data-close-edit-day>
+                            Cancelar
+                        </button>
+
+                        <button
+                                type="submit"
+                                class="button button-primary">
+                            Aplicar cambios
+                        </button>
+
+                    </div>
+
+                </form>
+            </dialog>
+
+
+            <!-- ANÁLISIS MUSCULAR DEL PLAN -->
+            <dialog
+                    id="plan-muscle-dialog"
+                    class="plan-muscle-dialog"
+                    aria-labelledby="plan-muscle-dialog-title">
+
+                <div class="dialog-heading compact">
+                    <div>
+                        <p class="eyebrow">
+                            PLANIFICACIÓN MUSCULAR
+                        </p>
+
+                        <h2 id="plan-muscle-dialog-title">
+                            Análisis muscular
+                        </h2>
+
+                        <p>
+                            Estimación según ejercicios y
+                            series programados, no esfuerzo real.
+                        </p>
+                    </div>
+
+                    <button
+                            type="button"
+                            class="icon-button"
+                            data-close-plan-muscles
+                            aria-label="Cerrar análisis">
+                        ×
+                    </button>
+                </div>
+
+                <div class="plan-muscle-toolbar">
+
+                    <div class="plan-muscle-switch"
+                         role="group"
+                         aria-label="Ámbito del análisis">
+
+                        <button type="button"
+                                data-plan-muscle-scope="day"
+                                aria-pressed="true">
+                            Día
+                        </button>
+
+                        <button type="button"
+                                data-plan-muscle-scope="week"
+                                aria-pressed="false">
+                            Semana del plan
+                        </button>
+                    </div>
+
+                    <label id="plan-muscle-day-picker">
+                        Día
+                        <select id="plan-muscle-day-select"
+                                aria-label="Día que se analiza">
+                        </select>
+                    </label>
+                </div>
+
+                <div class="plan-muscle-layout">
+
+                    <div class="plan-muscle-figure">
+
+                        <div id="plan-muscle-map"
+                             class="plan-muscle-map"
+                             aria-label="Mapa muscular frontal y posterior">
+                            Preparando anatomía…
+                        </div>
+
+                        <div id="plan-muscle-legend"
+                             class="plan-muscle-legend">
+                        </div>
+                    </div>
+
+                    <div class="plan-muscle-details">
+
+                        <h3 id="plan-muscle-analysis-title">
+                            Músculos previstos
+                        </h3>
+
+                        <p id="plan-muscle-analysis-summary"></p>
+
+                        <div id="plan-muscle-analysis-list"
+                             aria-live="polite">
+                        </div>
+
+                        <p class="plan-muscle-disclaimer">
+                            La estimación utiliza series primarias
+                            al 100 % y secundarias al 50 %.
+                            No representa activación EMG,
+                            hipertrofia ni fatiga reales.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="dialog-actions">
+                    <button type="button"
+                            class="button button-primary"
+                            data-close-plan-muscles>
+                        Cerrar
+                    </button>
+                </div>
+            </dialog>
+
+
         </section>
 
         <section class="view" id="view-training" data-title="Entrenamiento en curso" data-eyebrow="EJECUCIÓN · SERIES · ESFUERZO">
@@ -421,12 +725,191 @@
 </dialog>
 
 
-<dialog id="exercise-picker-dialog" class="exercise-picker-dialog">
-    <div class="dialog-heading"><div><p class="eyebrow">AÑADIR AL ENTRENAMIENTO</p><h2>Elige un ejercicio</h2><p>El ejercicio aparece una sola vez. Después podrás concretar material, agarre y apertura cuando existan variantes.</p></div><button class="icon-button" data-close-picker aria-label="Cerrar">×</button></div>
-    <div class="picker-filters"><label>Buscar<input id="session-exercise-query" type="search" placeholder="Ej. dominadas, press, remo…"></label><label>Equipamiento<select id="session-exercise-equipment"><option value="">Todo el equipamiento</option></select></label><label>Grupo muscular<select id="session-exercise-muscle"><option value="">Todos los músculos</option></select></label></div>
-    <div class="exercise-picker-layout"><div><div class="result-meta"><strong id="session-exercise-count">0 ejercicios</strong><span>Sin variantes duplicadas</span></div><div id="session-exercise-results" class="picker-results"></div></div><aside id="session-exercise-config" class="picker-config"><div class="empty-state">Selecciona un ejercicio para configurar cómo vas a realizarlo.</div></aside></div>
-    <div class="dialog-actions"><button class="button button-secondary" data-close-picker>Cancelar</button><button id="session-add-exercise" class="button button-primary" disabled>Añadir al entrenamiento</button></div>
+
+<dialog
+        id="exercise-picker-dialog"
+        class="exercise-picker-dialog"
+        aria-labelledby="exercise-picker-title">
+
+    <div class="dialog-heading">
+        <div>
+            <p class="eyebrow" id="exercise-picker-eyebrow">
+                AÑADIR AL ENTRENAMIENTO
+            </p>
+
+            <h2 id="exercise-picker-title">
+                Elige un ejercicio
+            </h2>
+
+            <p id="exercise-picker-description">
+                Elige un ejercicio y configura su ejecución.
+            </p>
+        </div>
+
+        <button type="button"
+                class="icon-button"
+                data-close-picker
+                aria-label="Cerrar">
+            ×
+        </button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="picker-filters">
+        <label>
+            Buscar
+            <input id="session-exercise-query"
+                   type="search"
+                   placeholder="Ej. dominadas, press, remo…">
+        </label>
+
+        <label>
+            Equipamiento
+            <select id="session-exercise-equipment">
+                <option value="">
+                    Todo el equipamiento
+                </option>
+            </select>
+        </label>
+
+        <label>
+            Grupo muscular
+            <select id="session-exercise-muscle">
+                <option value="">
+                    Todos los músculos
+                </option>
+            </select>
+        </label>
+    </div>
+
+    <!-- LISTADO Y CONFIGURACIÓN -->
+    <div class="exercise-picker-layout">
+
+        <div>
+            <div class="result-meta">
+                <strong id="session-exercise-count">
+                    0 ejercicios
+                </strong>
+                <span>Sin variantes duplicadas</span>
+            </div>
+
+            <div id="session-exercise-results"
+                 class="picker-results">
+            </div>
+        </div>
+
+        <aside class="picker-config">
+
+            <div id="session-exercise-config">
+                <div class="empty-state">
+                    Selecciona un ejercicio para configurar
+                    cómo vas a realizarlo.
+                </div>
+            </div>
+
+            <!-- Solo visible en Planes -->
+            <div id="plan-picker-fields"
+                 class="plan-picker-fields"
+                 hidden>
+
+                <h4>Objetivos del ejercicio</h4>
+
+                <div class="plan-picker-numbers">
+                    <label>
+                        Series
+                        <input id="plan-picker-sets"
+                               type="number"
+                               min="1"
+                               max="100"
+                               step="1"
+                               value="3"
+                               required>
+                    </label>
+
+                    <label>
+                        Repeticiones
+                        <input id="plan-picker-reps"
+                               type="number"
+                               min="1"
+                               max="500"
+                               step="1"
+                               value="10"
+                               required>
+                    </label>
+
+                    <label>
+                        Descanso (s)
+                        <input id="plan-picker-rest"
+                               type="number"
+                               min="0"
+                               max="3600"
+                               step="1"
+                               value="90"
+                               required>
+                    </label>
+                </div>
+
+                <p>
+                    Estos valores se podrán ajustar
+                    después en la tabla del día.
+                </p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="dialog-actions">
+
+        <button type="button"
+                class="button button-secondary"
+                data-close-picker>
+            Cancelar
+        </button>
+
+        <button id="session-add-exercise"
+                type="button"
+                class="button button-primary"
+                disabled>
+            Añadir al entrenamiento
+        </button>
+
+    </div>
 </dialog>
+
+<dialog
+        id="plan-advanced-config-dialog"
+        class="plan-advanced-config-dialog"
+        aria-labelledby="plan-advanced-config-title">
+    <form id="plan-advanced-config-form">
+        <div class="dialog-heading">
+            <div>
+                <p class="eyebrow">CONFIGURACIÓN AVANZADA</p>
+                <h2 id="plan-advanced-config-title">Modificar configuración</h2>
+                <p>
+                    Ajusta las opciones principales.
+                    Los detalles menos habituales están en
+                    «Más ajustes técnicos».
+                    Las series, repeticiones y el descanso se conservarán.
+                </p>
+            </div>
+            <button type="button" class="icon-button" data-close-plan-advanced aria-label="Cerrar">×</button>
+        </div>
+
+        <div id="plan-advanced-config-body" class="plan-advanced-config-body">
+            <div id="plan-advanced-identity" class="plan-advanced-identity"></div>
+            <div class="plan-advanced-workspace">
+                <div id="plan-advanced-fields" class="plan-advanced-fields"></div>
+                <div id="plan-advanced-result" class="resolved-variant plan-advanced-result"></div>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button type="button" class="button button-secondary" data-close-plan-advanced>Cancelar</button>
+            <button id="plan-advanced-save" type="submit" class="button button-primary">Guardar configuración</button>
+        </div>
+    </form>
+</dialog>
+
 <dialog id="session-muscle-dialog" class="muscle-dialog">
     <div class="dialog-heading"><div><p class="eyebrow">DISTRIBUCIÓN DE LA SESIÓN</p><h2>Músculos trabajados</h2><p>Vista combinada de músculos primarios y secundarios. Los estabilizadores no se incluyen para mantener la lectura clara.</p></div><button class="icon-button" data-close-muscles aria-label="Cerrar">×</button></div>
     <div class="muscle-dialog-layout"><div id="session-muscle-map" class="session-muscle-map"><div class="map-loader">Preparando mapa…</div></div><div><div class="map-legend compact"><span><i class="primary"></i>Primario</span><span><i class="secondary"></i>Secundario</span></div><div id="session-muscle-list" class="session-muscle-list"></div></div></div>

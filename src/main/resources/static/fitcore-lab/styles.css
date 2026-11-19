@@ -17,7 +17,6 @@
     color: var(--ink);
     background: var(--canvas);
 }
-
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--canvas); }
@@ -97,6 +96,9 @@ input:hover, select:hover, textarea:hover { border-color: #aebdb6; }
 
 .exercise-picker-dialog { grid-template-rows: auto auto minmax(0,1fr) auto; width: min(1020px, calc(100vw - 34px)); max-width: 1020px; height: min(820px, calc(100vh - 34px)); max-height: min(820px, calc(100vh - 34px)); padding: 0; overflow: hidden; }.dialog-heading { display: flex; justify-content: space-between; gap: 20px; padding: 24px 26px 18px; border-bottom: 1px solid var(--line); }.dialog-heading h2 { margin: 6px 0; }.dialog-heading p:not(.eyebrow) { margin: 0; max-width: 690px; font-size: 11px; }.picker-filters { display: grid; grid-template-columns: minmax(220px,1fr) 220px 220px; gap: 11px; padding: 16px 26px; background: #f7f9f6; }.exercise-picker-layout { display: grid; grid-template-columns: minmax(310px,.85fr) minmax(360px,1.15fr); gap: 20px; min-height: 0; padding: 18px 26px; overflow: auto; }.picker-results { display: grid; align-content: start; gap: 7px; max-height: 440px; margin-top: 10px; padding-right: 5px; overflow: auto; }.picker-exercise { display: grid; grid-template-columns: 44px minmax(0,1fr) auto; align-items: center; gap: 11px; padding: 10px; border: 1px solid var(--line); border-radius: 13px; background: white; text-align: left; }.picker-exercise:hover, .picker-exercise.is-selected { border-color: var(--green-2); background: #f1f7f3; }.picker-exercise strong, .picker-exercise small { display: block; }.picker-exercise strong { font-size: 12px; }.picker-exercise small { margin-top: 4px; color: var(--muted); font-size: 9px; }.picker-exercise i { color: var(--green-2); font-size: 20px; font-style: normal; }.picker-config { min-width: 0; padding: 18px; overflow: auto; border: 1px solid var(--line); border-radius: 16px; background: #f8faf7; }.picker-selected { display: grid; grid-template-columns: 70px minmax(0,1fr); gap: 14px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--line); }.picker-selected-thumb { width: 70px; height: 70px; object-fit: cover; border-radius: 16px; background: #e7ede8; }.picker-selected h3 { margin: 5px 0; font-size: 19px; }.picker-selected small { color: var(--muted); line-height: 1.4; }.picker-variant-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; margin: 16px 0; }.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 15px 26px; border-top: 1px solid var(--line); background: white; }
 
+.plan-simple-selection { display: grid; gap: 8px; margin-top: 16px; padding: 16px; border: 1px solid #d7e2dc; border-radius: 14px; background: white; }.plan-simple-selection .plan-simple-label { color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }.plan-simple-selection > strong { font-size: 14px; }.plan-simple-selection > p { margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.55; }.plan-simple-selection > p b { color: var(--green-2); }
+.plan-advanced-config-dialog { width: min(780px, calc(100vw - 34px)); max-width: 780px; max-height: min(820px, calc(100vh - 34px)); padding: 0; overflow: hidden; }.plan-advanced-config-dialog > form { display: grid; grid-template-rows: auto minmax(0,1fr) auto; max-height: min(820px, calc(100vh - 34px)); }.plan-advanced-config-body { display: grid; grid-template-columns: minmax(220px,.72fr) minmax(360px,1.28fr); gap: 20px; min-height: 0; padding: 22px 26px; overflow: auto; }.plan-advanced-identity { align-self: start; display: grid; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: #f5f8f5; }.plan-advanced-thumb { width: 86px; height: 86px; object-fit: cover; border-radius: 18px; background: #e7ede8; }.plan-advanced-identity h3 { margin: 5px 0 7px; font-size: 19px; }.plan-advanced-identity p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }.plan-advanced-workspace { min-width: 0; }.plan-advanced-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }.plan-advanced-fields label { min-width: 0; font-size: 10px; }.plan-advanced-fields select { margin-top: 6px; background: white; }.plan-advanced-fields select:disabled { opacity: 1; color: var(--ink); background: #eef2ef; }.plan-advanced-result { margin-top: 16px; }.plan-advanced-result:empty { display: none; }
+
 .muscle-dialog { width: min(930px, calc(100vw - 34px)); max-width: 930px; padding: 0; overflow: hidden; }.muscle-dialog-layout { display: grid; grid-template-columns: minmax(420px,1.25fr) minmax(260px,.75fr); min-height: 520px; }.session-muscle-map { display: grid; place-items: center; min-height: 520px; overflow: hidden; background: #a9acaa; }.session-muscle-map svg { width: 100%; height: 100%; max-height: 600px; }.session-muscle-map [data-fitcore-role="PRIMARY"] { fill: var(--red) !important; filter: drop-shadow(0 0 5px rgba(206,59,54,.35)); }.session-muscle-map [data-fitcore-role="SECONDARY"] { fill: var(--coral) !important; }.map-legend.compact { border: 0; }.session-muscle-list { max-height: 455px; padding: 0 18px 18px; overflow: auto; }.session-muscle-row { display: grid; grid-template-columns: 9px minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); }.session-muscle-row > i { width: 9px; height: 38px; border-radius: 6px; background: var(--coral); }.session-muscle-row > i.primary { background: var(--red); }.session-muscle-row strong, .session-muscle-row small { display: block; }.session-muscle-row strong { font-size: 11px; }.session-muscle-row small, .session-muscle-row > span { color: var(--muted); font-size: 9px; }
 .set-table { min-width: 820px; }.set-table input[type="number"] { width: 64px; min-width: 58px; }.previous-performance { min-width: 100px; color: var(--muted); white-space: nowrap; }.previous-performance strong { color: #66736d; font-size: 10px; }.pending-set { display: inline-flex; padding: 5px 8px; border-radius: 999px; color: var(--muted); background: #edf1ee; font-size: 9px; font-weight: 800; }.rest-setting { display: grid; grid-template-columns: auto auto; align-items: center; gap: 1px 8px; padding: 0; border: 0; color: var(--muted); background: transparent; text-align: left; }.rest-setting strong { color: var(--green-2); font-size: 13px; }.rest-setting small { grid-column: 1 / -1; color: var(--green-2); font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }.rest-setting:hover strong, .rest-setting:hover small { color: var(--red); }.rpe-button { width: 58px; min-height: 38px; border: 1px solid #cad5cf; border-radius: 10px; color: var(--muted); background: white; font-size: 10px; font-weight: 850; }.rpe-button.has-value { border-color: #f2b02e; color: #71500a; background: #fff8df; font-size: 13px; }.rpe-button.is-auto { border-color: #a7c3b8; color: var(--green-2); background: #edf6f1; }.rpe-button.is-manual.has-value { border-color: #f2b02e; color: #71500a; background: #fff8df; }
 
@@ -133,6 +135,14 @@ dialog { max-width: 430px; padding: 26px; border: 1px solid var(--line); border-
 body.resting .toast-region { bottom: 190px; }
 @media (max-width: 640px) { .rest-timer { right: 12px; bottom: 12px; width: calc(100vw - 24px); }.rest-presets { grid-template-columns: repeat(3,1fr); }body.resting .toast-region { bottom: 202px; } }
 
+@media (max-width: 720px) {
+    .plan-advanced-config-body { grid-template-columns: 1fr; padding-inline: 16px; }
+    .plan-advanced-identity { grid-template-columns: 72px minmax(0,1fr); align-items: center; }
+    .plan-advanced-thumb { width: 72px; height: 72px; }
+    .plan-advanced-fields { grid-template-columns: 1fr; }
+    .plan-advanced-config-dialog .dialog-actions { position: sticky; bottom: 0; }
+}
+
 
 /* FITCORE - MINIATURA MUSCULAR */
 
@@ -140,7 +150,6 @@ body.resting .toast-region { bottom: 190px; }
     padding: 9px 12px;
     background: #f8fbf9;
 }
-
 .session-muscle-mini {
     display: grid;
     place-items: center;
@@ -632,6 +641,222 @@ body.resting .toast-region { bottom: 190px; }
 }
 
 
+/* FITCORE - CATÁLOGO ESTABLE Y ACTIVACIONES */
+
+@media (min-width: 1281px) {
+    .catalog-layout {
+        align-items: stretch;
+        height: calc(100dvh - 152px);
+        min-height: 620px;
+        max-height: calc(100dvh - 152px);
+    }
+
+    .catalog-layout > .panel {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .filter-panel,
+    .detail-panel {
+        overflow: hidden;
+    }
+
+    .catalog-results {
+        flex: 1;
+        min-height: 0;
+        max-height: none;
+    }
+
+    .detail-panel {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+    }
+
+    .map-panel {
+        min-height: 0;
+    }
+
+    .map-toolbar {
+        flex: 0 0 186px;
+        height: 186px;
+        align-items: flex-start;
+        overflow: hidden;
+    }
+
+    .map-toolbar > div {
+        min-width: 0;
+    }
+
+    .map-toolbar h2,
+    .map-toolbar p:not(.eyebrow) {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+
+    .map-stage {
+        min-height: 0;
+    }
+
+    .map-stage svg {
+        max-height: 100%;
+    }
+}
+
+.activation-section {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+}
+
+.activation-section-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.activation-section-heading h2 {
+    margin: 5px 0 0;
+}
+
+.activation-section-heading > span {
+    padding: 6px 9px;
+    border-radius: 999px;
+    color: var(--green-2);
+    background: var(--lime-soft);
+    font-size: 8px;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+.activation-list {
+    gap: 10px;
+}
+
+.activation {
+    --activation-color: var(--coral);
+    --activation-soft: #fff2ee;
+    position: relative;
+    padding: 13px 14px 12px;
+    overflow: hidden;
+    border: 1px solid #e1e7e3;
+    border-left: 4px solid var(--activation-color);
+    border-radius: 13px;
+    background: linear-gradient(135deg, #fff 0%, var(--activation-soft) 145%);
+    box-shadow: 0 5px 16px rgba(18, 63, 53, .045);
+}
+
+.activation[data-role="PRIMARY"] {
+    --activation-color: var(--red);
+    --activation-soft: #ffebe8;
+}
+
+.activation[data-role="SECONDARY"] {
+    --activation-color: var(--coral);
+    --activation-soft: #fff0eb;
+}
+
+.activation[data-role="STABILIZER"] {
+    --activation-color: var(--amber);
+    --activation-soft: #fff6df;
+}
+
+.activation .activation-head,
+.activation .activation-muscle,
+.activation .activation-metrics {
+    display: flex;
+    align-items: center;
+}
+
+.activation .activation-head {
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.activation .activation-muscle {
+    min-width: 0;
+    gap: 8px;
+}
+
+.activation-muscle i {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--activation-color);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--activation-color) 14%, transparent);
+}
+
+.activation-muscle strong {
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.activation-role {
+    flex: 0 0 auto;
+    padding: 5px 8px;
+    border-radius: 999px;
+    color: color-mix(in srgb, var(--activation-color) 76%, #241b19);
+    background: color-mix(in srgb, var(--activation-color) 13%, white);
+    font-size: 8px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.activation .activation-metrics {
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 9px;
+}
+
+.activation-metrics b {
+    color: var(--ink);
+    font-weight: 850;
+}
+
+.activation .activation-bar {
+    display: block;
+    width: 100%;
+    height: 6px;
+    margin-top: 9px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #e6ebe8;
+}
+
+.activation .activation-bar i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--activation-color);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--activation-color) 28%, transparent);
+}
+
+.activation .activation-evidence {
+    display: block;
+    margin-top: 8px;
+    color: #708079;
+    font-size: 8px;
+    line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+    .activation-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+
 /* 12. CORRECCIÓN DEL SELECTOR DE EJERCICIOS */
 
 /* Cerrado: completamente oculto */
@@ -1017,6 +1242,16 @@ body.resting .toast-region { bottom: 190px; }
     text-overflow: ellipsis;
 }
 
+.plan-exercise-name {
+    display: block;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 850;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .plan-exercise-identity small {
     display: block;
     margin-top: 2px;
@@ -1079,6 +1314,12 @@ body.resting .toast-region { bottom: 190px; }
     font-weight: 800;
 }
 
+.plan-row-menu {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+}
+
 .plan-row-actions {
     width: 42px;
     height: 38px;
@@ -1091,10 +1332,89 @@ body.resting .toast-region { bottom: 190px; }
     letter-spacing: 1px;
 }
 
-.plan-row-actions:hover {
-    border-color: #e4a29f;
+.plan-row-actions:hover,
+.plan-row-actions[aria-expanded="true"] {
+    border-color: var(--green-2);
+    color: var(--green);
+    background: var(--lime-soft);
+}
+
+.plan-row-action-menu {
+    position: fixed;
+    z-index: 90;
+    display: grid;
+    width: min(260px, calc(100vw - 24px));
+    padding: 7px;
+    border: 1px solid #cbd7d1;
+    border-radius: 14px;
+    background: white;
+    box-shadow: 0 18px 50px rgba(7, 45, 36, .2);
+}
+
+.plan-row-action-menu[hidden] {
+    display: none;
+}
+
+.plan-row-action-menu button {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 10px;
+    border: 0;
+    border-radius: 9px;
+    color: var(--ink);
+    background: transparent;
+    text-align: left;
+}
+
+.plan-row-action-menu button:hover,
+.plan-row-action-menu button:focus-visible {
+    outline: 0;
+    background: #eef5f1;
+}
+
+.plan-row-action-menu button > span:first-child {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    color: var(--green-2);
+    background: #e9f1ed;
+    font-size: 17px;
+    font-weight: 900;
+}
+
+.plan-row-action-menu strong,
+.plan-row-action-menu small {
+    display: block;
+}
+
+.plan-row-action-menu strong {
+    font-size: 11px;
+}
+
+.plan-row-action-menu small {
+    margin-top: 2px;
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.35;
+}
+
+.plan-row-action-menu .is-danger {
+    color: #9f302c;
+}
+
+.plan-row-action-menu .is-danger:hover,
+.plan-row-action-menu .is-danger:focus-visible {
+    background: #fff1ef;
+}
+
+.plan-row-action-menu .is-danger > span:first-child {
     color: var(--red);
-    background: #fff4f3;
+    background: #ffe6e2;
 }
 
 .plan-day-no-exercises {
@@ -1293,9 +1613,13 @@ body.resting .toast-region { bottom: 190px; }
         min-width: 0;
     }
 
-    .plan-row-actions {
+    .plan-row-menu {
         grid-column: 4;
         grid-row: 2;
+        width: 100%;
+    }
+
+    .plan-row-actions {
         width: 100%;
     }
 
@@ -1346,12 +1670,1228 @@ body.resting .toast-region { bottom: 190px; }
         grid-column: 1 / -1;
     }
 
-    .plan-row-actions {
+    .plan-row-menu {
         grid-column: 2;
         grid-row: 3;
     }
 
     .plan-settings-actions .button {
         width: 100%;
+    }
+}
+
+
+/* =========================================
+   FITCORE - MODALES DE PLANES
+   ========================================= */
+
+/* Ocultar la ventana de días cuando esté cerrada */
+#plan-new-day-dialog:not([open]) {
+    display: none !important;
+}
+
+/* Ventana para crear un día */
+#plan-new-day-dialog[open] {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    display: block;
+
+    width: min(480px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+
+    padding: 0;
+    overflow-y: auto;
+
+    background: var(--surface);
+    color: var(--ink);
+
+    border: 1px solid var(--line);
+    border-radius: 18px;
+
+    box-shadow:
+            0 24px 70px rgba(16, 37, 31, .22);
+}
+
+#plan-new-day-dialog form {
+    margin: 0;
+}
+
+#plan-new-day-dialog .plan-new-day-fields {
+    display: grid;
+    gap: 16px;
+    padding: 22px;
+}
+
+#plan-new-day-dialog .dialog-actions {
+    flex-wrap: wrap;
+}
+
+/* Fondo oscuro detrás del diálogo */
+#plan-new-day-dialog::backdrop {
+    background: rgba(10, 28, 23, .55);
+    backdrop-filter: blur(2px);
+}
+
+/* =========================================
+   CAMPOS DE SERIES, REPS Y DESCANSO
+   ========================================= */
+
+#plan-picker-fields[hidden] {
+    display: none !important;
+}
+
+.plan-picker-fields {
+    display: grid;
+    gap: 12px;
+
+    margin-top: 18px;
+    padding-top: 16px;
+
+    border-top: 1px solid var(--line);
+}
+
+.plan-picker-fields h4 {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink);
+}
+
+.plan-picker-numbers {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.plan-picker-numbers label {
+    min-width: 0;
+}
+
+.plan-picker-numbers input {
+    width: 100%;
+    min-width: 0;
+    min-height: 40px;
+
+    padding: 8px;
+    text-align: center;
+}
+
+.plan-picker-fields p {
+    margin: 0;
+
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+/* =========================================
+   ADAPTACIÓN MÓVIL
+   ========================================= */
+
+@media (max-width: 640px) {
+    #plan-new-day-dialog .plan-new-day-fields {
+        padding: 16px;
+    }
+
+    .plan-picker-numbers {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+
+/* =========================================
+   FITCORE - CONFIGURACIÓN DE DÍAS
+   ========================================= */
+
+/* Ocultar el diálogo cerrado */
+#plan-edit-day-dialog:not([open]) {
+    display: none !important;
+}
+
+/* Ventana de configuración */
+#plan-edit-day-dialog[open] {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+
+    display: block;
+
+    width: min(660px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+
+    padding: 0;
+    overflow-y: auto;
+
+    border: 1px solid var(--line);
+    border-radius: 20px;
+
+    background: white;
+
+    box-shadow:
+            0 24px 70px rgba(16, 37, 31, .22);
+}
+
+#plan-edit-day-dialog::backdrop {
+    background: rgba(10, 28, 23, .55);
+    backdrop-filter: blur(2px);
+}
+
+#plan-edit-day-dialog form {
+    margin: 0;
+}
+
+/* Campos de configuración */
+.plan-edit-day-fields {
+    display: grid;
+    gap: 20px;
+    padding: 22px;
+}
+
+/* Contenedor de tipos */
+.plan-edit-type-fieldset {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+}
+
+.plan-edit-type-fieldset legend {
+    margin-bottom: 12px;
+    color: #43564f;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+/* Cuadrícula de tipos */
+.plan-edit-type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.plan-edit-type-card {
+    position: relative;
+    display: block;
+    cursor: pointer;
+}
+
+/* Radio accesible pero visualmente oculto */
+.plan-edit-type-card input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    opacity: 0;
+}
+
+/* Tarjeta de cada tipo */
+.plan-edit-type-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+    min-height: 76px;
+    padding: 10px;
+
+    border: 1px solid #dbe2dd;
+    border-radius: 12px;
+
+    background: #fbfcfa;
+    color: #123f35;
+
+    font-size: 11px;
+    font-weight: 750;
+    text-align: center;
+
+    transition:
+            background .15s ease,
+            border-color .15s ease;
+}
+
+/* Iconos SVG originales de FitCore */
+.plan-edit-type-content svg {
+    width: 25px;
+    height: 25px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Tipo seleccionado */
+.plan-edit-type-card input:checked
++ .plan-edit-type-content {
+    background: #eefbd6;
+    border-color: #83c32c;
+
+    box-shadow:
+            inset 0 0 0 1px #83c32c;
+}
+
+/* Navegación con teclado */
+.plan-edit-type-card input:focus-visible
++ .plan-edit-type-content {
+    outline: 3px solid rgba(189,241,90,.85);
+    outline-offset: 2px;
+}
+
+.plan-edit-type-card:hover
+.plan-edit-type-content {
+    border-color: #83b78f;
+}
+
+/* Administración */
+.plan-edit-day-management {
+    display: grid;
+    gap: 12px;
+
+    padding: 17px 22px;
+
+    border-top: 1px solid var(--line);
+    background: #f9fbf8;
+}
+
+.plan-edit-day-management > strong {
+    font-size: 12px;
+}
+
+.plan-edit-management-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.plan-edit-management-actions .button {
+    font-size: 11px;
+    min-height: 38px;
+}
+
+#plan-edit-delete {
+    justify-self: start;
+}
+
+/* Cabecera compacta del día */
+.plan-day-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+}
+
+.plan-day-title h3 {
+    margin: 0;
+    min-width: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: 1.25;
+}
+
+/* Etiqueta del tipo de día */
+.plan-day-title .plan-day-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    padding: 6px 9px;
+
+    border-radius: 999px;
+    background: #edf5ef;
+    color: #245745;
+
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0;
+}
+
+/* Evitar el separador de la cabecera original */
+.plan-day-title .plan-day-type-badge::after {
+    content: none;
+}
+
+.plan-day-type-badge svg {
+    width: 15px;
+    height: 15px;
+
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.plan-day-controls {
+    align-items: center;
+}
+
+/* Adaptación a móviles */
+@media (max-width: 640px) {
+    .plan-edit-day-fields,
+    .plan-edit-day-management {
+        padding: 16px;
+    }
+
+    .plan-edit-type-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .plan-edit-management-actions {
+        flex-direction: column;
+    }
+}
+
+
+
+/* ===========================================
+   FITCORE - DRAG AND DROP
+   =========================================== */
+
+/* TARJETAS DE DÍAS */
+
+.plan-day-tab {
+    position: relative;
+    padding-right: 30px;
+}
+
+.plan-day-tab .plan-day-grip {
+    position: absolute;
+
+    right: 5px;
+    top: 5px;
+
+    display: grid;
+    place-items: center;
+
+    width: 26px;
+    height: 30px;
+
+    border-radius: 7px;
+    color: #58766a;
+
+    font-size: 21px;
+
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+
+/* FILAS DE EJERCICIOS */
+
+.plan-order-controls .plan-exercise-grip {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+}
+
+
+/* HOVER */
+
+.plan-day-grip:hover,
+.plan-exercise-grip:hover {
+    color: #123f35;
+}
+
+
+/* CURSOR AL ARRASTRAR */
+
+.plan-is-dragging,
+.plan-is-dragging * {
+    cursor: grabbing !important;
+}
+
+
+/* HUECO QUE DEJA EL ELEMENTO */
+
+.plan-drag-placeholder {
+    opacity: 0.24 !important;
+
+    border: 2px dashed #83c32c !important;
+
+    background: #eefbd6 !important;
+
+    pointer-events: none;
+}
+
+
+/* ELEMENTO FLOTANTE DURANTE EL ARRASTRE */
+
+.plan-drag-ghost {
+    box-sizing: border-box;
+
+    opacity: 0.94 !important;
+
+    background: white !important;
+
+    border: 1px solid #a4d45f !important;
+    border-radius: 14px;
+
+    box-shadow:
+            0 18px 40px rgba(18, 63, 53, 0.20)
+    !important;
+
+    pointer-events: none !important;
+    user-select: none !important;
+}
+
+
+/* TRANSICIONES SUAVES */
+
+@media (prefers-reduced-motion: no-preference) {
+    .plan-day-tab:not(.plan-drag-placeholder),
+    .exercise-editor:not(.plan-drag-placeholder) {
+        transition:
+                background-color .12s ease,
+                border-color .12s ease;
+    }
+}
+
+
+
+/* ==========================================
+   FITCORE - ANÁLISIS MUSCULAR DE PLANES
+   ========================================== */
+
+#view-plans .plan-day-editor-head {
+    flex-wrap: wrap;
+}
+
+#view-plans .plan-day-controls {
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* MINIATURA DEL DÍA */
+
+.plan-day-muscle-button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    padding: 4px 10px 4px 5px;
+
+    border: 1px solid var(--line);
+    border-radius: 13px;
+
+    background: #fbfcfa;
+    color: var(--green);
+
+    text-align: left;
+    cursor: pointer;
+}
+
+.plan-day-muscle-button:hover {
+    border-color: #9cc35b;
+    background: #f6faee;
+}
+
+.plan-day-muscle-mini {
+    display: grid;
+    place-items: center;
+
+    width: 86px;
+    height: 76px;
+    flex: 0 0 86px;
+
+    overflow: hidden;
+    border-radius: 10px;
+    background: white;
+}
+
+.plan-day-muscle-mini svg {
+    width: 100%;
+    height: 100%;
+    transform: none !important;
+    filter: none !important;
+}
+
+.plan-day-muscle-copy {
+    display: grid;
+    gap: 4px;
+}
+
+.plan-day-muscle-copy strong {
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.plan-day-muscle-copy small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+/* VENTANA AMPLIADA */
+
+#plan-muscle-dialog:not([open]) {
+    display: none !important;
+}
+
+#plan-muscle-dialog[open] {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+
+    width: min(1040px, calc(100vw - 28px));
+    max-width: calc(100vw - 28px);
+    max-height: calc(100dvh - 28px);
+
+    padding: 0;
+    overflow: auto;
+
+    border: 1px solid var(--line);
+    border-radius: 20px;
+
+    background: white;
+    box-shadow: 0 30px 70px rgba(10,28,23,.2);
+}
+
+#plan-muscle-dialog::backdrop {
+    background: rgba(10,28,23,.62);
+    backdrop-filter: blur(2px);
+}
+
+/* SELECTOR DÍA / SEMANA */
+
+.plan-muscle-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+}
+
+.plan-muscle-switch {
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+
+    border-radius: 11px;
+    background: #eaf1e9;
+}
+
+.plan-muscle-switch button {
+    min-height: 36px;
+    padding: 7px 14px;
+
+    border: 0;
+    border-radius: 9px;
+
+    color: var(--green);
+    background: transparent;
+
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.plan-muscle-switch button[aria-pressed="true"] {
+    background: var(--lime);
+}
+
+#plan-muscle-day-picker {
+    min-width: 230px;
+}
+
+#plan-muscle-day-picker[hidden] {
+    display: none !important;
+}
+
+/* MAPA Y ESTADÍSTICAS */
+
+.plan-muscle-layout {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1.2fr)
+        minmax(280px, .8fr);
+}
+
+.plan-muscle-figure {
+    display: grid;
+    grid-template-rows: minmax(320px, 1fr) auto;
+    min-width: 0;
+    border-right: 1px solid var(--line);
+}
+
+.plan-muscle-map {
+    display: grid;
+    place-items: center;
+
+    min-width: 0;
+    min-height: 320px;
+
+    overflow: hidden;
+    background: #f7faf8;
+}
+
+.plan-muscle-map svg {
+    width: 100% !important;
+    height: min(50vh, 480px) !important;
+    max-width: 100%;
+
+    transform: none !important;
+    filter: none !important;
+}
+
+.plan-muscle-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+.plan-muscle-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.plan-muscle-legend i {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+/* COLORES DE LAS ACTIVACIONES */
+
+.plan-muscle-legend .primary {
+    background: #ce3b36;
+}
+
+.plan-muscle-legend .secondary {
+    background: #f06b4f;
+}
+
+.plan-muscle-legend .low {
+    background: #d5efbc;
+}
+
+.plan-muscle-legend .medium {
+    background: #8dd455;
+}
+
+.plan-muscle-legend .high {
+    background: #166c4f;
+}
+
+/* Anatomía - Día */
+
+#plan-day-muscle-mini
+[data-fitcore-role="PRIMARY"],
+#plan-muscle-map
+[data-fitcore-role="PRIMARY"] {
+    fill: #ce3b36 !important;
+}
+
+#plan-day-muscle-mini
+[data-fitcore-role="SECONDARY"],
+#plan-muscle-map
+[data-fitcore-role="SECONDARY"] {
+    fill: #f06b4f !important;
+}
+
+/* Anatomía - Semana */
+
+#plan-muscle-map
+[data-plan-muscle-level="low"] {
+    fill: #d5efbc !important;
+}
+
+#plan-muscle-map
+[data-plan-muscle-level="medium"] {
+    fill: #8dd455 !important;
+}
+
+#plan-muscle-map
+[data-plan-muscle-level="high"] {
+    fill: #166c4f !important;
+}
+
+/* LISTA DE MÚSCULOS */
+
+.plan-muscle-details {
+    padding: 22px;
+    min-width: 0;
+}
+
+.plan-muscle-details h3 {
+    margin: 0 0 7px;
+    font-size: 17px;
+}
+
+.plan-muscle-details > p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+#plan-muscle-analysis-list {
+    max-height: 350px;
+    overflow: auto;
+}
+
+.plan-muscle-item {
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.plan-muscle-item-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.plan-muscle-item-top span {
+    color: var(--green-2);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.plan-muscle-track {
+    height: 7px;
+    margin: 8px 0 5px;
+
+    border-radius: 8px;
+    background: #eaf1eb;
+
+    overflow: hidden;
+}
+
+.plan-muscle-track i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #7cc65b;
+}
+
+.plan-muscle-item small,
+.plan-muscle-disclaimer {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 800px) {
+    .plan-muscle-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .plan-muscle-figure {
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .plan-muscle-details {
+        padding: 16px;
+    }
+
+    .plan-muscle-map svg {
+        height: 310px !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .plan-day-muscle-button {
+        order: 3;
+        width: 100%;
+    }
+
+    #plan-muscle-dialog[open] {
+        width: calc(100vw - 12px);
+        max-width: calc(100vw - 12px);
+    }
+}
+
+
+/* ========================================
+   FITCORE - MINIATURA MUSCULAR ADAPTATIVA
+   ======================================== */
+
+/* Contenedor general */
+.plan-day-muscle-button {
+    min-height: 112px;
+    padding: 5px 12px 5px 5px;
+    gap: 10px;
+}
+
+/* Espacio destinado a las figuras */
+.plan-day-muscle-mini {
+    display: grid;
+    place-items: center;
+
+    width: 122px;
+    height: 102px;
+    flex: 0 0 122px;
+    min-width: 0;
+
+    overflow: hidden;
+    background: #ffffff;
+
+    border-radius: 10px;
+}
+
+/* SVG centrado y proporcionado */
+.plan-day-muscle-mini > svg {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none;
+    max-height: none;
+
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+}
+
+/* Adaptación para móviles */
+@media (max-width: 600px) {
+    .plan-day-muscle-mini {
+        display: grid;
+        place-items: center;
+
+        width: 138px;
+        height: 108px;
+        flex: 0 0 138px;
+        min-width: 0;
+
+        overflow: hidden;
+        background: #ffffff;
+        border-radius: 10px;
+    }
+}
+
+
+/* ==========================================
+   FITCORE - MAPA MUSCULAR HORIZONTAL
+   ========================================== */
+
+/* Cabecera: título | mapa rectangular | botones */
+
+#view-plans .plan-day-editor-head {
+    display: grid;
+
+    grid-template-columns:
+        minmax(220px, 1fr)
+        minmax(360px, 420px)
+        auto;
+
+    align-items: center;
+    gap: 14px;
+    padding: 12px 22px;
+}
+
+
+#view-plans .plan-day-title {
+    min-width: 0;
+}
+
+/* Área central */
+#view-plans .plan-day-muscle-area {
+    min-width: 0;
+}
+
+/* Tarjeta rectangular */
+
+#view-plans .plan-day-muscle-button {
+    display: grid;
+
+    grid-template-columns:
+        minmax(145px, 44%)
+        minmax(0, 1fr);
+
+    align-items: center;
+    gap: 12px;
+
+    width: 100%;
+    min-width: 0;
+
+    height: 128px;
+    min-height: 128px;
+
+    padding: 6px 12px 6px 8px;
+
+    border: 1px solid #e5eae3;
+    border-radius: 14px;
+
+    background: #f5f9f3;
+    text-align: left;
+    box-shadow: none;
+}
+
+
+#view-plans .plan-day-muscle-button:hover {
+    background: #eef7e8;
+}
+
+/* Zona izquierda: SVG */
+
+#view-plans .plan-day-muscle-mini {
+    display: grid;
+    place-items: center;
+
+    width: 100%;
+    height: 114px;
+
+    min-width: 0;
+    min-height: 0;
+    max-width: none;
+
+    padding: 0;
+    margin: 0;
+
+    overflow: hidden;
+    border-radius: 12px;
+    background: transparent;
+
+    isolation: isolate;
+}
+
+
+/* Mantener los cuerpos proporcionados */
+#view-plans .plan-day-muscle-mini > svg {
+    display: block;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    max-width: 100%;
+    max-height: 100%;
+
+    opacity: 1 !important;
+    transform: translateY(-3px) !important;
+    filter: none !important;
+
+    border-radius: inherit;
+    clip-path: inset(0 round 12px);
+}
+
+/* Zona derecha: información muscular */
+#view-plans .plan-day-muscle-copy {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+
+    gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+#view-plans .plan-day-muscle-title {
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 850;
+    line-height: 1.2;
+}
+
+#view-plans .plan-day-muscle-list {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+/* Cada músculo */
+#view-plans .plan-day-muscle-row {
+    display: flex;
+    align-items: center;
+
+    gap: 6px;
+    min-width: 0;
+
+    color: #43564f;
+    font-size: 10px;
+    line-height: 1.2;
+}
+
+#view-plans .plan-day-muscle-row > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Puntos verdes */
+#view-plans .plan-day-muscle-dot {
+    flex: 0 0 8px;
+
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+    background: #a7e535;
+}
+
+/* Estados y contador */
+#view-plans .plan-day-muscle-empty {
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.35;
+}
+
+#view-plans #plan-day-muscle-caption {
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1.2;
+}
+
+/* Acciones alineadas a la derecha */
+#view-plans .plan-day-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+
+    flex-wrap: nowrap;
+    gap: 10px;
+    min-width: 0;
+}
+
+#view-plans .plan-day-controls > button {
+    white-space: nowrap;
+}
+
+/* Pantallas medianas */
+@media (max-width: 1380px) {
+    #view-plans .plan-day-editor-head {
+        grid-template-columns:
+            minmax(220px, 1fr)
+            minmax(300px, 360px);
+    }
+
+    #view-plans .plan-day-controls {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+    }
+}
+
+/* Móviles y pantallas pequeñas */
+@media (max-width: 850px) {
+    #view-plans .plan-day-editor-head {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #view-plans .plan-day-muscle-area {
+        width: 100%;
+        max-width: 500px;
+    }
+
+    #view-plans .plan-day-controls {
+        grid-column: 1;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+
+/* CONFIGURADOR AVANZADO COMPACTO */
+
+#plan-advanced-config-dialog {
+    width: min(680px, calc(100vw - 28px));
+    max-width: 680px;
+}
+
+#plan-advanced-config-dialog .plan-advanced-config-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 20px 24px;
+}
+
+/* Identidad horizontal del ejercicio */
+
+#plan-advanced-config-dialog .plan-advanced-identity {
+    display: grid;
+    grid-template-columns: 66px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+}
+
+#plan-advanced-config-dialog .plan-advanced-thumb {
+    width: 66px;
+    height: 66px;
+    border-radius: 12px;
+}
+
+#plan-advanced-config-dialog .plan-advanced-identity h3 {
+    margin: 2px 0 4px;
+    font-size: 17px;
+}
+
+/* Solo dos columnas de controles principales */
+
+#plan-advanced-config-dialog .plan-advanced-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+#plan-advanced-config-dialog .plan-advanced-more,
+#plan-advanced-config-dialog .plan-advanced-exact-choice,
+#plan-advanced-config-dialog .plan-advanced-no-fields {
+    grid-column: 1 / -1;
+}
+
+/* Apartado técnico plegable */
+
+#plan-advanced-config-dialog .plan-advanced-more {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #f8faf7;
+    padding: 13px 14px;
+}
+
+#plan-advanced-config-dialog .plan-advanced-more summary {
+    cursor: pointer;
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+#plan-advanced-config-dialog .plan-advanced-more summary small {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+#plan-advanced-config-dialog .plan-advanced-more > p,
+#plan-advanced-config-dialog .plan-advanced-no-fields {
+    margin: 9px 0 12px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+#plan-advanced-config-dialog .plan-advanced-extra-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+#plan-advanced-config-dialog .plan-advanced-result {
+    margin-top: 12px;
+}
+
+@media (max-width: 600px) {
+    #plan-advanced-config-dialog .plan-advanced-config-body {
+        padding: 16px;
+    }
+
+    #plan-advanced-config-dialog .plan-advanced-fields,
+    #plan-advanced-config-dialog .plan-advanced-extra-fields {
+        grid-template-columns: 1fr;
     }
 }
