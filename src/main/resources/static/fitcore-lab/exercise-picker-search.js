@@ -123,20 +123,14 @@
                 if (exercise.code === 'benchPress') {
                     title = main.equipment === 'SMITH_MACHINE'
                         ? 'Press de banca' + adj + ' en Smith'
-                        : 'Press de banca' + adj + ' (barra o mancuernas)';
+                        : 'Press de banca' + adj;
                 } else if (exercise.code === 'machineChestPress') {
                     title = 'Press de pecho' + adj + ' en máquina';
                 } else if (exercise.code === 'chestFly') {
                     title = 'Aperturas de pecho · ' + materials.join(' / ');
                 }
-                const angleMap = {FLAT:'0°', LOW_INCLINE:'≈15°',
-                    INCLINE:'≈30–45°', HIGH_INCLINE:'≈60°'};
-                const angles = [...new Set(fullGroup.map(item =>
-                    angleMap[item.benchAngle]).filter(Boolean))];
                 const detail = materials.join(' / ') + ' · ' + fullGroup.length +
-                    (fullGroup.length === 1 ? ' configuración' : ' configuraciones') +
-                    ((exercise.code === 'benchPress' || exercise.code === 'machineChestPress') && angles.length
-                        ? ' · Ángulos aprox.: ' + angles.join(' / ') : '');
+                    (fullGroup.length === 1 ? ' configuración' : ' configuraciones');
                 results.push({
                     exercise, variant: main,
                     variantCodes: fullGroup.map(item => item.code),

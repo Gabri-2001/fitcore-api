@@ -56,46 +56,65 @@ test('selector, plan y sesión emplean el mismo nombre visible', () => {
     assert.match(source, /const exerciseName = variant \? FitCoreVariantUI\.variantTitle\(base, variant\)/);
 });
 
-test('se conserva variante específica, botón accesible y ajustes en el panel antes de añadir', () => {
-    const helperSection = extract('function renderVariantConfiguratorFields(', 'async function openPlanAdvancedConfigDialog(');
-    const variants = [
-        variant('default', 'Press plano con barra', 'FLAT','BARBELL'),
-        variant('incline', 'Press inclinado con mancuernas', 'INCLINE','DUMBBELL')
-    ];
+
+test('el selector permite configurar solo cuando hay variantes alternativas', () => {
+    const section = extract('function availablePickerVariants(', 'async function openPlanAdvancedConfigDialog(');
+    assert.match(section, /variants\.length > 1/);
+    assert.match(section, /data-picker-toggle-config/);
+    assert.match(section, /showModal\(\)/);
+    assert.match(section, /data-picker-dialog-field/);
+    assert.match(section, /renderVariantConfiguratorFields\(controls, candidates, selectedVariant/);
+    assert.match(section, /state\.sessionPicker\.configuration = configurationFromVariant\(selectedVariant\)/);
+    assert.match(html, /id="picker-variant-dialog"/);
+    assert.match(html, /id="picker-variant-apply"/);
+    assert.match(html, /data-close-picker-variant/);
+});
+
+test('Cancelar deja la selección original y Aplicar confirma el borrador', () => {
+    const section = extract('function availablePickerVariants(', 'async function openPlanAdvancedConfigDialog(');
+    const nodes = {
+        'picker-variant-dialog': {open:false,showModal(){this.open=true;},close(){this.open=false;}},
+        'picker-variant-dialog-body': {querySelector(){return null;}},
+        'picker-variant-title': {textContent:''},
+        'picker-variant-identity': {innerHTML:''},
+        'picker-variant-dialog-fields': {innerHTML:''},
+        'picker-variant-dialog-result': {innerHTML:''},
+        'picker-variant-apply': {disabled:false}
+    };
     const context = {
-        state:{pickerConfigOpen:false, pickerConfigMoreOpen:false, sessionPicker:{configuration:{variantCode:'incline'}}},
-        FitCoreVariantUI:{variantTitle},
-        planPrimaryVariantKeys:new Set(['equipment','benchAngle','gripType','gripWidth']),
-        orderedVariantsForExercise:()=>variants,
-        defaultVariantForExercise:()=>variants[0],
+        state: {pickerMode:'plan',pickerGroupCodes:null,pickerDraft:null,
+            sessionPicker:{exercise:base,configuration:{variantCode:'default'}}},
+        orderedVariantsForExercise: () => [
+            variant('default','Press plano con barra','FLAT','BARBELL'),
+            variant('incline','Press inclinado con mancuernas','INCLINE','DUMBBELL')
+        ],
         configurationFromVariant:v=>({variantCode:v.code,equipment:v.equipment,benchAngle:v.benchAngle}),
-        resolveVariantForExercise:(exercise, configuration)=>({
-            selectedVariant: variants.find(v=>v.code===configuration.variantCode)||variants[0],
-            candidates:variants,
-            controls:[{key:'equipment',label:'Equipamiento',values:['BARBELL','DUMBBELL'],selected:configuration.equipment||'DUMBBELL',empty:[]}]
+        resolveVariantForExercise:(_,config,options)=>({
+            controls:[],candidates:options,
+            selectedVariant:options.find(v=>v.code===config.variantCode)||options[0]
         }),
-        variantConfigurationChips:v=>[v.equipment,v.benchAngle],
+        renderVariantConfiguratorFields:()=>'<div>Controles</div>',
+        variantConfigurationChips:()=>[],
         exerciseThumb:()=>'<span>PR</span>',
-        escapeHtml:v=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;'),
-        variantValue:(_,v)=>v,
-        friendly:v=>v,
-        $:()=>({disabled:null})
+        escapeHtml:String,friendly:String,
+        FitCoreVariantUI:{variantTitle},
+        renderSessionExerciseConfig:()=>{},renderSessionExerciseResults:()=>{},
+        $:id=>nodes[id]
     };
     vm.createContext(context);
-    vm.runInContext(helperSection, context);
-    const container = {innerHTML:''};
-    context.renderPlanSimpleExerciseConfig(container, base);
-    assert.match(container.innerHTML,/data-picker-toggle-config/);
-    assert.match(container.innerHTML,/Press de banca inclinado/);
-    assert.match(container.innerHTML,/Press inclinado con mancuernas/);
+    vm.runInContext(section,context);
+    context.openPickerVariantDialog();
+    context.state.pickerDraft.configuration.variantCode='incline';
+    context.closePickerVariantDialog();
+    assert.equal(context.state.sessionPicker.configuration.variantCode,'default');
+    context.openPickerVariantDialog();
+    context.state.pickerDraft.configuration.variantCode='incline';
+    context.applyPickerVariantDialog();
     assert.equal(context.state.sessionPicker.configuration.variantCode,'incline');
-    context.state.pickerConfigOpen = true;
-    context.renderPlanSimpleExerciseConfig(container, base);
-    assert.match(container.innerHTML,/data-picker-variant-field="equipment"/);
-    assert.match(container.innerHTML,/data-picker-variant-code/);
-    assert.match(container.innerHTML,/data-picker-reset-default/);
-    assert.equal(context.state.sessionPicker.configuration.variantCode,'incline');
+    assert.equal(context.state.pickerDraft,null);
+    assert.equal(nodes['picker-variant-dialog'].open,false);
 });
+
 
 test('el editor posterior reutiliza los mismos controles sin alterar los códigos', () => {
     const advanced = extract('function renderPlanAdvancedConfig(', 'function closePlanAdvancedConfig(');
@@ -104,6 +123,6 @@ test('el editor posterior reutiliza los mismos controles sin alterar los código
     assert.match(advanced, /data-plan-advanced-variant-code/);
     const events = extract("$('session-exercise-config').addEventListener('change',e=>", "$('plan-advanced-config-form').addEventListener('submit'");
     assert.match(events, /data-picker-toggle-config/);
-    assert.match(events, /data-picker-variant-field/);
-    assert.match(events, /data-picker-variant-code/);
+    assert.match(events, /data-picker-dialog-field/);
+    assert.match(events, /data-picker-dialog-variant-code/);
 });

@@ -881,6 +881,37 @@
     </div>
 </dialog>
 
+<dialog id="picker-variant-dialog" class="picker-variant-dialog"
+        aria-labelledby="picker-variant-title" aria-describedby="picker-variant-description">
+    <div class="picker-variant-modal-shell">
+        <header class="dialog-heading picker-variant-heading">
+            <div>
+                <p class="eyebrow">CONFIGURACIÓN DEL EJERCICIO</p>
+                <h2 id="picker-variant-title">Configurar variante</h2>
+                <p id="picker-variant-description">Ajusta material, inclinación y agarre antes de añadir.
+                    FitCore solo muestra opciones disponibles.</p>
+            </div>
+            <button type="button" class="icon-button" data-close-picker-variant
+                    aria-label="Cancelar y cerrar configuración">×</button>
+        </header>
+        <div id="picker-variant-dialog-body" class="picker-variant-dialog-body">
+            <div id="picker-variant-identity" class="picker-variant-identity"></div>
+            <div class="picker-variant-workspace">
+                <div id="picker-variant-dialog-fields" class="picker-variant-dialog-fields"></div>
+                <div id="picker-variant-dialog-result" class="resolved-variant picker-variant-dialog-result"
+                     aria-live="polite"></div>
+            </div>
+        </div>
+        <footer class="dialog-actions picker-variant-dialog-actions">
+            <button id="picker-variant-reset" type="button" class="button button-secondary">Restablecer</button>
+            <div class="picker-variant-dialog-buttons">
+                <button type="button" class="button button-secondary" data-close-picker-variant>Cancelar</button>
+                <button id="picker-variant-apply" type="button" class="button button-primary">Aplicar configuración</button>
+            </div>
+        </footer>
+    </div>
+</dialog>
+
 <dialog
         id="plan-advanced-config-dialog"
         class="plan-advanced-config-dialog"

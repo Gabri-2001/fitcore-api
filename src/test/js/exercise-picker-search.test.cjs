@@ -45,7 +45,7 @@ test('press es una palabra distinta de prensa (sin mirar legPress interno)',()=>
 test('busqueda general mantiene un resultado por ejercicio base',()=>{
   const rows=find('press de banca');
   assert.equal(rows.length,2);
-  assert.deepEqual(rows.map(row=>row.title),['Press de banca (barra o mancuernas)','Press de banca en Smith']);
+  assert.deepEqual(rows.map(row=>row.title),['Press de banca','Press de banca en Smith']);
   assert.equal(rows[0].kind,'modality');
   assert.equal(rows[0].variantCodes.length,4);
 });
@@ -172,4 +172,12 @@ test('inclinación ligera queda dentro de la modalidad; no crea otra tarjeta',()
   assert.ok(rows.some(x=>x.variantCodes.includes(low.code)));
   assert.ok(rows.some(x=>x.variantCodes.includes(smith.code)));
   assert.ok(rows.every(x=>!x.title.includes('ligera')));
+});
+
+test('las tarjetas de press muestran solo título, material y configuraciones', () => {
+    const rows=find('press inclinado');
+    assert.ok(rows.some(row => row.title === 'Press de banca inclinado'));
+    assert.ok(rows.every(row => !row.title.includes('(barra o mancuernas)')));
+    assert.ok(rows.every(row => !row.detail.includes('Ángulos aprox.')));
+    assert.ok(rows.every(row => !row.detail.includes('°')));
 });

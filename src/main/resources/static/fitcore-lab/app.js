@@ -12,6 +12,7 @@ const state = {
     pickerMode: 'session', planPickerDayIndex: null, planPickerAction: 'add',
     planPickerExerciseIndex: null, planPickerExerciseCode: null,
     planAdvancedConfig: null, pickerConfigOpen: false, pickerConfigMoreOpen: false,
+    pickerDraft: null, pickerGroupCodes: null,
     sessionPrevious: new Map(), restEditorExerciseId: null, rpeTarget: null,
     restTimer: {exerciseId:null, exerciseName:'', remaining:0, total:0, running:false, interval:null}
 };
@@ -363,8 +364,8 @@ async function selectExercise(code) {
     await previewConfiguredVariant();
 }
 
-function resolveVariantForExercise(exercise, configuration) {
-    const variants = orderedVariantsForExercise(exercise);
+function resolveVariantForExercise(exercise, configuration, allowedVariants = null) {
+    const variants = allowedVariants || orderedVariantsForExercise(exercise);
     let candidates = variants;
     const controls = [];
     variantConfigFields.forEach(field => {
@@ -2551,6 +2552,8 @@ async function openExercisePicker(mode = 'session', options = {}) {
         state.planPickerExerciseCode = null;
         state.pickerConfigOpen = false;
         state.pickerConfigMoreOpen = false;
+        state.pickerDraft = null;
+        state.pickerGroupCodes = null;
 
         state.sessionPicker = {
             exercise: action === 'add' ? null : currentExercise || null,
@@ -2653,6 +2656,7 @@ function exerciseThumb(exercise, cssClass = 'exercise-thumb') {
 }
 
 function renderSessionExerciseResults() {
+    const preserveConfiguredSelection = arguments[0] === true;
     const container = $('session-exercise-results');
     if (!container) return;
     const results = filteredSessionExercises();
@@ -2663,12 +2667,14 @@ function renderSessionExerciseResults() {
     // se invalida antes de permitir añadir nada al plan o entrenamiento.
     const selectionVisible = !currentExerciseCode || results.some(({exercise, matchingCodes, variantCodes}) =>
         exercise.code === currentExerciseCode &&
-        (!currentVariantCode || (matchingCodes || variantCodes).includes(currentVariantCode))
+        (!currentVariantCode || (preserveConfiguredSelection ? variantCodes : (matchingCodes || variantCodes)).includes(currentVariantCode))
     );
     if (!selectionVisible) {
         state.sessionPicker = {exercise: null, configuration: {}};
         state.pickerConfigOpen = false;
         state.pickerConfigMoreOpen = false;
+        state.pickerDraft = null;
+        state.pickerGroupCodes = null;
         renderSessionExerciseConfig();
     }
 
@@ -2766,61 +2772,116 @@ function renderVariantConfiguratorFields(controls, candidates, selectedVariant, 
     `;
 }
 
+function availablePickerVariants(exercise) {
+    const all = orderedVariantsForExercise(exercise).filter(variant => variant.active !== false);
+    const group = state.pickerGroupCodes;
+    return Array.isArray(group) && group.length
+        ? all.filter(variant => group.includes(variant.code))
+        : all;
+}
+
 function renderPlanSimpleExerciseConfig(container, exercise) {
-    const variants = orderedVariantsForExercise(exercise);
-    const requestedCode = state.sessionPicker.configuration?.variantCode;
-    const currentVariant = variants.find(variant => variant.code === requestedCode) || defaultVariantForExercise(exercise);
-    if (!currentVariant) {
+    const variants = availablePickerVariants(exercise);
+    const requested = state.sessionPicker.configuration?.variantCode;
+    const selected = variants.find(variant => variant.code === requested)
+        || variants.find(variant => variant.isDefault || variant.defaultVariant || variant.default)
+        || variants[0];
+    if (!selected) {
         container.innerHTML = '<div class="empty-state">Este ejercicio no tiene configuraciones disponibles.</div>';
         $('session-add-exercise').disabled = true;
         return;
     }
-
-    let controls = [], candidates = [];
-    let selectedVariant = currentVariant;
-    if (state.pickerConfigOpen) {
-        const resolved = resolveVariantForExercise(exercise, state.sessionPicker.configuration);
-        controls = resolved.controls;
-        candidates = resolved.candidates;
-        selectedVariant = resolved.selectedVariant;
-    }
-    if (!selectedVariant) selectedVariant = currentVariant;
-    state.sessionPicker.configuration = configurationFromVariant(selectedVariant);
-
-    const title = FitCoreVariantUI.variantTitle(exercise, selectedVariant);
-    const chips = variantConfigurationChips(selectedVariant).slice(0, 4);
-    const toggleLabel = state.pickerConfigOpen ? 'Cerrar configuración' : 'Configurar';
-    const editor = state.pickerConfigOpen ? `<div class="picker-config-editor" id="picker-config-editor" role="region" aria-label="Configurar variante de ${escapeHtml(exercise.name)}">
-        <p class="picker-config-help">Elige material, ángulo y agarre. Solo se muestran combinaciones disponibles.</p>
-        <div class="picker-config-fields">${renderVariantConfiguratorFields(controls, candidates, selectedVariant, {
-            fieldAttribute: 'data-picker-variant-field', exactAttribute: 'data-picker-variant-code',
-            moreAttribute: 'data-picker-more', moreOpen: state.pickerConfigMoreOpen
-        })}</div>
-        <div class="picker-config-footer"><button type="button" class="button button-secondary picker-config-reset" data-picker-reset-default>Restablecer predeterminada</button></div>
-    </div>` : '';
-
+    state.sessionPicker.configuration = configurationFromVariant(selected);
+    const title = FitCoreVariantUI.variantTitle(exercise, selected);
+    const chips = variantConfigurationChips(selected).slice(0, 4);
+    const canConfigure = variants.length > 1;
+    const button = canConfigure ? `<button type="button" class="picker-config-toggle"
+        data-picker-toggle-config aria-haspopup="dialog" aria-controls="picker-variant-dialog"
+        aria-label="Configurar variante de ${escapeHtml(exercise.name)}">
+        <span aria-hidden="true">⚙</span><span>Configurar</span>
+    </button>` : '';
     container.innerHTML = `<div class="picker-selected picker-selected-configurable">
         ${exerciseThumb(exercise, 'picker-selected-thumb')}
         <div class="picker-selected-copy"><p class="eyebrow">EJERCICIO SELECCIONADO</p>
             <h3>${escapeHtml(title)}</h3>
             <small>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</small>
         </div>
-        <button type="button" class="picker-config-toggle" data-picker-toggle-config
-            aria-expanded="${state.pickerConfigOpen}" aria-controls="picker-config-editor"
-            aria-label="${escapeHtml(toggleLabel)} de ${escapeHtml(exercise.name)}" title="${escapeHtml(toggleLabel)}">
-            <span aria-hidden="true">⚙</span><span>${toggleLabel}</span>
-        </button>
+        ${button}
     </div>
     <div class="plan-simple-selection">
         <span class="plan-simple-label">Configuración seleccionada</span>
-        <strong>${escapeHtml(selectedVariant.name)}</strong>
-        ${chips.length ? `<div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
-        <p>${state.pickerConfigOpen
-            ? 'Esta variante se añadirá al plan. Puedes ajustar de nuevo los parámetros más adelante.'
-            : 'Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.'}</p>
-    </div>
-    ${editor}`;
-    $('session-add-exercise').disabled = !selectedVariant;
+        <strong>${escapeHtml(selected.name)}</strong>
+        ${chips.length ? `<div class="configuration-chips">${chips.map(chip =>
+            `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
+        <p>${canConfigure
+            ? 'Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.'
+            : 'Esta es la única configuración disponible para esta modalidad.'}</p>
+    </div>`;
+    $('session-add-exercise').disabled = false;
+}
+
+function openPickerVariantDialog() {
+    if (state.pickerMode !== 'plan') return;
+    const exercise = state.sessionPicker.exercise;
+    if (!exercise) return;
+    const variants = availablePickerVariants(exercise);
+    if (variants.length < 2) return;
+    const selected = variants.find(v => v.code === state.sessionPicker.configuration?.variantCode)
+        || variants.find(v => v.isDefault || v.defaultVariant || v.default)
+        || variants[0];
+    state.pickerDraft = {exerciseCode: exercise.code, configuration: configurationFromVariant(selected), moreOpen:false};
+    renderPickerVariantDialog();
+    $('picker-variant-dialog').showModal();
+    $('picker-variant-dialog-body').querySelector('select:not(:disabled)')?.focus();
+}
+
+function renderPickerVariantDialog() {
+    const draft = state.pickerDraft;
+    const exercise = state.sessionPicker.exercise;
+    if (!draft || !exercise || draft.exerciseCode !== exercise.code) return;
+    const variants = availablePickerVariants(exercise);
+    const {controls, candidates, selectedVariant} =
+        resolveVariantForExercise(exercise, draft.configuration, variants);
+    $('picker-variant-title').textContent = `Configurar ${exercise.name}`;
+    $('picker-variant-identity').innerHTML = `${exerciseThumb(exercise, 'picker-variant-thumb')}
+        <div><p class="eyebrow">EJERCICIO SELECCIONADO</p>
+        <h3>${escapeHtml(exercise.name)}</h3>
+        <p>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</p></div>`;
+    $('picker-variant-dialog-fields').innerHTML =
+        renderVariantConfiguratorFields(controls, candidates, selectedVariant, {
+            fieldAttribute:'data-picker-dialog-field',
+            exactAttribute:'data-picker-dialog-variant-code',
+            moreAttribute:'data-picker-dialog-more',
+            moreOpen:!!draft.moreOpen
+        });
+    const chips = selectedVariant ? variantConfigurationChips(selectedVariant).slice(0,4) : [];
+    $('picker-variant-dialog-result').innerHTML = selectedVariant
+        ? `<span>Configuración resultante</span>
+            <strong>${escapeHtml(selectedVariant.name)}</strong>
+            ${chips.length ? `<div class="configuration-chips">${chips.map(chip =>
+                `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
+            <small>Solo se pueden aplicar variantes existentes en el catálogo.</small>`
+        : `<span>Configuración resultante</span><strong>Sin combinación válida</strong>`;
+    $('picker-variant-apply').disabled = !selectedVariant;
+}
+
+function closePickerVariantDialog() {
+    const dialog = $('picker-variant-dialog');
+    if (dialog.open) dialog.close();
+    state.pickerDraft = null;
+}
+
+function applyPickerVariantDialog() {
+    const draft = state.pickerDraft;
+    const exercise = state.sessionPicker.exercise;
+    if (!draft || !exercise || draft.exerciseCode !== exercise.code) return;
+    const variants = availablePickerVariants(exercise);
+    const {selectedVariant} = resolveVariantForExercise(exercise, draft.configuration, variants);
+    if (!selectedVariant || !variants.some(v => v.code === selectedVariant.code)) return;
+    state.sessionPicker.configuration = configurationFromVariant(selectedVariant);
+    closePickerVariantDialog();
+    renderSessionExerciseConfig();
+    renderSessionExerciseResults(true);
 }
 
 async function openPlanAdvancedConfigDialog(dayIndex, exerciseIndex) {
@@ -4294,42 +4355,56 @@ function bindEvents() {
                     ? configurationFromVariant(defaultVariantForExercise(exercise))
                     : {};
         state.sessionPicker = {exercise, configuration};
+        const selectedRow = filteredSessionExercises().find(row =>
+            row.exercise.code === exercise.code &&
+            (matchedVariant ? row.variant?.code === matchedVariant.code : !row.variant)
+        );
+        state.pickerGroupCodes = selectedRow?.variantCodes || null;
         renderSessionExerciseResults();
         renderSessionExerciseConfig();
     });
     $('session-exercise-config').addEventListener('change',e=>{const field=e.target.closest('[data-session-variant-config]');if(!field)return;state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;state.sessionPicker.configuration.variantCode=null;renderSessionExerciseConfig();});
-    // Configurar antes de añadir (Planes / sustituir). No crea ningún ejercicio nuevo.
+
     $('session-exercise-config').addEventListener('click', event => {
-        if (state.pickerMode !== 'plan') return;
-        const toggle = event.target.closest('[data-picker-toggle-config]');
-        const reset = event.target.closest('[data-picker-reset-default]');
-        if (toggle) {
-            state.pickerConfigOpen = !state.pickerConfigOpen;
-            state.pickerConfigMoreOpen = false;
-            renderSessionExerciseConfig();
-            if (state.pickerConfigOpen) $('session-exercise-config').querySelector('[data-picker-variant-field]')?.focus();
-        } else if (reset) {
-            state.sessionPicker.configuration = configurationFromVariant(defaultVariantForExercise(state.sessionPicker.exercise));
-            renderSessionExerciseConfig();
-        }
+        if (event.target.closest('[data-picker-toggle-config]')) openPickerVariantDialog();
     });
-    $('session-exercise-config').addEventListener('change', event => {
-        if (state.pickerMode !== 'plan' || !state.pickerConfigOpen) return;
-        const field = event.target.closest('[data-picker-variant-field]');
-        const exact = event.target.closest('[data-picker-variant-code]');
+    document.querySelectorAll('[data-close-picker-variant]').forEach(button =>
+        button.addEventListener('click', closePickerVariantDialog));
+    $('picker-variant-dialog').addEventListener('close', () => {
+        state.pickerDraft = null;
+    });
+    $('picker-variant-dialog-body').addEventListener('change', event => {
+        const draft = state.pickerDraft;
+        if (!draft) return;
+        const field = event.target.closest('[data-picker-dialog-field]');
+        const exact = event.target.closest('[data-picker-dialog-variant-code]');
         if (!field && !exact) return;
-        state.pickerConfigMoreOpen = !!$('session-exercise-config').querySelector('[data-picker-more]')?.open;
+        draft.moreOpen = !!$('picker-variant-dialog-fields')
+            .querySelector('[data-picker-dialog-more]')?.open;
         if (field) {
-            state.sessionPicker.configuration[field.dataset.pickerVariantField] = field.value;
-            state.sessionPicker.configuration.variantCode = null;
+            draft.configuration[field.dataset.pickerDialogField] = field.value;
+            draft.configuration.variantCode = null;
         } else {
-            const variant = state.variants.find(value => value.code === exact.value &&
-                value.exerciseCode === state.sessionPicker.exercise?.code);
+            const variant = availablePickerVariants(state.sessionPicker.exercise)
+                .find(item => item.code === exact.value);
             if (!variant) return;
-            state.sessionPicker.configuration = configurationFromVariant(variant);
+            draft.configuration = configurationFromVariant(variant);
         }
-        renderSessionExerciseConfig();
+        renderPickerVariantDialog();
+        if (field) $('picker-variant-dialog-fields')
+            .querySelector('[data-picker-dialog-field="' + field.dataset.pickerDialogField + '"]')?.focus();
     });
+    $('picker-variant-reset').addEventListener('click', () => {
+        if (!state.pickerDraft) return;
+        const variants = availablePickerVariants(state.sessionPicker.exercise);
+        const selected = variants.find(v => v.isDefault || v.defaultVariant || v.default) || variants[0];
+        if (!selected) return;
+        state.pickerDraft.configuration = configurationFromVariant(selected);
+        renderPickerVariantDialog();
+    });
+    $('picker-variant-apply').addEventListener('click', applyPickerVariantDialog);
+
+
 
     $('plan-advanced-config-form').addEventListener('submit', savePlanAdvancedConfig);
     $('plan-advanced-config-body').addEventListener('change', event => {
@@ -4350,7 +4425,7 @@ function bindEvents() {
     $('plan-advanced-config-dialog').addEventListener('close', () => {
         state.planAdvancedConfig = null;
     });
-    document.querySelectorAll('[data-close-picker]').forEach(button=>button.addEventListener('click',()=>$('exercise-picker-dialog').close())); document.querySelectorAll('[data-close-muscles]').forEach(button=>button.addEventListener('click',()=>$('session-muscle-dialog').close()));
+    document.querySelectorAll('[data-close-picker]').forEach(button=>button.addEventListener('click',()=>{ closePickerVariantDialog(); $('exercise-picker-dialog').close(); })); document.querySelectorAll('[data-close-muscles]').forEach(button=>button.addEventListener('click',()=>$('session-muscle-dialog').close()));
     document.querySelectorAll('[data-close-rest]').forEach(button=>button.addEventListener('click',()=>$('rest-settings-dialog').close())); document.querySelectorAll('[data-close-rpe]').forEach(button=>button.addEventListener('click',()=>$('rpe-dialog').close()));
     $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-edit-rest]'))openRestEditor(card);else if(e.target.closest('[data-rpe-picker]'))openRpeEditor(e.target.closest('[data-rpe-picker]'));else if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
     $('session-exercises').addEventListener('change',async e=>{const completion=e.target.closest('[data-set-complete]');if(!completion)return;const row=completion.closest('[data-set-row]'),card=completion.closest('.session-card');await updateSet(card,row,row.dataset.setRow,completion.checked);});
