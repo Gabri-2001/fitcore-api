@@ -110,6 +110,9 @@ public class ExerciseVariant extends BaseEntity {
     @Column(name = "focus_evidence_level", nullable = false, length = 30)
     private EvidenceLevel focusEvidenceLevel = EvidenceLevel.MEDIUM;
 
+    @Column(name = "is_default", nullable = false)
+    private boolean defaultVariant = false;
+
     @Column(nullable = false)
     private boolean active = true;
 
@@ -163,6 +166,10 @@ public class ExerciseVariant extends BaseEntity {
 
     public void setCode(String code) {
         this.code = code;
+    }
+
+    public boolean isDefaultVariant() {
+        return defaultVariant;
     }
 
     public boolean isActive() {

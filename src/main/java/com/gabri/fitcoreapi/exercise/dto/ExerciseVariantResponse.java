@@ -10,7 +10,7 @@ public record ExerciseVariantResponse(Long id, String code, String name, String 
         ExerciseFocus primaryFocus, ExerciseFocus secondaryFocus, Practicality practicality,
         String focusDescription, String imageUrl, String thumbnailUrl, String imageAltText,
         EvidenceType focusEvidenceType, EvidenceLevel focusEvidenceLevel,
-        boolean requiresCaution, boolean active) {
+        boolean defaultVariant, boolean requiresCaution, boolean active) {
     public static ExerciseVariantResponse from(ExerciseVariant value) {
         return new ExerciseVariantResponse(value.getId(), value.getCode(), value.getName(), value.getExercise().getCode(),
                 value.getEquipment(), value.getGripType(), value.getGripWidth(), value.getBenchAngle(),
@@ -19,6 +19,6 @@ public record ExerciseVariantResponse(Long id, String code, String name, String 
                 value.getKneePosition(), value.getContractionType(), value.getPrimaryFocus(), value.getSecondaryFocus(),
                 value.getPracticality(), value.getFocusDescription(), value.getImageUrl(), value.getThumbnailUrl(),
                 value.getImageAltText(), value.getFocusEvidenceType(),
-                value.getFocusEvidenceLevel(), value.isRequiresCaution(), value.isActive());
+                value.getFocusEvidenceLevel(), value.isDefaultVariant(), value.isRequiresCaution(), value.isActive());
     }
 }
