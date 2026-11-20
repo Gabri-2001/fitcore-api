@@ -2577,13 +2577,13 @@ async function openExercisePicker(mode = 'session', options = {}) {
                 ? {
                     eyebrow: 'INTERCAMBIAR EJERCICIO',
                     title: 'Elige el sustituto',
-                    description: 'Selecciona una variante concreta o utiliza Configurar antes de intercambiar. Se conservarán las series, repeticiones y el descanso.',
+                    description: 'Selecciona un ejercicio o busca una variante concreta. Podrás ajustarla en Configurar y conservar las series, repeticiones y el descanso.',
                     action: 'Intercambiar ejercicio'
                 }
                 : {
                         eyebrow: 'AÑADIR AL PLAN',
                         title: 'Elige un ejercicio',
-                        description: 'Busca y elige una variante, o pulsa Configurar para cambiar material, inclinación y agarre antes de añadirla.',
+                        description: 'Elige un ejercicio y ajusta su configuración. Si buscas una variante concreta, quedará preseleccionada.',
                         action: 'Añadir al día'
                     };
 
@@ -2663,12 +2663,14 @@ function renderSessionExerciseResults() {
     const currentExerciseCode = state.sessionPicker.exercise?.code;
     const currentVariantCode = state.sessionPicker.configuration?.variantCode;
 
-    // Si el ejercicio elegido deja de coincidir con la búsqueda o los filtros,
-    // se invalida antes de permitir añadir nada al plan o entrenamiento.
-    const selectionVisible = !currentExerciseCode || results.some(({exercise, matchingCodes, variantCodes}) =>
-        exercise.code === currentExerciseCode &&
-        (!currentVariantCode || (preserveConfiguredSelection ? variantCodes : (matchingCodes || variantCodes)).includes(currentVariantCode))
-    );
+    // Si cambian los filtros y la elección ya no coincide, no permitimos
+    // registrar una variante de otra búsqueda por accidente.
+    const selectionVisible = !currentExerciseCode ||
+        results.some(({exercise, matchingCodes, variantCodes}) =>
+            exercise.code === currentExerciseCode &&
+            (!currentVariantCode || (preserveConfiguredSelection
+                ? variantCodes : (matchingCodes || variantCodes)).includes(currentVariantCode))
+        );
     if (!selectionVisible) {
         state.sessionPicker = {exercise: null, configuration: {}};
         state.pickerConfigOpen = false;
@@ -2678,40 +2680,25 @@ function renderSessionExerciseResults() {
         renderSessionExerciseConfig();
     }
 
-    $('session-exercise-count').textContent = `${results.length} resultado${results.length === 1 ? '' : 's'}`;
-    container.innerHTML = results.length ? results.map(({exercise, variant, variantCodes, kind, title: groupedTitle, detail: groupedDetail}) => {
-        const selectedCode = state.sessionPicker.configuration?.variantCode;
-        const selected = state.sessionPicker.exercise?.code === exercise.code &&
-            (!selectedCode || variantCodes.includes(selectedCode));
-        const groupVariants = state.variants.filter(candidate => variantCodes.includes(candidate.code));
-        let title = kind === 'modality' && variant
-            ? FitCoreVariantUI.variantTitle(exercise, variant)
-            : exercise.name;
-        // En dominadas/jalones, la anchura no identifica a toda una modalidad.
-        if (kind === 'modality' && variantCodes.length > 1 &&
-            ['pullUp', 'latPulldown'].includes(exercise.code)) {
-            title = `${exercise.name} · ${friendly(variant.gripType)}`;
-        } else if (kind === 'modality' && variantCodes.length > 1 &&
-            !['benchPress', 'machineChestPress', 'chestFly'].includes(exercise.code) &&
-            groupVariants.some(item => item.gripType !== variant?.gripType)) {
-            title = exercise.name;
-        }
-        if (groupedTitle) title = groupedTitle;
-        const materials = [...new Set(groupVariants.map(candidate => friendly(candidate.equipment)))];
-        const detail = kind === 'modality'
-            ? variantCodes.length > 1
-                ? `${materials.join(' / ')} · ${variantCodes.length} configuraciones`
-                : variantConfigurationChips(variant).slice(0, 4).join(' · ')
-            : `${friendly(exercise.mainMuscleGroup)}${variantCodes.length > 1 ? ' · ' + variantCodes.length + ' configuraciones' : ''}`;
-        const variantAttribute = variant
-            ? ` data-session-variant-code="${escapeHtml(variant.code)}"`
-            : '';
-        return `<button type="button" class="picker-exercise ${selected ? 'is-selected' : ''}"
-            aria-pressed="${selected ? 'true' : 'false'}"
-            data-session-exercise-code="${escapeHtml(exercise.code)}"${variantAttribute}>
-            ${exerciseThumb(exercise)}<span><strong>${escapeHtml(title)}</strong>
-            <small>${escapeHtml(groupedDetail || detail)}</small></span><i aria-hidden="true">›</i></button>`;
-    }).join('') : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
+    $('session-exercise-count').textContent =
+        `\${results.length} resultado\${results.length === 1 ? '' : 's'}`;
+    container.innerHTML = results.length
+        ? results.map(({exercise, variant, variantCodes, title, detail}) => {
+            const selected = state.sessionPicker.exercise?.code === exercise.code &&
+                (!state.sessionPicker.configuration?.variantCode ||
+                 variantCodes.includes(state.sessionPicker.configuration.variantCode));
+            const chosen = variant
+                ? ` data-session-variant-code="\${escapeHtml(variant.code)}"`
+                : '';
+            return `<button type="button" class="picker-exercise \${selected ? 'is-selected' : ''}"
+                aria-pressed="\${selected ? 'true' : 'false'}"
+                data-session-exercise-code="\${escapeHtml(exercise.code)}"\${chosen}>
+                \${exerciseThumb(exercise)}
+                <span><strong>\${escapeHtml(title || exercise.name)}</strong>
+                <small>\${escapeHtml(detail || friendly(exercise.mainMuscleGroup))}</small></span>
+                <i aria-hidden="true">›</i></button>`;
+        }).join('')
+        : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
 }
 
 function renderSessionExerciseConfig() {
@@ -2780,10 +2767,7 @@ function renderVariantConfiguratorFields(controls, candidates, selectedVariant, 
 
 function availablePickerVariants(exercise) {
     const all = orderedVariantsForExercise(exercise).filter(variant => variant.active !== false);
-    const group = state.pickerGroupCodes;
-    return Array.isArray(group) && group.length
-        ? all.filter(variant => group.includes(variant.code))
-        : all;
+    return all;
 }
 
 function renderPlanSimpleExerciseConfig(container, exercise) {
@@ -4360,11 +4344,9 @@ function bindEvents() {
                     ? configurationFromVariant(defaultVariantForExercise(exercise))
                     : {};
         state.sessionPicker = {exercise, configuration};
-        const selectedRow = filteredSessionExercises().find(row =>
-            row.exercise.code === exercise.code &&
-            (matchedVariant ? row.variant?.code === matchedVariant.code : !row.variant)
-        );
-        state.pickerGroupCodes = selectedRow?.variantCodes || null;
+        // Buscar una variante específica la preselecciona; nunca restringe
+        // las opciones que se pueden abrir después desde «Configurar».
+        state.pickerGroupCodes = null;
         renderSessionExerciseResults();
         renderSessionExerciseConfig();
     });

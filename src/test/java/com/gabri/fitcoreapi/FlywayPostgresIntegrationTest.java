@@ -581,4 +581,21 @@ class FlywayPostgresIntegrationTest {
         assertEquals(1,existingFacePull);
     }
 
+
+    @Test
+    void keepsDefaultPronatedMediumPullupAndThreeTricepsFamilies() {
+        String defaultPullup=jdbcTemplate.queryForObject("""
+                SELECT v.code FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.code='pullUp' AND v.active AND v.is_default
+                """,String.class);
+        assertEquals("pullUpBodyweightPronatedMediumGrip",defaultPullup);
+
+        Integer tricepsFamilies=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercises e
+                WHERE e.code IN ('tricepsPushdown','overheadTricepsExtension','lyingTricepsExtension')
+                  AND e.main_muscle_group='TRICEPS' AND e.active
+                """,Integer.class);
+        assertEquals(3,tricepsFamilies);
+    }
+
 }

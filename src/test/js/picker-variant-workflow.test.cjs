@@ -51,7 +51,7 @@ test('el HTML carga el formateador antes de app.js', () => {
 });
 
 test('selector, plan y sesión emplean el mismo nombre visible', () => {
-    assert.match(extract('function renderSessionExerciseResults()', 'function renderSessionExerciseConfig()'), /FitCoreVariantUI\.variantTitle\(exercise, variant\)/);
+    assert.match(extract('function renderSessionExerciseResults()', 'function renderSessionExerciseConfig()'), /escapeHtml\(title \|\| exercise\.name\)/);
     assert.match(extract('function exerciseEditor(', 'function closePlanRowMenus('), /FitCoreVariantUI\.variantTitle\(base, variant\)/);
     assert.match(source, /const exerciseName = variant \? FitCoreVariantUI\.variantTitle\(base, variant\)/);
 });

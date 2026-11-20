@@ -2,506 +2,353 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const staticDir = fs.existsSync(path.join(__dirname, 'exercise-picker-search.js'))
-  ? __dirname
-  : path.resolve(__dirname, '../../main/resources/static/fitcore-lab');
-const {search, normalize, matches, groupKey} = require(path.join(staticDir,'exercise-picker-search.js'));
+const vm = require('node:vm');
+const staticDir = path.resolve(__dirname, '../../main/resources/static/fitcore-lab');
+const {search, matches, normalize, preferred, groupKey, titleFor} =
+  require(path.join(staticDir,'exercise-picker-search.js'));
 const {variantTitle} = require(path.join(staticDir,'exercise-variant-ui.js'));
+const app = fs.readFileSync(path.join(staticDir,'app.js'),'utf8');
 
-const exercises = [
-  {code:'legPress', name:'Prensa de piernas', mainMuscleGroup:'QUADRICEPS'},
-  {code:'hipAbduction', name:'Abducción de cadera en máquina', mainMuscleGroup:'GLUTES'},
-  {code:'benchPress', name:'Press de banca', mainMuscleGroup:'CHEST'},
-  {code:'machineChestPress', name:'Press de pecho en máquina', mainMuscleGroup:'CHEST'},
-  {code:'pullUp', name:'Dominadas', mainMuscleGroup:'BACK'},
-  {code:'barbellRow', name:'Remo con barra', mainMuscleGroup:'BACK'}
+const e=(code,name,mainMuscleGroup='BACK')=>({code,name,mainMuscleGroup});
+const v=(code,exerciseCode,equipment,name,extras={})=>({
+  code,exerciseCode,equipment,name,practicality:'COMMON',active:true,...extras
+});
+const friendly = code => ({
+  BODYWEIGHT:'Peso corporal',BARBELL:'Barra',DUMBBELL:'Mancuernas',
+  EZ_BAR:'Barra Z',CABLE:'Polea',SMITH_MACHINE:'Multipower',
+  MACHINE_PLATE_LOADED:'Máquina de discos',MACHINE_SELECTORISED:'Máquina de placas',
+  BAND:'Banda',PRONATED:'Prono',SUPINATED:'Supino',NEUTRAL:'Neutro',
+  MEDIUM:'Media',WIDE:'Ancha',NARROW:'Estrecha',FLAT:'Plano',
+  INCLINE:'Inclinado',LOW_INCLINE:'Inclinación baja',
+  SEATED:'Sentado',PRONE:'Tumbado',STANDING:'De pie'
+}[code] || String(code||''));
+const find=(exercises,variants,query='',extra={})=>
+  search({exercises,variants,query,friendly,...extra});
+
+const pull=e('pullUp','Dominadas');
+const scapularPull=e('scapularPullUp','Dominadas escapulares','SCAPULAR');
+const pulls=[
+  v('pronMedium','pullUp','BODYWEIGHT','Dominadas pronas con agarre medio',
+    {gripType:'PRONATED',gripWidth:'MEDIUM',isDefault:true}),
+  v('pronWide','pullUp','BODYWEIGHT','Dominadas pronas con agarre ancho',
+    {gripType:'PRONATED',gripWidth:'WIDE'}),
+  v('supMedium','pullUp','BODYWEIGHT','Dominadas supinas con agarre medio',
+    {gripType:'SUPINATED',gripWidth:'MEDIUM'}),
+  v('supNarrow','pullUp','BODYWEIGHT','Dominadas supinas con agarre estrecho',
+    {gripType:'SUPINATED',gripWidth:'NARROW'}),
+  v('neutralMedium','pullUp','BODYWEIGHT','Dominadas con agarre neutro medio',
+    {gripType:'NEUTRAL',gripWidth:'MEDIUM'}),
+  v('scapPron','scapularPullUp','BODYWEIGHT','Dominadas escapulares con agarre prono',
+    {gripType:'PRONATED',isDefault:true}),
+  v('scapNeutral','scapularPullUp','BODYWEIGHT','Dominadas escapulares con agarre neutro',
+    {gripType:'NEUTRAL'})
 ];
-const v=(code,exerciseCode,equipment,benchAngle,name,gripType='PRONATED')=>({code,exerciseCode,equipment,benchAngle,name,gripType,gripWidth:'MEDIUM',practicality:'COMMON',active:true});
-const variants = [
-  v('legPressMachineHighFeet','legPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Prensa de piernas con pies altos'),
-  v('abductionMachine','hipAbduction','MACHINE_SELECTORISED','NOT_APPLICABLE','Abducción de cadera'),
-  v('benchPressBarbellFlatMediumGrip','benchPress','BARBELL','FLAT','Press plano con barra'),
-  v('benchPressBarbellInclineMediumGrip','benchPress','BARBELL','INCLINE','Press de banca inclinado con barra'),
-  v('benchPressDumbbellInclineNeutralGrip','benchPress','DUMBBELL','INCLINE','Press inclinado con mancuernas neutro','NEUTRAL'),
-  v('benchPressDumbbellInclinePronatedGrip','benchPress','DUMBBELL','INCLINE','Press inclinado con mancuernas prono'),
-  v('benchPressSmithInclineMediumGrip','benchPress','SMITH_MACHINE','INCLINE','Press de banca inclinado en Smith'),
-  v('chestPressMachineIncline','machineChestPress','MACHINE_PLATE_LOADED','INCLINE','Press de pecho inclinado en máquina'),
-  v('pullUpBodyweightPronatedWideGrip','pullUp','BODYWEIGHT','NOT_APPLICABLE','Dominadas pronas con agarre ancho','PRONATED'),
-  v('pullUpBodyweightPronatedMediumGrip','pullUp','BODYWEIGHT','NOT_APPLICABLE','Dominadas pronas con agarre medio','PRONATED'),
-  v('pullUpBodyweightSupinatedNarrowGrip','pullUp','BODYWEIGHT','NOT_APPLICABLE','Dominadas supinas con agarre estrecho','SUPINATED'),
-  v('barbellRowPronatedMediumGrip','barbellRow','BARBELL','NOT_APPLICABLE','Remo con barra prono')
+
+const triceps=[
+  e('tricepsPushdown','Extensión de tríceps en polea','TRICEPS'),
+  e('overheadTricepsExtension','Extensión de tríceps sobre la cabeza','TRICEPS'),
+  e('lyingTricepsExtension','Extensión de tríceps tumbado','TRICEPS')
 ];
-const labels = {BARBELL:'Barra',DUMBBELL:'Mancuernas',SMITH_MACHINE:'Multipower',MACHINE_PLATE_LOADED:'Máquina de discos',CABLE:'Polea',BODYWEIGHT:'Peso corporal',PRONATED:'Prono',NEUTRAL:'Neutro',SUPINATED:'Supino',FLAT:'Plano',INCLINE:'Inclinado'};
-const friendly=x=>labels[x]||String(x||'');
-const find=(query,extra={})=>search({exercises,variants,query,friendly,...extra});
+const tricepsVariants=[
+  v('pushRope','tricepsPushdown','CABLE','Extensión de tríceps en polea con cuerda',
+    {attachmentType:'ROPE',isDefault:true}),
+  v('pushBar','tricepsPushdown','CABLE','Extensión de tríceps en polea con barra recta',
+    {attachmentType:'STRAIGHT_BAR'}),
+  v('pushV','tricepsPushdown','CABLE','Extensión de tríceps en polea con barra en V',
+    {attachmentType:'V_BAR'}),
+  v('overCable','overheadTricepsExtension','CABLE',
+    'Extensión de tríceps sobre la cabeza en polea con cuerda',{isDefault:true}),
+  v('overEZ','overheadTricepsExtension','EZ_BAR',
+    'Extensión de tríceps sobre la cabeza con barra Z'),
+  v('overDumb','overheadTricepsExtension','DUMBBELL',
+    'Extensión de tríceps sobre la cabeza con mancuerna'),
+  v('lieEZ','lyingTricepsExtension','EZ_BAR',
+    'Extensión de tríceps tumbado con barra Z',{isDefault:true}),
+  v('lieDumb','lyingTricepsExtension','DUMBBELL',
+    'Extensión de tríceps tumbado con mancuernas')
+];
 
-test('press es una palabra distinta de prensa (sin mirar legPress interno)',()=>{
-  const rows=find('press');
-  assert.ok(rows.some(x=>x.exercise.code==='benchPress'));
-  assert.ok(!rows.some(x=>x.exercise.code==='legPress'));
-  assert.ok(!rows.some(x=>x.exercise.code==='hipAbduction'));
-  assert.deepEqual(find('prensa').map(x=>x.exercise.code),['legPress']);
+test('buscar dominadas muestra solo dos familias reales y no tres agarres',()=>{
+  const rows=find([pull,scapularPull],pulls,'dominadas');
+  assert.deepEqual(rows.map(x=>x.title),['Dominadas','Dominadas escapulares']);
+  assert.equal(rows[0].variantCodes.length,5);
+  assert.equal(rows[1].variantCodes.length,2);
+  assert.equal(rows[0].variant.code,'pronMedium');
+  assert.equal(rows[0].variant.gripType,'PRONATED');
 });
-test('busqueda general mantiene un resultado por ejercicio base',()=>{
-  const rows=find('press de banca');
-  assert.equal(rows.length,2);
-  assert.deepEqual(rows.map(row=>row.title),['Press de banca','Press de banca en Smith']);
-  assert.equal(rows[0].kind,'modality');
-  assert.equal(rows[0].variantCodes.length,4);
-});
-test('press inclinado agrupa barra y mancuernas; Smith y máquina por separado',()=>{
-  const rows=find('press inclinado');
-  assert.equal(rows.length,3);
-  assert.equal(rows[0].kind,'modality');
-  const groups=rows.map(r=>({base:r.exercise.code,equipment:r.variant.equipment,n:r.variantCodes.length}));
-  assert.ok(groups.some(g=>g.base==='benchPress'&&g.equipment==='BARBELL'&&g.n===4));
-  assert.ok(groups.some(g=>g.base==='benchPress'&&g.equipment==='SMITH_MACHINE'&&g.n===1));
-  assert.ok(groups.some(g=>g.base==='machineChestPress'&&g.n===1));
-});
-test('si se filtra por mancuernas sigue siendo una sola modalidad inclinada',()=>{
-  const rows=find('press inclinado',{equipment:'DUMBBELL'});
+test('dominadas supinas preselecciona agarre SUPINATED medio sin reducir opciones',()=>{
+  const rows=find([pull,scapularPull],pulls,'dominadas supinas');
   assert.equal(rows.length,1);
-  assert.equal(rows[0].variant.equipment,'DUMBBELL');
-  assert.equal(rows[0].variantCodes.length,2);
+  assert.equal(rows[0].title,'Dominadas');
+  assert.equal(rows[0].variant.gripType,'SUPINATED');
+  assert.equal(rows[0].variant.gripWidth,'MEDIUM');
+  assert.equal(rows[0].variantCodes.length,5);
+  assert.deepEqual(rows[0].matchingCodes.sort(),['supMedium','supNarrow']);
+  assert.match(rows[0].detail,/Coincidencia:/);
 });
-test('filtro general de equipamiento agrupa y preselecciona variante compatible',()=>{
-  const rows=find('',{equipment:'SMITH_MACHINE'});
-  assert.equal(rows.length,1);
-  assert.equal(rows[0].kind,'modality');
-  assert.equal(rows[0].variant.equipment,'SMITH_MACHINE');
+test('dominadas neutras y agarre prono funcionan con vocabulario natural',()=>{
+  assert.equal(find([pull],pulls,'dominadas neutras')[0].variant.code,'neutralMedium');
+  assert.equal(find([pull],pulls,'dominadas agarre prono')[0].variant.code,'pronMedium');
+  assert.equal(find([pull],pulls,'dominadas supinas',{equipment:'DUMBBELL'}).length,0);
 });
-test('dominadas agrupa agarres relevantes sin duplicar anchuras',()=>{
-  const rows=find('dominadas agarre');
-  assert.equal(rows.length,2);
-  assert.ok(rows.some(row=>row.title==='Dominadas pronas'));
-  assert.ok(rows.some(row=>row.title==='Dominadas supinas'));
-  assert.ok(rows.every(row=>row.variantCodes.length>=1));
-  const byGrip = variants.filter(v=>v.exerciseCode==='pullUp').map(v=>groupKey(exercises[4],v));
-  assert.equal(new Set(byGrip).size,2);
+test('una consulta de dominadas escapulares no encuentra dominadas normales',()=>{
+  assert.deepEqual(find([pull,scapularPull],pulls,'dominadas escapulares')
+    .map(x=>x.exercise.code),['scapularPullUp']);
 });
-test('coincidencias basadas en palabras admiten tildes y prefijos pero no subcadenas',()=>{
-  assert.equal(normalize('MÁQUINA'), 'maquina');
-  assert.equal(matches('Press de banca', ['pres']), true);
-  assert.equal(matches('Prensa', ['press']), false);
-  assert.equal(matches('Press de banca', ['press','banc']), true);
-});
-test('los titulos distinguen Smith y conservan el formato para mancuernas',()=>{
-  const bench=exercises[2];
-  assert.equal(variantTitle(bench,variants[3]),'Press de banca inclinado (≈30–45°)');
-  assert.equal(variantTitle(bench,variants[6]),'Press de banca inclinado (≈30–45°) en Smith');
-});
-test('la busqueda no inventa variantes y nunca cambia codigos',()=>{
-  const rows=find('press inclinado');
-  const all=new Set(variants.map(x=>x.code));
-  assert.ok(rows.every(row=>row.variantCodes.every(code=>all.has(code))));
-  assert.ok(rows.every(row=>!row.variant||row.variantCodes.includes(row.variant.code)));
-});
-
-const appPath = path.resolve(staticDir, 'app.js');
-if (fs.existsSync(appPath)) {
-  const vm = require('node:vm');
-  const app = fs.readFileSync(appPath, 'utf8');
-  const from = app.indexOf('function renderSessionExerciseResults() {');
-  const until = app.indexOf('function renderSessionExerciseConfig() {', from);
-  test('los resultados usan el buscador agrupado y no la búsqueda heredada', () => {
-    assert.match(app, /FitCoreExerciseSearch\.search\(/);
-    assert.ok(from >= 0 && until > from);
-  });
-  if (from >= 0 && until > from) {
-    const renderer = app.slice(from, until);
-    test('cambiar de búsqueda limpia una selección obsoleta y desactiva Añadir', () => {
-      const nodes = {
-        'session-exercise-results': {innerHTML:''},
-        'session-exercise-count': {textContent:''},
-        'session-add-exercise': {disabled:false}
-      };
-      const state = {
-        exercises, variants,
-        sessionPicker: {exercise: exercises[1], configuration:{variantCode:'abductionMachine'}},
-        pickerConfigOpen:true, pickerConfigMoreOpen:true
-      };
-      const context = {
-        state,
-        $: id => nodes[id],
-        filteredSessionExercises: () => find('press inclinado'),
-        renderSessionExerciseConfig: () => {nodes['session-add-exercise'].disabled = !state.sessionPicker.exercise;},
-        friendly,
-        variantConfigurationChips: () => [],
-        exerciseThumb: () => 'PR',
-        escapeHtml: x => String(x ?? ''),
-        FitCoreVariantUI: {variantTitle}
-      };
-      vm.createContext(context);
-      vm.runInContext(renderer, context);
-      vm.runInContext('renderSessionExerciseResults()', context);
-      assert.equal(state.sessionPicker.exercise, null);
-      assert.equal(nodes['session-add-exercise'].disabled, true);
-      assert.equal(state.pickerConfigOpen, false);
-      assert.equal(state.pickerConfigMoreOpen, false);
-    });
-    test('configuración escogida dentro de una modalidad agrupada sigue válida', () => {
-      const nodes = {
-        'session-exercise-results': {innerHTML:''},
-        'session-exercise-count': {textContent:''},
-        'session-add-exercise': {disabled:false}
-      };
-      const state = {
-        exercises, variants,
-        sessionPicker: {exercise: exercises[2], configuration:{variantCode:'benchPressDumbbellInclineNeutralGrip'}},
-        pickerConfigOpen:true, pickerConfigMoreOpen:false
-      };
-      const context = {
-        state, $: id => nodes[id],
-        filteredSessionExercises: () => find('press inclinado'),
-        renderSessionExerciseConfig: () => {throw Error('No debe invalidarse');},
-        friendly, variantConfigurationChips: () => [], exerciseThumb: () => 'PR',
-        escapeHtml: x => String(x ?? ''), FitCoreVariantUI: {variantTitle}
-      };
-      vm.createContext(context);
-      vm.runInContext(renderer, context);
-      vm.runInContext('renderSessionExerciseResults()', context);
-      assert.equal(state.sessionPicker.configuration.variantCode,'benchPressDumbbellInclineNeutralGrip');
-      assert.match(nodes['session-exercise-results'].innerHTML,/aria-pressed="true"/);
-    });
-  }
-}
-
-test('inclinación ligera queda dentro de la modalidad; no crea otra tarjeta',()=>{
-  const low={...variants[3],code:'benchPressBarbellLowInclineGrip',name:'Press con inclinación ligera',benchAngle:'LOW_INCLINE'};
-  const smith={...variants[6],code:'benchPressSmithLowInclineGrip',name:'Press con inclinación ligera en Smith',benchAngle:'LOW_INCLINE'};
-  const rows=search({exercises,variants:[...variants,low,smith],query:'press inclinado',friendly});
-  assert.equal(rows.length,3);
-  assert.ok(rows.some(x=>x.variantCodes.includes(low.code)));
-  assert.ok(rows.some(x=>x.variantCodes.includes(smith.code)));
-  assert.ok(rows.every(x=>!x.title.includes('ligera')));
-});
-
-test('las tarjetas de press muestran solo título, material y configuraciones', () => {
-    const rows=find('press inclinado');
-    assert.ok(rows.some(row => row.title === 'Press de banca inclinado'));
-    assert.ok(rows.every(row => !row.title.includes('(barra o mancuernas)')));
-    assert.ok(rows.every(row => !row.detail.includes('Ángulos aprox.')));
-    assert.ok(rows.every(row => !row.detail.includes('°')));
-});
-
-test('la búsqueda no anuncia una configuración única',()=>{
-  const rows=find('press inclinado');
-  const machine=rows.find(row=>row.exercise.code==='machineChestPress');
-  assert.ok(machine);
-  assert.equal(machine.variantCodes.length,1);
-  assert.ok(!machine.detail.includes('1 configuración'));
-  assert.equal(machine.detail,'Máquina de discos');
-  assert.ok(rows.some(row=>row.variantCodes.length>1 && row.detail.includes('configuraciones')));
-});
-
-test('espalda: jalón unilateral separado del jalón bilateral',()=>{
-  const base={code:'latPulldown',name:'Jalón al pecho',mainMuscleGroup:'BACK'};
-  const a=v('latSeated','latPulldown','CABLE','NOT_APPLICABLE','Jalón al pecho prono');
-  a.laterality='BILATERAL';
-  const b=v('latUnilateral','latPulldown','CABLE','NOT_APPLICABLE','Jalón unilateral en polea');
-  b.laterality='UNILATERAL';
-  const rows=search({exercises:[base],variants:[a,b],friendly,query:''});
-  assert.deepEqual(rows.map(x=>x.title),['Jalón al pecho','Jalón unilateral en polea']);
-  assert.ok(rows.every(x=>x.variantCodes.length===1));
-});
-test('espalda: remos en máquina de discos y selectorizada son modalidades distintas',()=>{
-  const base={code:'machineRow',name:'Remo en máquina',mainMuscleGroup:'BACK'};
-  const a=v('loaded','machineRow','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Remo con discos');
-  const b=v('selector','machineRow','MACHINE_SELECTORISED','NOT_APPLICABLE','Remo selectorizado');
-  const rows=search({exercises:[base],variants:[a,b],friendly,query:'remo'});
-  assert.deepEqual(rows.map(x=>x.title),['Remo en máquina de discos','Remo en máquina selectorizada']);
-});
-test('hombros: press y elevación lateral solo se dividen por equipamiento',()=>{
-  const bases=[{code:'overheadPress',name:'Press militar',mainMuscleGroup:'SHOULDERS'},
-    {code:'lateralRaise',name:'Elevación lateral',mainMuscleGroup:'SHOULDERS'}];
-  const variants=[
-    v('ohBar','overheadPress','BARBELL','NOT_APPLICABLE','Press militar barra'),
-    v('ohDumbSeat','overheadPress','DUMBBELL','NOT_APPLICABLE','Press de hombros sentado mancuernas'),
-    v('ohDumbStand','overheadPress','DUMBBELL','NOT_APPLICABLE','Press de hombros de pie mancuernas'),
-    v('ohSmith','overheadPress','SMITH_MACHINE','NOT_APPLICABLE','Press de hombros Smith'),
-    v('latDumb','lateralRaise','DUMBBELL','NOT_APPLICABLE','Elevación lateral mancuernas'),
-    v('latCable','lateralRaise','CABLE','NOT_APPLICABLE','Elevación lateral polea')
-  ];
-  const rows=search({exercises:bases,variants,friendly,query:'',muscle:'SHOULDERS'});
-  assert.equal(rows.length,5);
-  assert.equal(rows.find(x=>x.title==='Press de hombros con mancuernas')?.variantCodes.length,2);
-  assert.ok(rows.some(x=>x.title==='Elevaciones laterales en polea'));
-});
-
-test('bíceps: modalidades por equipamiento sin duplicar curl sentado, inclinado o predicador',()=>{
-  const base={code:'bicepsCurl',name:'Curl de bíceps',mainMuscleGroup:'BICEPS'};
-  const a=v('dbStanding','bicepsCurl','DUMBBELL','NOT_APPLICABLE','Curl de bíceps de pie con mancuernas','SUPINATED');
-  const b=v('dbIncline','bicepsCurl','DUMBBELL','INCLINE','Curl de bíceps inclinado con mancuernas','SUPINATED');
-  const c=v('dbPreacher','bicepsCurl','DUMBBELL','NOT_APPLICABLE','Curl predicador con mancuernas','SUPINATED');
-  const d=v('bar','bicepsCurl','BARBELL','NOT_APPLICABLE','Curl de bíceps con barra','SUPINATED');
-  const e=v('ez','bicepsCurl','EZ_BAR','NOT_APPLICABLE','Curl de bíceps con barra Z','SUPINATED');
-  const rows=search({exercises:[base],variants:[a,b,c,d,e],friendly,query:'curl'});
-  assert.equal(rows.length,3);
-  assert.equal(rows.find(x=>x.title==='Curl de bíceps con mancuernas')?.variantCodes.length,3);
-  assert.ok(rows.some(x=>x.title==='Curl de bíceps con barra Z'));
-  const preacher=search({exercises:[base],variants:[a,b,c,d,e],friendly,query:'curl predicador'});
-  assert.equal(preacher.length,1);
-  assert.equal(preacher[0].title,'Curl de bíceps predicador con mancuernas');
-  assert.equal(preacher[0].variant.code,'dbPreacher');
-});
-test('tríceps: cuerda, barra y asa en polea son configuraciones, no tres tarjetas',()=>{
-  const base={code:'tricepsPushdown',name:'Extensión de tríceps en polea',mainMuscleGroup:'TRICEPS'};
-  const a=v('rope','tricepsPushdown','CABLE','NOT_APPLICABLE','Extensión de tríceps con cuerda');
-  const b=v('bar','tricepsPushdown','CABLE','NOT_APPLICABLE','Extensión de tríceps con barra recta');
-  const c=v('single','tricepsPushdown','CABLE','NOT_APPLICABLE','Extensión unilateral de tríceps en polea');
-  const rows=search({exercises:[base],variants:[a,b,c],friendly,query:'tríceps'});
-  assert.equal(rows.length,1);
-  assert.equal(rows[0].title,'Extensión de tríceps en polea');
-  assert.equal(rows[0].variantCodes.length,3);
-  const unilateral=search({exercises:[base],variants:[a,b,c],friendly,query:'unilateral'});
-  assert.equal(unilateral.length,1);
-  assert.equal(unilateral[0].matchingCodes.length,1);
-  assert.equal(unilateral[0].variant.code,'single');
-});
-test('tríceps: extensión sobre la cabeza separa polea de mancuernas y barra Z',()=>{
-  const base={code:'overheadTricepsExtension',name:'Extensión de tríceps sobre la cabeza',mainMuscleGroup:'TRICEPS'};
-  const a=v('rope','overheadTricepsExtension','CABLE','NOT_APPLICABLE','Extensión sobre la cabeza en polea');
-  const b=v('db','overheadTricepsExtension','DUMBBELL','NOT_APPLICABLE','Extensión sobre la cabeza con mancuernas');
-  const c=v('ez','overheadTricepsExtension','EZ_BAR','NOT_APPLICABLE','Extensión sobre la cabeza con barra Z');
-  const rows=search({exercises:[base],variants:[a,b,c],friendly,query:'',muscle:'TRICEPS'});
+test('tríceps devuelve solo tres ejercicios base, material en configuración',()=>{
+  const rows=find(triceps,tricepsVariants,'');
   assert.deepEqual(rows.map(x=>x.title),[
-    'Extensión de tríceps sobre la cabeza en polea',
-    'Extensión de tríceps sobre la cabeza con mancuernas',
-    'Extensión de tríceps sobre la cabeza con barra Z'
+    'Extensión de tríceps','Extensión de tríceps sobre la cabeza',
+    'Extensión de tríceps tumbado'
   ]);
+  assert.deepEqual(rows.map(x=>x.variantCodes.length),[3,3,2]);
+  assert.ok(rows.every(row=>!row.title.includes('polea')&&!row.title.includes('barra Z')));
 });
-
-test('piernas: prensa con pies altos o bajos sigue siendo una sola modalidad',()=>{
-  const e={code:'legPress',name:'Prensa de piernas',mainMuscleGroup:'QUADRICEPS'};
-  const x=v('mid','legPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Prensa de piernas pies medios');
-  const y=v('high','legPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Prensa de piernas pies altos');
-  const z=v('single','legPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Prensa de piernas unilateral');
-  const w=v('selector','legPress','MACHINE_SELECTORISED','NOT_APPLICABLE','Prensa en máquina selectorizada');
-  const rows=search({exercises:[e],variants:[x,y,z,w],query:'prensa',friendly});
-  assert.equal(rows.length,2);
-  assert.equal(rows.find(r=>r.title==='Prensa de piernas en máquina de discos').variantCodes.length,3);
-  assert.ok(rows.every(r=>!r.detail.includes('1 configuración')));
+test('consulta de tríceps en polea preselecciona polea y conserva configuraciones',()=>{
+  const rows=find(triceps,tricepsVariants,'extension de triceps polea');
+  assert.deepEqual(rows.map(x=>x.exercise.code),
+    ['tricepsPushdown','overheadTricepsExtension']);
+  assert.ok(rows.every(x=>x.variant.equipment==='CABLE'));
+  assert.equal(rows[1].variantCodes.length,3);
 });
-test('piernas: la sentadilla búlgara se encuentra dentro de la modalidad mancuerna',()=>{
-  const e={code:'splitSquat',name:'Sentadilla dividida',mainMuscleGroup:'QUADRICEPS'};
-  const x=v('bulgarian','splitSquat','DUMBBELL','NOT_APPLICABLE','Sentadilla búlgara con mancuernas');
-  const y=v('standard','splitSquat','DUMBBELL','NOT_APPLICABLE','Sentadilla dividida con mancuernas');
-  const rows=search({exercises:[e],variants:[x,y],query:'sentadilla bulgara',friendly});
-  assert.equal(rows.length,1);
-  assert.equal(rows[0].title,'Sentadilla búlgara con mancuernas');
-  assert.equal(rows[0].matchingCodes.length,1);
-  assert.equal(rows[0].variantCodes.length,2);
+test('consulta con barra Z no duplica tarjetas; encuentra dos extensiones',()=>{
+  const rows=find(triceps,tricepsVariants,'triceps barra z');
+  assert.deepEqual(rows.map(x=>x.exercise.code),
+    ['overheadTricepsExtension','lyingTricepsExtension']);
+  assert.ok(rows.every(x=>x.variant.equipment==='EZ_BAR'));
+  assert.ok(rows[0].variantCodes.includes('overCable'));
 });
-test('glúteos: hip thrust por equipamiento sin multiplicar configuraciones de apoyo',()=>{
-  const e={code:'hipThrust',name:'Hip thrust',mainMuscleGroup:'GLUTES'};
+test('buscando cuerda o barra en polea la configuración exacta queda preseleccionada',()=>{
+  assert.equal(find(triceps,tricepsVariants,'extension triceps cuerda')[0].variant.code,'pushRope');
+  assert.equal(find(triceps,tricepsVariants,'extension triceps barra recta')[0].variant.code,'pushBar');
+});
+test('query de press nunca coincide con prensa, incluso con código interno',()=>{
+  const ex=[e('benchPress','Press de banca','CHEST'),e('legPress','Prensa de piernas','QUADRICEPS')];
   const variants=[
-    v('bar','hipThrust','BARBELL','FLAT','Hip thrust con barra'),
-    v('smith','hipThrust','SMITH_MACHINE','FLAT','Hip thrust en multipower'),
-    v('machine','hipThrust','MACHINE_PLATE_LOADED','FLAT','Hip thrust en máquina')
+    v('incline','benchPress','BARBELL','Press de banca inclinado con barra',{benchAngle:'INCLINE'}),
+    v('smith','benchPress','SMITH_MACHINE','Press de banca inclinado en Smith',{benchAngle:'INCLINE'}),
+    v('pressHigh','legPress','MACHINE_PLATE_LOADED','Prensa de piernas pies altos')
   ];
-  const rows=search({exercises:[e],variants,query:'hip thrust',friendly});
-  assert.deepEqual(rows.map(r=>r.title),[
-    'Hip thrust con barra','Hip thrust en Smith','Hip thrust en máquina de discos'
-  ]);
+  assert.deepEqual(find(ex,variants,'press').map(x=>x.exercise.code),['benchPress']);
+  assert.deepEqual(find(ex,variants,'prensa').map(x=>x.exercise.code),['legPress']);
+  assert.equal(matches('Prensa de piernas',['press']),false);
 });
-test('aductores: aducción se filtra por ADDUCTORS, no glúteos',()=>{
-  const ex={code:'hipAdduction',name:'Aducción de cadera',mainMuscleGroup:'ADDUCTORS'};
-  const v1=v('adduction','hipAdduction','MACHINE_SELECTORISED','NOT_APPLICABLE','Aducción de cadera en máquina');
-  assert.equal(search({exercises:[ex],variants:[v1],query:'',muscle:'GLUTES',friendly}).length,0);
-  const found=search({exercises:[ex],variants:[v1],query:'',muscle:'ADDUCTORS',friendly});
-  assert.equal(found.length,1);
-  assert.equal(found[0].detail,'Máquina de discos' === friendly('MACHINE_SELECTORISED') ? 'Máquina de discos' : String('MACHINE_SELECTORISED'));
-});
-
-test('isquiotibiales: curl femoral sentado y tumbado tienen tarjetas distintas',()=>{
-  const ex={code:'legCurl',name:'Curl femoral',mainMuscleGroup:'HAMSTRINGS'};
-  const s=v('seated','legCurl','MACHINE_SELECTORISED','NOT_APPLICABLE','Curl femoral sentado');
-  const u=v('seatedOneLeg','legCurl','MACHINE_SELECTORISED','NOT_APPLICABLE','Curl femoral sentado unilateral');
-  const p=v('prone','legCurl','MACHINE_SELECTORISED','NOT_APPLICABLE','Curl femoral tumbado');
-  s.bodyPosition='SEATED';u.bodyPosition='SEATED';p.bodyPosition='PRONE';
-  const found=search({exercises:[ex],variants:[s,u,p],query:'curl femoral',friendly});
-  assert.equal(found.length,2);
-  assert.deepEqual(found.map(x=>x.title),[
-    'Curl femoral sentado en máquina selectorizada',
-    'Curl femoral tumbado en máquina selectorizada'
-  ]);
-  assert.equal(found[0].variantCodes.length,2);
-});
-test('isquiotibiales: peso muerto rumano sin duplicar por unilateralidad',()=>{
-  const ex={code:'romanianDeadlift',name:'Peso muerto rumano',mainMuscleGroup:'HAMSTRINGS'};
-  const b=v('bar','romanianDeadlift','BARBELL','NOT_APPLICABLE','Peso muerto rumano con barra');
-  const d=v('dumb','romanianDeadlift','DUMBBELL','NOT_APPLICABLE','Peso muerto rumano con mancuernas');
-  const u=v('dumbSingle','romanianDeadlift','DUMBBELL','NOT_APPLICABLE','Peso muerto rumano unilateral con mancuernas');
-  const found=search({exercises:[ex],variants:[b,d,u],query:'peso muerto rumano',friendly});
-  assert.deepEqual(found.map(x=>x.title),['Peso muerto rumano con barra','Peso muerto rumano con mancuernas']);
-  assert.equal(found[1].variantCodes.length,2);
-});
-test('gemelos: separar elevaciones de pie y sentadas y prensa, nunca cada apoyo',()=>{
-  const bases=[
-    {code:'standingCalfRaise',name:'Elevación de gemelos de pie',mainMuscleGroup:'CALVES'},
-    {code:'seatedCalfRaise',name:'Elevación de gemelos sentado',mainMuscleGroup:'CALVES'},
-    {code:'calfPressLegPress',name:'Elevación de gemelos en prensa',mainMuscleGroup:'CALVES'}
+test('press banca muestra una tarjeta incluso en Smith; consulta específica la preselecciona',()=>{
+  const ex=e('benchPress','Press de banca','CHEST');
+  const vs=[
+    v('flat','benchPress','BARBELL','Press de banca plano con barra',{isDefault:true,benchAngle:'FLAT'}),
+    v('incline','benchPress','DUMBBELL','Press inclinado con mancuernas',{benchAngle:'INCLINE'}),
+    v('smith','benchPress','SMITH_MACHINE','Press de banca inclinado en Smith',{benchAngle:'INCLINE'})
   ];
-  const a=v('standing','standingCalfRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación gemelos de pie');
-  const b=v('unilateral','standingCalfRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación gemelos de pie unilateral');
-  const c=v('seated','seatedCalfRaise','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Elevación gemelos sentado');
-  const d=v('press','calfPressLegPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Elevación gemelos prensa');
-  const found=search({exercises:bases,variants:[a,b,c,d],query:'gemelos',friendly});
-  assert.equal(found.length,3);
-  assert.equal(found[0].variantCodes.length,2);
-  assert.ok(found.some(x=>x.title==='Elevación de gemelos en prensa en máquina de discos'));
-});
-test('peso muerto convencional se puede localizar bajo FULL_BODY',()=>{
-  const ex={code:'deadlift',name:'Peso muerto',mainMuscleGroup:'FULL_BODY'};
-  const a=v('conventional','deadlift','BARBELL','NOT_APPLICABLE','Peso muerto convencional con barra');
-  const b=v('sumo','deadlift','BARBELL','NOT_APPLICABLE','Peso muerto sumo con barra');
-  a.stanceType='CONVENTIONAL';b.stanceType='SUMO';
-  assert.equal(search({exercises:[ex],variants:[a,b],query:'peso muerto',muscle:'HAMSTRINGS',friendly}).length,0);
-  const found=search({exercises:[ex],variants:[a,b],query:'peso muerto',muscle:'FULL_BODY',friendly});
-  assert.equal(found.length,1);
-  assert.equal(found[0].variantCodes.length,2);
-  assert.equal(search({exercises:[ex],variants:[a,b],query:'sumo',friendly})[0].title,'Peso muerto sumo con barra');
-});
-
-test('core: Pallof y woodchopper son patrones separados y no mezclan configuraciones',()=>{
-  const base=[
-    {code:'pallofPress',name:'Press Pallof',mainMuscleGroup:'CORE'},
-    {code:'woodchopper',name:'Giro diagonal (woodchopper)',mainMuscleGroup:'CORE'}
-  ];
-  const a=v('pallofCable','pallofPress','CABLE','NOT_APPLICABLE','Press Pallof de pie en polea');
-  const b=v('pallofKneeling','pallofPress','CABLE','NOT_APPLICABLE','Press Pallof medio arrodillado');
-  const c=v('woodHigh','woodchopper','CABLE','NOT_APPLICABLE','Giro diagonal arriba abajo en polea');
-  const d=v('woodLow','woodchopper','CABLE','NOT_APPLICABLE','Giro diagonal abajo arriba en polea');
-  const found=search({exercises:base,variants:[a,b,c,d],query:'',muscle:'CORE',friendly});
-  assert.equal(found.length,2);
-  assert.equal(found[0].title,'Press Pallof en polea');
-  assert.equal(found[1].title,'Giro diagonal en polea');
-  assert.deepEqual(found.map(x=>x.variantCodes.length),[2,2]);
-});
-test('core: silla romana y suspendido separados; rodillas y piernas en Configurar',()=>{
-  const ex={code:'legRaise',name:'Elevación de piernas',mainMuscleGroup:'CORE'};
-  const h=v('h','legRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación de rodillas colgado');
-  const c=v('c','legRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación de rodillas en silla romana');
-  const d=v('d','legRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación de piernas en silla romana');
-  h.supportType='FREE';c.supportType='MACHINE_SUPPORTED';d.supportType='MACHINE_SUPPORTED';
-  const found=search({exercises:[ex],variants:[h,c,d],query:'elevacion',friendly});
-  assert.equal(found.length,2);
-  assert.equal(found[0].title,'Elevación de piernas colgado');
-  assert.equal(found[1].title,'Elevación de piernas en silla romana');
-  assert.equal(found[1].variantCodes.length,2);
-});
-test('core: las planchas no crean tarjetas por dificultad ni anuncian configuración única',()=>{
-  const ex={code:'sidePlank',name:'Plancha lateral',mainMuscleGroup:'CORE'};
-  const a=v('straight','sidePlank','BODYWEIGHT','NOT_APPLICABLE','Plancha lateral sobre antebrazo');
-  const b=v('knees','sidePlank','BODYWEIGHT','NOT_APPLICABLE','Plancha lateral con rodillas apoyadas');
-  const found=search({exercises:[ex],variants:[a,b],query:'plancha lateral',friendly});
-  assert.equal(found.length,1);
-  assert.equal(found[0].variantCodes.length,2);
-  assert.equal(found[0].title,'Plancha lateral');
-  assert.ok(!found[0].detail.includes('1 configuración'));
-});
-
-test('antebrazo: flexión y extensión de muñeca son familias distintas',()=>{
-  const es=[
-    {code:'wristCurl',name:'Flexión de muñeca',mainMuscleGroup:'FOREARMS'},
-    {code:'wristExtension',name:'Extensión de muñeca',mainMuscleGroup:'FOREARMS'}];
-  const xs=[
-    v('flexBar','wristCurl','BARBELL','NOT_APPLICABLE','Flexión de muñeca con barra'),
-    v('flexOne','wristCurl','DUMBBELL','NOT_APPLICABLE','Flexión unilateral de muñeca con mancuerna'),
-    v('extBar','wristExtension','BARBELL','NOT_APPLICABLE','Extensión de muñeca con barra')];
-  const out=search({exercises:es,variants:xs,query:'',muscle:'FOREARMS',friendly});
-  assert.equal(out.length,3);
-  assert.deepEqual(out.map(x=>x.title),[
-    'Flexión de muñeca con barra','Flexión de muñeca con mancuernas','Extensión de muñeca con barra']);
-  assert.ok(out.every(x=>!x.detail.includes('1 configuración')));
-  assert.equal(search({exercises:es,variants:xs,query:'',muscle:'BICEPS',friendly}).length,0);
-});
-test('antebrazo: pronación y supinación se buscan por nombre, sin alterar códigos',()=>{
-  const e={code:'forearmRotation',name:'Pronación y supinación de antebrazo',mainMuscleGroup:'FOREARMS'};
-  const a=v('pronDumb','forearmRotation','DUMBBELL','NOT_APPLICABLE','Pronación de antebrazo sentado con mancuerna');
-  const b=v('supDumb','forearmRotation','DUMBBELL','NOT_APPLICABLE','Supinación de antebrazo sentado con mancuerna');
-  const c=v('pronBand','forearmRotation','BAND','NOT_APPLICABLE','Pronación de antebrazo con banda');
-  const d=v('supBand','forearmRotation','BAND','NOT_APPLICABLE','Supinación de antebrazo con banda');
-  const all=[a,b,c,d];
-  const out=search({exercises:[e],variants:all,query:'pronacion',friendly});
-  assert.equal(out.length,2);
-  assert.ok(out.every(x=>x.title.startsWith('Pronación')));
-  assert.ok(out.every(x=>x.matchingCodes.every(code=>code.startsWith('pron'))));
-  assert.ok(out.every(x=>x.variantCodes.length===2));
-  const reverse=search({exercises:[e],variants:all,query:'supinacion',friendly});
-  assert.equal(reverse.length,2);
-  assert.ok(reverse.every(x=>x.matchingCodes.every(code=>code.startsWith('sup'))));
-});
-test('antebrazo: paseo unilateral configura el mismo material que bilateral',()=>{
-  const e={code:'farmerCarry',name:'Paseo del granjero',mainMuscleGroup:'FOREARMS'};
-  const a=v('bilateral','farmerCarry','DUMBBELL','NOT_APPLICABLE','Paseo del granjero con mancuernas');
-  const b=v('suitcase','farmerCarry','DUMBBELL','NOT_APPLICABLE','Paseo de maleta unilateral con mancuerna');
-  const c=v('trap','farmerCarry','TRAP_BAR','NOT_APPLICABLE','Paseo del granjero con barra hexagonal');
-  const out=search({exercises:[e],variants:[a,b,c],query:'',friendly});
-  assert.equal(out.length,2);
-  assert.equal(out[0].title,'Paseo del granjero con mancuernas');
-  assert.equal(out[0].variantCodes.length,2);
-  assert.equal(out[1].title,'Paseo del granjero con barra hexagonal');
-});
-test('antebrazo: rodillo agrupa sentidos y suspensión agrupa agarres',()=>{
-  const es=[
-    {code:'wristRoller',name:'Rodillo de muñeca',mainMuscleGroup:'FOREARMS'},
-    {code:'deadHang',name:'Suspensión en barra',mainMuscleGroup:'FOREARMS'}];
-  const xs=[
-    v('flex','wristRoller','WRIST_ROLLER','NOT_APPLICABLE','Rodillo de muñeca flexión'),
-    v('ext','wristRoller','WRIST_ROLLER','NOT_APPLICABLE','Rodillo de muñeca extensión'),
-    v('prono','deadHang','BODYWEIGHT','NOT_APPLICABLE','Suspensión en barra agarre prono'),
-    v('neutro','deadHang','BODYWEIGHT','NOT_APPLICABLE','Suspensión en barra agarre neutro')];
-  const out=search({exercises:es,variants:xs,query:'',friendly});
-  assert.deepEqual(out.map(x=>x.title),['Rodillo de muñeca','Suspensión en barra']);
-  assert.deepEqual(out.map(x=>x.variantCodes.length),[2,2]);
-  assert.ok(out.every(x=>x.variantCodes.every(code=>xs.some(v=>v.code===code))));
-});
-
-test('V28: escapulares separan pared y suelo, pero agrupan las rodillas',()=>{
-  const e={code:'scapularPushUp',name:'Flexiones escapulares',mainMuscleGroup:'SCAPULAR'};
-  const a=v('standard','scapularPushUp','BODYWEIGHT','NOT_APPLICABLE','Flexiones escapulares en suelo');
-  const b=v('knees','scapularPushUp','BODYWEIGHT','NOT_APPLICABLE','Flexiones escapulares con rodillas');
-  const c=v('wall','scapularPushUp','BODYWEIGHT','NOT_APPLICABLE','Flexiones escapulares en pared');
-  a.bodyPosition='PRONE';b.bodyPosition='PRONE';c.bodyPosition='STANDING';
-  const rows=search({exercises:[e],variants:[a,b,c],query:'flexiones escapulares',muscle:'SCAPULAR',friendly});
-  assert.deepEqual(rows.map(x=>x.title),['Flexiones escapulares en suelo','Flexiones escapulares en pared']);
-  assert.deepEqual(rows.map(x=>x.variantCodes.length),[2,1]);
-  assert.ok(rows.every(x=>!x.detail.includes('1 configuración')));
-});
-test('V28: rotación interna y externa son dos familias y el equipamiento es modalidad',()=>{
-  const es=[
-    {code:'shoulderExternalRotation',name:'Rotación externa de hombro',mainMuscleGroup:'ROTATOR_CUFF'},
-    {code:'shoulderInternalRotation',name:'Rotación interna de hombro',mainMuscleGroup:'ROTATOR_CUFF'}];
-  const a=v('extCable','shoulderExternalRotation','CABLE','NOT_APPLICABLE','Rotación externa de hombro en polea');
-  const b=v('extAbducted','shoulderExternalRotation','CABLE','NOT_APPLICABLE','Rotación externa con brazo separado en polea');
-  const c=v('extBand','shoulderExternalRotation','BAND','NOT_APPLICABLE','Rotación externa de hombro con banda');
-  const d=v('intCable','shoulderInternalRotation','CABLE','NOT_APPLICABLE','Rotación interna de hombro en polea');
-  const rows=search({exercises:es,variants:[a,b,c,d],query:'',muscle:'ROTATOR_CUFF',friendly});
-  assert.equal(rows.length,3);
-  assert.deepEqual(rows.map(x=>x.title),['Rotación externa de hombro en polea','Rotación externa de hombro con banda','Rotación interna de hombro en polea']);
-  assert.equal(rows[0].variantCodes.length,2);
-  const onlyInternal=search({exercises:es,variants:[a,b,c,d],query:'rotacion interna',muscle:'ROTATOR_CUFF',friendly});
-  assert.deepEqual(onlyInternal.map(x=>x.exercise.code),['shoulderInternalRotation']);
-});
-test('V28: Y en banco y sin carga son modalidades y face pull sigue siendo hombros',()=>{
-  const es=[
-    {code:'proneYRaise',name:'Elevación en Y',mainMuscleGroup:'SCAPULAR'},
-    {code:'facePull',name:'Face pull',mainMuscleGroup:'SHOULDERS'}];
-  const a=v('dumb','proneYRaise','DUMBBELL','INCLINE','Elevación en Y con mancuernas');
-  const b=v('body','proneYRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación en Y sin carga');
-  const c=v('face','facePull','CABLE','NOT_APPLICABLE','Face pull con cuerda');
-  const scaps=search({exercises:es,variants:[a,b,c],query:'',muscle:'SCAPULAR',friendly});
-  assert.deepEqual(scaps.map(x=>x.title),['Elevación en Y con mancuernas','Elevación en Y']);
-  assert.equal(search({exercises:es,variants:[a,b,c],query:'',muscle:'SHOULDERS',friendly}).length,1);
-});
-test('V28: retracción escapular en polea es distinta de remo sentado normal',()=>{
-  const es=[
-    {code:'scapularRetraction',name:'Retracción escapular con brazos extendidos',mainMuscleGroup:'SCAPULAR'},
-    {code:'seatedCableRow',name:'Remo sentado en polea',mainMuscleGroup:'BACK'}];
-  const a=v('scap','scapularRetraction','CABLE','NOT_APPLICABLE','Retracción escapular con brazos extendidos en polea');
-  const b=v('row','seatedCableRow','CABLE','NOT_APPLICABLE','Remo sentado en polea');
-  const rows=search({exercises:es,variants:[a,b],query:'',muscle:'SCAPULAR',friendly});
+  const rows=find([ex],vs,'press de banca');
   assert.equal(rows.length,1);
-  assert.equal(rows[0].title,'Retracción escapular con brazos extendidos en polea');
+  assert.equal(rows[0].variant.code,'flat');
+  assert.equal(rows[0].variantCodes.length,3);
+  const requested=find([ex],vs,'press inclinado smith');
+  assert.equal(requested.length,1);
+  assert.equal(requested[0].variant.code,'smith');
+  assert.equal(requested[0].title,'Press de banca');
+});
+test('no genera un mensaje de una sola configuración',()=>{
+  const ex=e('crunch','Crunch abdominal','CORE');
+  const vs=[v('single','crunch','BODYWEIGHT','Crunch abdominal')];
+  const found=find([ex],vs);
+  assert.equal(found.length,1);
+  assert.doesNotMatch(found[0].detail,/1 configuraci/);
+});
+test('filtro por equipamiento solo decide resultados/preselección, no restringe Configurar',()=>{
+  const ex=e('bicepsCurl','Curl de bíceps','BICEPS');
+  const vs=[
+    v('bar','bicepsCurl','BARBELL','Curl de bíceps con barra',{isDefault:true}),
+    v('dumb','bicepsCurl','DUMBBELL','Curl de bíceps con mancuernas'),
+    v('cable','bicepsCurl','CABLE','Curl de bíceps en polea')
+  ];
+  const found=find([ex],vs,'',{equipment:'CABLE'});
+  assert.equal(found.length,1);
+  assert.equal(found[0].variant.code,'cable');
+  assert.deepEqual(found[0].variantCodes,['bar','dumb','cable']);
+});
+test('jalón unilateral o agarre neutro sigue dentro de la misma familia',()=>{
+  const ex=e('latPulldown','Jalón al pecho');
+  const vs=[
+    v('standard','latPulldown','CABLE','Jalón al pecho prono',{isDefault:true,laterality:'BILATERAL'}),
+    v('uni','latPulldown','CABLE','Jalón unilateral al pecho',{laterality:'UNILATERAL'}),
+    v('neutral','latPulldown','CABLE','Jalón al pecho neutro',{gripType:'NEUTRAL'})
+  ];
+  assert.equal(find([ex],vs,'jalon').length,1);
+  assert.equal(find([ex],vs,'jalon unilateral')[0].variant.code,'uni');
+  assert.equal(find([ex],vs,'jalon neutro')[0].variant.code,'neutral');
+});
+test('reman juntos remo en máquina, extensión de piernas, glúteos y otros materiales',()=>{
+  for(const [code,name] of [
+    ['machineRow','Remo en máquina'],['legPress','Prensa de piernas'],
+    ['hipThrust','Hip thrust'],['overheadPress','Press de hombros'],
+    ['legExtension','Extensión de piernas']]) {
+    const ex=e(code,name);
+    const variants=[
+      v(code+'Bar',code,'BARBELL',name+' con barra',{isDefault:true}),
+      v(code+'Dumb',code,'DUMBBELL',name+' con mancuernas'),
+      v(code+'Smith',code,'SMITH_MACHINE',name+' en Smith')
+    ];
+    const all=find([ex],variants,name);
+    assert.equal(all.length,1,code);
+    assert.equal(all[0].variantCodes.length,3,code);
+    assert.equal(find([ex],variants,name+' mancuernas')[0].variant.equipment,'DUMBBELL',code);
+  }
+});
+test('curl femoral sentado/tumbado se preselecciona pero no se desdobla',()=>{
+  const ex=e('legCurl','Curl femoral','HAMSTRINGS');
+  const vs=[
+    v('seated','legCurl','MACHINE_SELECTORISED','Curl femoral sentado',{bodyPosition:'SEATED',isDefault:true}),
+    v('prone','legCurl','MACHINE_SELECTORISED','Curl femoral tumbado',{bodyPosition:'PRONE'})
+  ];
+  assert.equal(find([ex],vs,'curl femoral').length,1);
+  assert.equal(find([ex],vs,'curl femoral tumbado')[0].variant.code,'prone');
+});
+test('curl bíceps en banco inclinado o predicador es una familia con variantes',()=>{
+  const ex=e('bicepsCurl','Curl de bíceps','BICEPS');
+  const vs=[
+    v('curlStanding','bicepsCurl','DUMBBELL','Curl de bíceps de pie',{isDefault:true}),
+    v('curlIncline','bicepsCurl','DUMBBELL','Curl de bíceps en banco inclinado'),
+    v('curlPreacher','bicepsCurl','DUMBBELL','Curl predicador de bíceps con mancuernas')
+  ];
+  assert.equal(find([ex],vs,'curl').length,1);
+  assert.equal(find([ex],vs,'curl predicador')[0].variant.code,'curlPreacher');
+});
+test('posición de los pies de prensa y peso muerto sumo son ajustes preseleccionables',()=>{
+  const leg=e('legPress','Prensa de piernas','QUADRICEPS');
+  const dead=e('deadlift','Peso muerto','FULL_BODY');
+  const vs=[
+    v('high','legPress','MACHINE_PLATE_LOADED','Prensa de piernas pies altos'),
+    v('low','legPress','MACHINE_PLATE_LOADED','Prensa de piernas pies bajos'),
+    v('conventional','deadlift','BARBELL','Peso muerto convencional',{isDefault:true}),
+    v('sumo','deadlift','BARBELL','Peso muerto sumo')
+  ];
+  assert.equal(find([leg,dead],vs,'prensa').length,1);
+  assert.equal(find([leg,dead],vs,'prensa pies altos')[0].variant.code,'high');
+  assert.equal(find([leg,dead],vs,'peso muerto sumo')[0].variant.code,'sumo');
+});
+test('core: rueda y plancha lateral no se duplican por dificultad',()=>{
+  const ex=[e('abWheel','Rueda abdominal','CORE'),e('sidePlank','Plancha lateral','CORE')];
+  const vs=[
+    v('knees','abWheel','AB_WHEEL','Rueda abdominal de rodillas'),
+    v('standing','abWheel','AB_WHEEL','Rueda abdominal de pie'),
+    v('forearm','sidePlank','BODYWEIGHT','Plancha lateral con antebrazo'),
+    v('kneesPlank','sidePlank','BODYWEIGHT','Plancha lateral con rodillas')
+  ];
+  assert.deepEqual(find(ex,vs).map(x=>x.title),['Rueda abdominal','Plancha lateral']);
+});
+test('antebrazos: pronación y supinación se preseleccionan sin tarjetas adicionales',()=>{
+  const ex=e('forearmRotation','Pronación y supinación de antebrazo','FOREARMS');
+  const vs=[
+    v('pron','forearmRotation','DUMBBELL','Pronación de antebrazo sentado'),
+    v('sup','forearmRotation','DUMBBELL','Supinación de antebrazo sentado')
+  ];
+  assert.equal(find([ex],vs,'').length,1);
+  assert.equal(find([ex],vs,'pronacion')[0].variant.code,'pron');
+  assert.equal(find([ex],vs,'supinacion')[0].variant.code,'sup');
+  assert.equal(find([ex],vs,'pronacion')[0].variantCodes.length,2);
+});
+test('escápulas: flexiones en pared/suelo y manguito rotador por material son configuración',()=>{
+  const ex=[
+    e('scapularPushUp','Flexiones escapulares','SCAPULAR'),
+    e('shoulderExternalRotation','Rotación externa de hombro','ROTATOR_CUFF'),
+    e('shoulderInternalRotation','Rotación interna de hombro','ROTATOR_CUFF')
+  ];
+  const vs=[
+    v('floor','scapularPushUp','BODYWEIGHT','Flexiones escapulares en suelo'),
+    v('wall','scapularPushUp','BODYWEIGHT','Flexiones escapulares en pared'),
+    v('extCable','shoulderExternalRotation','CABLE','Rotación externa de hombro en polea'),
+    v('extBand','shoulderExternalRotation','BAND','Rotación externa de hombro con banda'),
+    v('intBand','shoulderInternalRotation','BAND','Rotación interna de hombro con banda')
+  ];
+  assert.equal(find(ex,vs,'flexiones escapulares').length,1);
+  assert.equal(find(ex,vs,'flexiones escapulares pared')[0].variant.code,'wall');
+  assert.deepEqual(find(ex,vs,'rotacion').map(x=>x.exercise.code),
+    ['shoulderExternalRotation','shoulderInternalRotation']);
+});
+test('no inventa opciones ni altera códigos de las variantes',()=>{
+  const rows=find([pull,scapularPull,...triceps],[...pulls,...tricepsVariants],'');
+  const known=new Set([...pulls,...tricepsVariants].map(v=>v.code));
+  assert.ok(rows.every(row=>row.variantCodes.every(code=>known.has(code))));
+  assert.ok(rows.every(row=>known.has(row.variant.code)));
+  assert.equal(groupKey(pull,pulls[0]),'pullUp');
+  assert.equal(titleFor(triceps[0]),'Extensión de tríceps');
+  assert.equal(preferred(pulls).code,'pronMedium');
+});
+test('normaliza tildes y busca por palabras, no por códigos internos',()=>{
+  assert.equal(normalize('MÁQUINA'), 'maquina');
+  assert.equal(matches('Press de banca',['press','banc']),true);
+  assert.equal(matches('Prensa de piernas',['press']),false);
+  const ex=e('legPress','Prensa de piernas','QUADRICEPS');
+  assert.equal(find([ex],[v('legPressInternal','legPress','MACHINE_PLATE_LOADED','Prensa de piernas')],'legPressInternal').length,0);
+});
+test('el título específico utilizado tras seleccionar mantiene el ejercicio registrado',()=>{
+  assert.equal(variantTitle({name:'Press de banca'}, {
+    name:'Press plano con barra',equipment:'BARBELL',benchAngle:'FLAT'
+  }), 'Press de banca plano');
+});
+
+const from=app.indexOf('function renderSessionExerciseResults() {');
+const until=app.indexOf('function renderSessionExerciseConfig() {',from);
+test('el selector usa una tarjeta por familia y variantes completas, sin recortar Configurar',()=>{
+  assert.match(app,/FitCoreExerciseSearch\.search\(/);
+  assert.ok(from>=0 && until>from);
+  const renderer=app.slice(from,until);
+  assert.match(renderer,/escapeHtml\(title \|\| exercise\.name\)/);
+  assert.match(renderer,/data-session-variant-code/);
+  assert.match(renderer,/matchingCodes/);
+  assert.match(app,/state\.pickerGroupCodes = null;/);
+  const start=app.indexOf('function availablePickerVariants(exercise) {');
+  const end=app.indexOf('function renderPlanSimpleExerciseConfig(',start);
+  assert.ok(start>=0 && end>start);
+  const helper=app.slice(start,end);
+  assert.match(helper,/return all;/);
+  assert.doesNotMatch(helper,/filter\(variant => group\.includes/);
+});
+test('una búsqueda distinta invalida la selección anterior',()=>{
+  const renderer=app.slice(from,until);
+  const nodes={
+    'session-exercise-results':{innerHTML:''},
+    'session-exercise-count':{textContent:''},
+    'session-add-exercise':{disabled:false}
+  };
+  const state={
+    exercises:[pull,scapularPull],variants:pulls,
+    sessionPicker:{exercise:pull,configuration:{variantCode:'pronMedium'}},
+    pickerConfigOpen:true,pickerConfigMoreOpen:true
+  };
+  const context={
+    state,$:id=>nodes[id],
+    filteredSessionExercises:()=>find([pull],pulls,'dominadas supinas'),
+    renderSessionExerciseConfig:()=>{nodes['session-add-exercise'].disabled=!state.sessionPicker.exercise;},
+    exerciseThumb:()=>'<span>DO</span>',escapeHtml:String,friendly
+  };
+  vm.createContext(context);
+  vm.runInContext(renderer,context);
+  context.renderSessionExerciseResults();
+  assert.equal(state.sessionPicker.exercise,null);
+  assert.equal(nodes['session-add-exercise'].disabled,true);
+});
+test('la variante específica se muestra como dato de selección, no como título duplicado',()=>{
+  const renderer=app.slice(from,until);
+  const nodes={
+    'session-exercise-results':{innerHTML:''},
+    'session-exercise-count':{textContent:''}
+  };
+  const found=find([pull],pulls,'dominadas supinas');
+  const context={
+    state:{exercises:[pull],variants:pulls,
+      sessionPicker:{exercise:pull,configuration:{variantCode:'supMedium'}}},
+    $:id=>nodes[id],filteredSessionExercises:()=>found,
+    renderSessionExerciseConfig:()=>{throw new Error('No se debe resetear');},
+    exerciseThumb:()=>'<span>DO</span>',escapeHtml:String,friendly
+  };
+  vm.createContext(context);
+  vm.runInContext(renderer,context);
+  context.renderSessionExerciseResults();
+  assert.match(nodes['session-exercise-results'].innerHTML,/>Dominadas<\/strong>/);
+  assert.doesNotMatch(nodes['session-exercise-results'].innerHTML,/Dominadas supinas<\/strong>/);
+  assert.match(nodes['session-exercise-results'].innerHTML,/data-session-variant-code="supMedium"/);
+  assert.match(nodes['session-exercise-results'].innerHTML,/aria-pressed="true"/);
 });
