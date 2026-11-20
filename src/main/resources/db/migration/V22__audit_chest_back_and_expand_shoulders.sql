@@ -2,6 +2,23 @@
 -- Migrates forward only. All prior variant IDs/codes and historical logs are preserved.
 -- Anatomical roles are qualitative biomechanical inferences, not measured EMG percentages.
 
+-- The V1 schema predates these values already present in the Java enums.
+-- Keep PostgreSQL validation synchronized with BodyPosition and Trajectory.
+ALTER TABLE exercise_variants DROP CONSTRAINT IF EXISTS exercise_variants_body_position_check;
+ALTER TABLE exercise_variants ADD CONSTRAINT exercise_variants_body_position_check
+    CHECK (body_position IN (
+        'STANDING','SEATED','SUPINE','PRONE','CHEST_SUPPORTED','BENT_OVER',
+        'INCLINE_PRONE','KNEELING','HALF_KNEELING','HANGING','QUADRUPED',
+        'SIDE_LYING','NOT_APPLICABLE'
+    ));
+ALTER TABLE exercise_variants DROP CONSTRAINT IF EXISTS exercise_variants_trajectory_check;
+ALTER TABLE exercise_variants ADD CONSTRAINT exercise_variants_trajectory_check
+    CHECK (trajectory IN (
+        'TO_CHEST','TO_UPPER_CHEST','TO_HIP','TO_ABDOMEN','TO_FACE',
+        'LOW_TO_HIGH','HIGH_TO_LOW','ARC','OVERHEAD','DOWNWARD','UPWARD',
+        'HORIZONTAL','ROTATIONAL','NOT_APPLICABLE'
+    ));
+
 -- The upright chest/triceps dip does not use a bench. Previously 'UPRIGHT'
 -- was mistakenly stored in bench_angle; the execution remains distinguished
 -- by its stable variant code, name and primary_focus. 
