@@ -227,3 +227,46 @@ test('hombros: press y elevación lateral solo se dividen por equipamiento',()=>
   assert.equal(rows.find(x=>x.title==='Press de hombros con mancuernas')?.variantCodes.length,2);
   assert.ok(rows.some(x=>x.title==='Elevaciones laterales en polea'));
 });
+
+test('bíceps: modalidades por equipamiento sin duplicar curl sentado, inclinado o predicador',()=>{
+  const base={code:'bicepsCurl',name:'Curl de bíceps',mainMuscleGroup:'BICEPS'};
+  const a=v('dbStanding','bicepsCurl','DUMBBELL','NOT_APPLICABLE','Curl de bíceps de pie con mancuernas','SUPINATED');
+  const b=v('dbIncline','bicepsCurl','DUMBBELL','INCLINE','Curl de bíceps inclinado con mancuernas','SUPINATED');
+  const c=v('dbPreacher','bicepsCurl','DUMBBELL','NOT_APPLICABLE','Curl predicador con mancuernas','SUPINATED');
+  const d=v('bar','bicepsCurl','BARBELL','NOT_APPLICABLE','Curl de bíceps con barra','SUPINATED');
+  const e=v('ez','bicepsCurl','EZ_BAR','NOT_APPLICABLE','Curl de bíceps con barra Z','SUPINATED');
+  const rows=search({exercises:[base],variants:[a,b,c,d,e],friendly,query:'curl'});
+  assert.equal(rows.length,3);
+  assert.equal(rows.find(x=>x.title==='Curl de bíceps con mancuernas')?.variantCodes.length,3);
+  assert.ok(rows.some(x=>x.title==='Curl de bíceps con barra Z'));
+  const preacher=search({exercises:[base],variants:[a,b,c,d,e],friendly,query:'curl predicador'});
+  assert.equal(preacher.length,1);
+  assert.equal(preacher[0].title,'Curl de bíceps predicador con mancuernas');
+  assert.equal(preacher[0].variant.code,'dbPreacher');
+});
+test('tríceps: cuerda, barra y asa en polea son configuraciones, no tres tarjetas',()=>{
+  const base={code:'tricepsPushdown',name:'Extensión de tríceps en polea',mainMuscleGroup:'TRICEPS'};
+  const a=v('rope','tricepsPushdown','CABLE','NOT_APPLICABLE','Extensión de tríceps con cuerda');
+  const b=v('bar','tricepsPushdown','CABLE','NOT_APPLICABLE','Extensión de tríceps con barra recta');
+  const c=v('single','tricepsPushdown','CABLE','NOT_APPLICABLE','Extensión unilateral de tríceps en polea');
+  const rows=search({exercises:[base],variants:[a,b,c],friendly,query:'tríceps'});
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].title,'Extensión de tríceps en polea');
+  assert.equal(rows[0].variantCodes.length,3);
+  const unilateral=search({exercises:[base],variants:[a,b,c],friendly,query:'unilateral'});
+  assert.equal(unilateral.length,1);
+  assert.equal(unilateral[0].matchingCodes.length,1);
+  assert.equal(unilateral[0].variant.code,'single');
+});
+test('tríceps: extensión sobre la cabeza separa polea de mancuernas y barra Z',()=>{
+  const base={code:'overheadTricepsExtension',name:'Extensión de tríceps sobre la cabeza',mainMuscleGroup:'TRICEPS'};
+  const a=v('rope','overheadTricepsExtension','CABLE','NOT_APPLICABLE','Extensión sobre la cabeza en polea');
+  const b=v('db','overheadTricepsExtension','DUMBBELL','NOT_APPLICABLE','Extensión sobre la cabeza con mancuernas');
+  const c=v('ez','overheadTricepsExtension','EZ_BAR','NOT_APPLICABLE','Extensión sobre la cabeza con barra Z');
+  const rows=search({exercises:[base],variants:[a,b,c],friendly,query:'',muscle:'TRICEPS'});
+  assert.deepEqual(rows.map(x=>x.title),[
+    'Extensión de tríceps sobre la cabeza en polea',
+    'Extensión de tríceps sobre la cabeza con mancuernas',
+    'Extensión de tríceps sobre la cabeza con barra Z'
+  ]);
+});

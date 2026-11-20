@@ -9,6 +9,7 @@
         MACHINE_PLATE_LOADED: 'maquina discos',
         DUMBBELL: 'mancuerna mancuernas',
         BARBELL: 'barra',
+        EZ_BAR: 'barra z barra ez',
         CABLE: 'polea cable',
         BODYWEIGHT: 'peso corporal'
     });
@@ -57,6 +58,14 @@
                 ? 'MAQUINA' : (variant.equipment || 'OTRO');
             return `${family}|${material}`;
         }
+        // Brazos: el material identifica la modalidad, no el agarre,
+        // la posición ni el accesorio de polea.
+        if (['bicepsCurl','hammerCurl','reverseCurl','tricepsPushdown',
+             'overheadTricepsExtension','lyingTricepsExtension'].includes(family)) {
+            const material = ['MACHINE_SELECTORISED','MACHINE_PLATE_LOADED'].includes(variant.equipment)
+                ? 'MAQUINA' : (variant.equipment || 'OTRO');
+            return `${family}|${material}`;
+        }
         // Aperturas: diferencia útil de posición/recorrido y material.
         if (family === 'chestFly') {
             return `${family}|${variant.equipment || 'OTRO'}`;
@@ -99,7 +108,9 @@
             if ((!tokens.length || matches(exercise.name, tokens)) && ![
                 'benchPress','machineChestPress','chestFly','pullUp','latPulldown',
                 'machineRow','seatedCableRow','overheadPress','lateralRaise',
-                'frontRaise','rearDeltFly','facePull'
+                'frontRaise','rearDeltFly','facePull',
+                'bicepsCurl','hammerCurl','reverseCurl','tricepsPushdown',
+                'overheadTricepsExtension','lyingTricepsExtension'
             ].includes(exercise.code)) {
                 results.push({
                     exercise,
@@ -175,6 +186,30 @@
                         : 'Aperturas de deltoide posterior con mancuernas';
                 } else if (exercise.code === 'facePull') {
                     title = main.equipment === 'BAND' ? 'Face pull con banda elástica' : 'Face pull en polea';
+                } else if (['bicepsCurl','hammerCurl','reverseCurl'].includes(exercise.code)) {
+                    const base = exercise.code === 'bicepsCurl' ? 'Curl de bíceps'
+                        : exercise.code === 'hammerCurl' ? 'Curl martillo' : 'Curl inverso';
+                    const queryWords = normalize(query);
+                    const specific = exercise.code === 'bicepsCurl' &&
+                        /\b(predicador|concentracion)\b/.test(queryWords)
+                        ? (queryWords.includes('predicador') ? ' predicador' : ' de concentración') : '';
+                    const equipmentName = main.equipment === 'CABLE' ? ' en polea'
+                        : main.equipment === 'EZ_BAR' ? ' con barra Z'
+                        : main.equipment === 'BARBELL' ? ' con barra'
+                        : main.equipment === 'DUMBBELL' ? ' con mancuernas'
+                        : main.equipment?.startsWith('MACHINE_') ? ' en máquina' : '';
+                    title = base + specific + equipmentName;
+                } else if (exercise.code === 'tricepsPushdown') {
+                    title = 'Extensión de tríceps en polea';
+                } else if (['overheadTricepsExtension','lyingTricepsExtension'].includes(exercise.code)) {
+                    const base = exercise.code === 'overheadTricepsExtension'
+                        ? 'Extensión de tríceps sobre la cabeza' : 'Extensión de tríceps tumbado';
+                    const equipmentName = main.equipment === 'CABLE' ? ' en polea'
+                        : main.equipment === 'EZ_BAR' ? ' con barra Z'
+                        : main.equipment === 'BARBELL' ? ' con barra'
+                        : main.equipment === 'DUMBBELL' ? ' con mancuernas'
+                        : main.equipment?.startsWith('MACHINE_') ? ' en máquina' : '';
+                    title = base + equipmentName;
                 }
                 const detail = materials.join(' / ') +
                     (fullGroup.length > 1 ? ' · ' + fullGroup.length + ' configuraciones' : '');
