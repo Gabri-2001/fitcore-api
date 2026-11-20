@@ -2681,21 +2681,21 @@ function renderSessionExerciseResults() {
     }
 
     $('session-exercise-count').textContent =
-        `\${results.length} resultado\${results.length === 1 ? '' : 's'}`;
+        `${results.length} resultado${results.length === 1 ? '' : 's'}`;
     container.innerHTML = results.length
         ? results.map(({exercise, variant, variantCodes, title, detail}) => {
             const selected = state.sessionPicker.exercise?.code === exercise.code &&
                 (!state.sessionPicker.configuration?.variantCode ||
                  variantCodes.includes(state.sessionPicker.configuration.variantCode));
             const chosen = variant
-                ? ` data-session-variant-code="\${escapeHtml(variant.code)}"`
+                ? ` data-session-variant-code="${escapeHtml(variant.code)}"`
                 : '';
-            return `<button type="button" class="picker-exercise \${selected ? 'is-selected' : ''}"
-                aria-pressed="\${selected ? 'true' : 'false'}"
-                data-session-exercise-code="\${escapeHtml(exercise.code)}"\${chosen}>
-                \${exerciseThumb(exercise)}
-                <span><strong>\${escapeHtml(title || exercise.name)}</strong>
-                <small>\${escapeHtml(detail || friendly(exercise.mainMuscleGroup))}</small></span>
+            return `<button type="button" class="picker-exercise ${selected ? 'is-selected' : ''}"
+                aria-pressed="${selected ? 'true' : 'false'}"
+                data-session-exercise-code="${escapeHtml(exercise.code)}"${chosen}>
+                ${exerciseThumb(exercise)}
+                <span><strong>${escapeHtml(title || exercise.name)}</strong>
+                <small>${escapeHtml(detail || friendly(exercise.mainMuscleGroup))}</small></span>
                 <i aria-hidden="true">›</i></button>`;
         }).join('')
         : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
