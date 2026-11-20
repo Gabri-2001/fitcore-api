@@ -81,9 +81,7 @@
         // Bisagras y gemelos: agrupar por equipamiento, sin duplicar
         // agarres, apoyos o número de piernas.
         if (['romanianDeadlift','deadlift','goodMorning','nordicHamstringCurl',
-             'standingCalfRaise','seatedCalfRaise','calfPressLegPress',
-                'crunch','legRaise','plank','pallofPress','reverseCrunch',
-                'abWheel','sidePlank','woodchopper','deadBug'].includes(family)) {
+             'standingCalfRaise','seatedCalfRaise','calfPressLegPress'].includes(family)) {
             return `${family}|${variant.equipment || 'OTRO'}`;
         }
         // Core: una tarjeta por patrón y modalidad; unilateralidad, dirección
@@ -146,7 +144,9 @@
                 'splitSquat','legExtension','hipThrust','gluteKickback',
                 'hipAbduction','hipAdduction','romanianDeadlift','deadlift',
                 'goodMorning','legCurl','nordicHamstringCurl',
-                'standingCalfRaise','seatedCalfRaise','calfPressLegPress'
+                'standingCalfRaise','seatedCalfRaise','calfPressLegPress',
+                'crunch','legRaise','plank','pallofPress','reverseCrunch',
+                'abWheel','sidePlank','woodchopper','deadBug'
             ].includes(exercise.code)) {
                 results.push({
                     exercise,
