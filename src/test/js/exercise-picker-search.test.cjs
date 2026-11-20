@@ -270,3 +270,45 @@ test('tríceps: extensión sobre la cabeza separa polea de mancuernas y barra Z'
     'Extensión de tríceps sobre la cabeza con barra Z'
   ]);
 });
+
+test('piernas: prensa con pies altos o bajos sigue siendo una sola modalidad',()=>{
+  const e={code:'legPress',name:'Prensa de piernas',mainMuscleGroup:'QUADRICEPS'};
+  const x=v('mid','legPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Prensa de piernas pies medios');
+  const y=v('high','legPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Prensa de piernas pies altos');
+  const z=v('single','legPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Prensa de piernas unilateral');
+  const w=v('selector','legPress','MACHINE_SELECTORISED','NOT_APPLICABLE','Prensa en máquina selectorizada');
+  const rows=search({exercises:[e],variants:[x,y,z,w],query:'prensa',friendly});
+  assert.equal(rows.length,2);
+  assert.equal(rows.find(r=>r.title==='Prensa de piernas en máquina de discos').variantCodes.length,3);
+  assert.ok(rows.every(r=>!r.detail.includes('1 configuración')));
+});
+test('piernas: la sentadilla búlgara se encuentra dentro de la modalidad mancuerna',()=>{
+  const e={code:'splitSquat',name:'Sentadilla dividida',mainMuscleGroup:'QUADRICEPS'};
+  const x=v('bulgarian','splitSquat','DUMBBELL','NOT_APPLICABLE','Sentadilla búlgara con mancuernas');
+  const y=v('standard','splitSquat','DUMBBELL','NOT_APPLICABLE','Sentadilla dividida con mancuernas');
+  const rows=search({exercises:[e],variants:[x,y],query:'sentadilla bulgara',friendly});
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].title,'Sentadilla búlgara con mancuernas');
+  assert.equal(rows[0].matchingCodes.length,1);
+  assert.equal(rows[0].variantCodes.length,2);
+});
+test('glúteos: hip thrust por equipamiento sin multiplicar configuraciones de apoyo',()=>{
+  const e={code:'hipThrust',name:'Hip thrust',mainMuscleGroup:'GLUTES'};
+  const variants=[
+    v('bar','hipThrust','BARBELL','FLAT','Hip thrust con barra'),
+    v('smith','hipThrust','SMITH_MACHINE','FLAT','Hip thrust en multipower'),
+    v('machine','hipThrust','MACHINE_PLATE_LOADED','FLAT','Hip thrust en máquina')
+  ];
+  const rows=search({exercises:[e],variants,query:'hip thrust',friendly});
+  assert.deepEqual(rows.map(r=>r.title),[
+    'Hip thrust con barra','Hip thrust en Smith','Hip thrust en máquina de discos'
+  ]);
+});
+test('aductores: aducción se filtra por ADDUCTORS, no glúteos',()=>{
+  const ex={code:'hipAdduction',name:'Aducción de cadera',mainMuscleGroup:'ADDUCTORS'};
+  const v1=v('adduction','hipAdduction','MACHINE_SELECTORISED','NOT_APPLICABLE','Aducción de cadera en máquina');
+  assert.equal(search({exercises:[ex],variants:[v1],query:'',muscle:'GLUTES',friendly}).length,0);
+  const found=search({exercises:[ex],variants:[v1],query:'',muscle:'ADDUCTORS',friendly});
+  assert.equal(found.length,1);
+  assert.equal(found[0].detail,'Máquina de discos' === friendly('MACHINE_SELECTORISED') ? 'Máquina de discos' : String('MACHINE_SELECTORISED'));
+});

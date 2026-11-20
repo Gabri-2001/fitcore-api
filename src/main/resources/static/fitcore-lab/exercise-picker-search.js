@@ -66,6 +66,13 @@
                 ? 'MAQUINA' : (variant.equipment || 'OTRO');
             return `${family}|${material}`;
         }
+        // Piernas y glúteos: una tarjeta por plataforma/material real;
+        // colocación de pies, apoyo y unilateralidad se eligen en Configurar.
+        if (['backSquat','frontSquat','hackSquat','legPress','lunge',
+             'splitSquat','legExtension','hipThrust','gluteKickback',
+             'hipAbduction','hipAdduction'].includes(family)) {
+            return `${family}|${variant.equipment || 'OTRO'}`;
+        }
         // Aperturas: diferencia útil de posición/recorrido y material.
         if (family === 'chestFly') {
             return `${family}|${variant.equipment || 'OTRO'}`;
@@ -110,7 +117,10 @@
                 'machineRow','seatedCableRow','overheadPress','lateralRaise',
                 'frontRaise','rearDeltFly','facePull',
                 'bicepsCurl','hammerCurl','reverseCurl','tricepsPushdown',
-                'overheadTricepsExtension','lyingTricepsExtension'
+                'overheadTricepsExtension','lyingTricepsExtension',
+                'backSquat','frontSquat','hackSquat','legPress','lunge',
+                'splitSquat','legExtension','hipThrust','gluteKickback',
+                'hipAbduction','hipAdduction'
             ].includes(exercise.code)) {
                 results.push({
                     exercise,
@@ -210,6 +220,36 @@
                         : main.equipment === 'DUMBBELL' ? ' con mancuernas'
                         : main.equipment?.startsWith('MACHINE_') ? ' en máquina' : '';
                     title = base + equipmentName;
+                } else if (['backSquat','frontSquat','hackSquat','legPress','lunge',
+                            'splitSquat','legExtension','hipThrust','gluteKickback',
+                            'hipAbduction','hipAdduction'].includes(exercise.code)) {
+                    const bases = {
+                        backSquat:'Sentadilla trasera',
+                        frontSquat:'Sentadilla frontal',
+                        hackSquat:'Sentadilla hack',
+                        legPress:'Prensa de piernas',
+                        lunge:'Zancadas',
+                        splitSquat:'Sentadilla dividida',
+                        legExtension:'Extensión de piernas',
+                        hipThrust:'Hip thrust',
+                        gluteKickback:'Patada de glúteo',
+                        hipAbduction:'Abducción de cadera',
+                        hipAdduction:'Aducción de cadera'
+                    };
+                    const gear = {
+                        BARBELL:' con barra', DUMBBELL:' con mancuernas',
+                        SMITH_MACHINE:' en Smith', CABLE:' en polea',
+                        MACHINE_SELECTORISED:' en máquina selectorizada',
+                        MACHINE_PLATE_LOADED:' en máquina de discos',
+                        BAND:' con banda', BODYWEIGHT:' con peso corporal'
+                    };
+                    const specific = normalize(query);
+                    const chosen = exercise.code === 'splitSquat' && /bulgar/.test(specific)
+                        ? 'Sentadilla búlgara'
+                        : exercise.code === 'lunge' && /inversa/.test(specific)
+                        ? 'Zancada inversa'
+                        : bases[exercise.code];
+                    title = chosen + (gear[main.equipment] || '');
                 }
                 const detail = materials.join(' / ') +
                     (fullGroup.length > 1 ? ' · ' + fullGroup.length + ' configuraciones' : '');
