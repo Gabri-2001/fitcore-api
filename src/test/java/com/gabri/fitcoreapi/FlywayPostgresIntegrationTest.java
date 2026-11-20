@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(26, version);
+        assertEquals(27, version);
     }
 
     @Test
@@ -473,6 +473,62 @@ class FlywayPostgresIntegrationTest {
                 SELECT name FROM exercise_variants WHERE code='legRaiseHanging'
                 """, String.class);
         assertEquals("Elevación de piernas colgado", visibleHangingName);
+    }
+
+
+    @Test
+    void seedsForearmAndGripFamiliesInV27WithoutSyntheticMuscleRegions() {
+        Integer families=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercises WHERE main_muscle_group='FOREARMS' AND active
+                """, Integer.class);
+        assertEquals(7,families);
+        Integer variants=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='FOREARMS' AND v.active
+                """, Integer.class);
+        assertEquals(20,variants);
+        Integer mapping=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_muscle_activations WHERE mapping_version=11
+                """, Integer.class);
+        assertEquals(41,mapping);
+        Integer missingPrimary=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='FOREARMS' AND v.active AND NOT EXISTS
+                  (SELECT 1 FROM exercise_muscle_activations a
+                   WHERE a.exercise_variant_id=v.id AND a.role='PRIMARY')
+                """, Integer.class);
+        assertEquals(0,missingPrimary);
+        Integer defaults=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='FOREARMS' AND v.active AND v.is_default
+                """, Integer.class);
+        assertEquals(7,defaults);
+        Integer secondsFamilies=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercises
+                WHERE code IN ('farmerCarry','deadHang','staticGripHold')
+                  AND default_unit='SECONDS' AND calories_estimation_type='DURATION_BASED'
+                """, Integer.class);
+        assertEquals(3,secondsFamilies);
+        Integer deepWithoutSvg=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM muscles WHERE code IN
+                ('PRONATOR_TERES','PRONATOR_QUADRATUS','SUPINATOR')
+                AND has_svg_region=false AND muscle_group='FOREARMS'
+                """,Integer.class);
+        assertEquals(3,deepWithoutSvg);
+        String pronation=jdbcTemplate.queryForObject("""
+                SELECT primary_focus FROM exercise_variants
+                WHERE code='forearmPronationDumbbellSeated'
+                """,String.class);
+        String supination=jdbcTemplate.queryForObject("""
+                SELECT primary_focus FROM exercise_variants
+                WHERE code='forearmSupinationDumbbellSeated'
+                """,String.class);
+        assertEquals("FOREARM_PRONATION",pronation);
+        assertEquals("FOREARM_SUPINATION",supination);
+        String earlierReverseCurl=jdbcTemplate.queryForObject("""
+                SELECT e.main_muscle_group FROM exercises e WHERE e.code='reverseCurl'
+                """,String.class);
+        assertEquals("BICEPS",earlierReverseCurl);
     }
 
 }

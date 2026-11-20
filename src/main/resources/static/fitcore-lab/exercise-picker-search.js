@@ -11,7 +11,12 @@
         BARBELL: 'barra',
         EZ_BAR: 'barra z barra ez',
         CABLE: 'polea cable',
-        BODYWEIGHT: 'peso corporal'
+        BODYWEIGHT: 'peso corporal',
+        KETTLEBELL: 'kettlebell pesa rusa',
+        TRAP_BAR: 'barra hexagonal trap bar',
+        WRIST_ROLLER: 'rodillo de muneca',
+        BAND: 'banda elastica',
+        WEIGHT_PLATE: 'disco'
     });
 
     function normalize(value) {
@@ -95,6 +100,15 @@
         if (['plank','abWheel','sidePlank'].includes(family)) {
             return family;
         }
+        // Antebrazo: separar modalidades por material, no multiplicar por
+        // lateralidad, posición de agarre o sentido de giro del rodillo.
+        if (['wristCurl','wristExtension','forearmRotation','farmerCarry',
+             'staticGripHold'].includes(family)) {
+            return `${family}|${variant.equipment || 'OTRO'}`;
+        }
+        if (['deadHang','wristRoller'].includes(family)) {
+            return family;
+        }
         // Aperturas: diferencia útil de posición/recorrido y material.
         if (family === 'chestFly') {
             return `${family}|${variant.equipment || 'OTRO'}`;
@@ -146,7 +160,9 @@
                 'goodMorning','legCurl','nordicHamstringCurl',
                 'standingCalfRaise','seatedCalfRaise','calfPressLegPress',
                 'crunch','legRaise','plank','pallofPress','reverseCrunch',
-                'abWheel','sidePlank','woodchopper','deadBug'
+                'abWheel','sidePlank','woodchopper','deadBug',
+                'wristCurl','wristExtension','forearmRotation','farmerCarry',
+                'deadHang','staticGripHold','wristRoller'
             ].includes(exercise.code)) {
                 results.push({
                     exercise,
@@ -157,7 +173,14 @@
                 return;
             }
 
-            const hits = available.filter(variant => matches([
+            const orientationQuery = exercise.code === 'forearmRotation'
+                ? (tokens.includes('pronacion') && !tokens.includes('supinacion')
+                    ? 'pronacion' : tokens.includes('supinacion') && !tokens.includes('pronacion')
+                    ? 'supinacion' : null)
+                : null;
+            const hits = available.filter(variant =>
+                (!orientationQuery || normalize(variant.name).includes(orientationQuery)) &&
+                matches([
                 exercise.name,
                 variant.name,
                 friendly(variant.equipment),
@@ -329,6 +352,26 @@
                     } else {
                         title = base + (gear[main.equipment] || '');
                     }
+                }
+                else if (['wristCurl','wristExtension','forearmRotation','farmerCarry',
+                          'deadHang','staticGripHold','wristRoller'].includes(exercise.code)) {
+                    const gear = {
+                        BARBELL:' con barra', DUMBBELL:' con mancuernas',
+                        CABLE:' en polea', BAND:' con banda',
+                        KETTLEBELL:' con pesas rusas', TRAP_BAR:' con barra hexagonal'
+                    };
+                    const base = {
+                        wristCurl:'Flexión de muñeca', wristExtension:'Extensión de muñeca',
+                        forearmRotation:'Pronación y supinación de antebrazo',
+                        farmerCarry:'Paseo del granjero',
+                        deadHang:'Suspensión en barra', staticGripHold:'Agarre estático',
+                        wristRoller:'Rodillo de muñeca'
+                    }[exercise.code];
+                    const orientation = exercise.code === 'forearmRotation' ? orientationQuery : null;
+                    title = orientation
+                        ? (orientation === 'pronacion' ? 'Pronación' : 'Supinación') +
+                          ' de antebrazo' + (gear[main.equipment] || '')
+                        : base + (gear[main.equipment] || '');
                 }
                 const detail = materials.join(' / ') +
                     (fullGroup.length > 1 ? ' · ' + fullGroup.length + ' configuraciones' : '');

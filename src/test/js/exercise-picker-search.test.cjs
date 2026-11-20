@@ -400,3 +400,60 @@ test('core: las planchas no crean tarjetas por dificultad ni anuncian configurac
   assert.equal(found[0].title,'Plancha lateral');
   assert.ok(!found[0].detail.includes('1 configuración'));
 });
+
+test('antebrazo: flexión y extensión de muñeca son familias distintas',()=>{
+  const es=[
+    {code:'wristCurl',name:'Flexión de muñeca',mainMuscleGroup:'FOREARMS'},
+    {code:'wristExtension',name:'Extensión de muñeca',mainMuscleGroup:'FOREARMS'}];
+  const xs=[
+    v('flexBar','wristCurl','BARBELL','NOT_APPLICABLE','Flexión de muñeca con barra'),
+    v('flexOne','wristCurl','DUMBBELL','NOT_APPLICABLE','Flexión unilateral de muñeca con mancuerna'),
+    v('extBar','wristExtension','BARBELL','NOT_APPLICABLE','Extensión de muñeca con barra')];
+  const out=search({exercises:es,variants:xs,query:'',muscle:'FOREARMS',friendly});
+  assert.equal(out.length,3);
+  assert.deepEqual(out.map(x=>x.title),[
+    'Flexión de muñeca con barra','Flexión de muñeca con mancuernas','Extensión de muñeca con barra']);
+  assert.ok(out.every(x=>!x.detail.includes('1 configuración')));
+  assert.equal(search({exercises:es,variants:xs,query:'',muscle:'BICEPS',friendly}).length,0);
+});
+test('antebrazo: pronación y supinación se buscan por nombre, sin alterar códigos',()=>{
+  const e={code:'forearmRotation',name:'Pronación y supinación de antebrazo',mainMuscleGroup:'FOREARMS'};
+  const a=v('pronDumb','forearmRotation','DUMBBELL','NOT_APPLICABLE','Pronación de antebrazo sentado con mancuerna');
+  const b=v('supDumb','forearmRotation','DUMBBELL','NOT_APPLICABLE','Supinación de antebrazo sentado con mancuerna');
+  const c=v('pronBand','forearmRotation','BAND','NOT_APPLICABLE','Pronación de antebrazo con banda');
+  const d=v('supBand','forearmRotation','BAND','NOT_APPLICABLE','Supinación de antebrazo con banda');
+  const all=[a,b,c,d];
+  const out=search({exercises:[e],variants:all,query:'pronacion',friendly});
+  assert.equal(out.length,2);
+  assert.ok(out.every(x=>x.title.startsWith('Pronación')));
+  assert.ok(out.every(x=>x.matchingCodes.every(code=>code.startsWith('pron'))));
+  assert.ok(out.every(x=>x.variantCodes.length===2));
+  const reverse=search({exercises:[e],variants:all,query:'supinacion',friendly});
+  assert.equal(reverse.length,2);
+  assert.ok(reverse.every(x=>x.matchingCodes.every(code=>code.startsWith('sup'))));
+});
+test('antebrazo: paseo unilateral configura el mismo material que bilateral',()=>{
+  const e={code:'farmerCarry',name:'Paseo del granjero',mainMuscleGroup:'FOREARMS'};
+  const a=v('bilateral','farmerCarry','DUMBBELL','NOT_APPLICABLE','Paseo del granjero con mancuernas');
+  const b=v('suitcase','farmerCarry','DUMBBELL','NOT_APPLICABLE','Paseo de maleta unilateral con mancuerna');
+  const c=v('trap','farmerCarry','TRAP_BAR','NOT_APPLICABLE','Paseo del granjero con barra hexagonal');
+  const out=search({exercises:[e],variants:[a,b,c],query:'',friendly});
+  assert.equal(out.length,2);
+  assert.equal(out[0].title,'Paseo del granjero con mancuernas');
+  assert.equal(out[0].variantCodes.length,2);
+  assert.equal(out[1].title,'Paseo del granjero con barra hexagonal');
+});
+test('antebrazo: rodillo agrupa sentidos y suspensión agrupa agarres',()=>{
+  const es=[
+    {code:'wristRoller',name:'Rodillo de muñeca',mainMuscleGroup:'FOREARMS'},
+    {code:'deadHang',name:'Suspensión en barra',mainMuscleGroup:'FOREARMS'}];
+  const xs=[
+    v('flex','wristRoller','WRIST_ROLLER','NOT_APPLICABLE','Rodillo de muñeca flexión'),
+    v('ext','wristRoller','WRIST_ROLLER','NOT_APPLICABLE','Rodillo de muñeca extensión'),
+    v('prono','deadHang','BODYWEIGHT','NOT_APPLICABLE','Suspensión en barra agarre prono'),
+    v('neutro','deadHang','BODYWEIGHT','NOT_APPLICABLE','Suspensión en barra agarre neutro')];
+  const out=search({exercises:es,variants:xs,query:'',friendly});
+  assert.deepEqual(out.map(x=>x.title),['Rodillo de muñeca','Suspensión en barra']);
+  assert.deepEqual(out.map(x=>x.variantCodes.length),[2,2]);
+  assert.ok(out.every(x=>x.variantCodes.every(code=>xs.some(v=>v.code===code))));
+});
