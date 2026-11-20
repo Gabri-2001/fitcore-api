@@ -29,7 +29,7 @@ SELECT seed.code, seed.name, e.id, seed.equipment, seed.grip_type, seed.grip_wid
        seed.bench_angle, seed.body_position, seed.laterality, seed.trajectory,
        seed.support_type, seed.stance_type, seed.attachment_type,
        seed.shoulder_position, seed.foot_placement, seed.knee_position,
-       seed.contraction_type, seed.requires_caution, true,
+       seed.contraction_type, seed.requires_caution::boolean, true,
        seed.primary_focus, seed.secondary_focus, seed.practicality,
        seed.focus_description, 'BIOMECHANICAL_INFERENCE', 'MEDIUM',
        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
