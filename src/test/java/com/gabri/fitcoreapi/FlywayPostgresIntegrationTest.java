@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(23, version);
+        assertEquals(24, version);
     }
 
     @Test
@@ -308,6 +308,55 @@ class FlywayPostgresIntegrationTest {
                 WHERE code = 'bicepsCurlDumbbellPreacherSeated'
                 """, String.class);
         assertEquals("BENCH_SUPPORTED", preacherSupport);
+    }
+
+
+    @Test
+    void seedsLowerBodyV24AndReclassifiesHipAdduction() {
+        Integer v24 = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants WHERE code IN ('backSquatSmithStanding', 'frontSquatSmithStanding', 'frontSquatDumbbellStanding', 'hackSquatMachineNarrowFeet', 'hackSquatMachineHighFeet', 'legPressMachineSingleLeg', 'legPressMachineSelectorizedSeated', 'lungeDumbbellForward', 'lungeDumbbellWalking', 'lungeBarbellReverse', 'lungeBodyweightReverse', 'splitSquatDumbbellStandard', 'bulgarianSplitSquatSmith', 'splitSquatBarbellStandard', 'bulgarianSplitSquatBodyweight', 'legExtensionMachineSingleLeg', 'hipThrustMachinePlateLoaded', 'hipThrustSmithBenchSupported', 'hipThrustDumbbellBenchSupported', 'hipThrustBodyweightBenchSupported', 'gluteKickbackMachineStanding', 'gluteKickbackBandQuadruped', 'gluteKickbackBodyweightQuadruped', 'hipAbductionCableStandingSingleLeg', 'hipAbductionBandStanding')
+                """, Integer.class);
+        assertEquals(25, v24);
+
+        Integer mappings = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_muscle_activations a
+                JOIN exercise_variants v ON v.id = a.exercise_variant_id
+                WHERE v.code IN ('backSquatSmithStanding', 'frontSquatSmithStanding', 'frontSquatDumbbellStanding', 'hackSquatMachineNarrowFeet', 'hackSquatMachineHighFeet', 'legPressMachineSingleLeg', 'legPressMachineSelectorizedSeated', 'lungeDumbbellForward', 'lungeDumbbellWalking', 'lungeBarbellReverse', 'lungeBodyweightReverse', 'splitSquatDumbbellStandard', 'bulgarianSplitSquatSmith', 'splitSquatBarbellStandard', 'bulgarianSplitSquatBodyweight', 'legExtensionMachineSingleLeg', 'hipThrustMachinePlateLoaded', 'hipThrustSmithBenchSupported', 'hipThrustDumbbellBenchSupported', 'hipThrustBodyweightBenchSupported', 'gluteKickbackMachineStanding', 'gluteKickbackBandQuadruped', 'gluteKickbackBodyweightQuadruped', 'hipAbductionCableStandingSingleLeg', 'hipAbductionBandStanding') AND a.mapping_version = 8
+                """, Integer.class);
+        assertEquals(109, mappings);
+
+        Integer missingPrimary = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v WHERE v.code IN ('backSquatSmithStanding', 'frontSquatSmithStanding', 'frontSquatDumbbellStanding', 'hackSquatMachineNarrowFeet', 'hackSquatMachineHighFeet', 'legPressMachineSingleLeg', 'legPressMachineSelectorizedSeated', 'lungeDumbbellForward', 'lungeDumbbellWalking', 'lungeBarbellReverse', 'lungeBodyweightReverse', 'splitSquatDumbbellStandard', 'bulgarianSplitSquatSmith', 'splitSquatBarbellStandard', 'bulgarianSplitSquatBodyweight', 'legExtensionMachineSingleLeg', 'hipThrustMachinePlateLoaded', 'hipThrustSmithBenchSupported', 'hipThrustDumbbellBenchSupported', 'hipThrustBodyweightBenchSupported', 'gluteKickbackMachineStanding', 'gluteKickbackBandQuadruped', 'gluteKickbackBodyweightQuadruped', 'hipAbductionCableStandingSingleLeg', 'hipAbductionBandStanding')
+                AND NOT EXISTS (
+                    SELECT 1 FROM exercise_muscle_activations a
+                    WHERE a.exercise_variant_id = v.id AND a.role = 'PRIMARY'
+                )
+                """, Integer.class);
+        assertEquals(0, missingPrimary);
+
+        Integer quadriceps = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='QUADRICEPS' AND v.active
+                """, Integer.class);
+        Integer glutes = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='GLUTES' AND v.active
+                """, Integer.class);
+        assertEquals(25, quadriceps);
+        assertEquals(12, glutes);
+
+        String adductorsGroup = jdbcTemplate.queryForObject("""
+                SELECT main_muscle_group FROM exercises WHERE code='hipAdduction'
+                """, String.class);
+        assertEquals("ADDUCTORS", adductorsGroup);
+
+        Integer defaultCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.code IN ('backSquat','frontSquat','hackSquat','legPress','lunge','splitSquat',
+                                 'legExtension','hipThrust','gluteKickback','hipAbduction','hipAdduction')
+                    AND v.active AND v.is_default
+                """, Integer.class);
+        assertEquals(11, defaultCount);
     }
 
 }
