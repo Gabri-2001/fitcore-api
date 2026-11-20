@@ -73,6 +73,17 @@
              'hipAbduction','hipAdduction'].includes(family)) {
             return `${family}|${variant.equipment || 'OTRO'}`;
         }
+        // Curl femoral: sentado, tumbado y de pie son modalidades útiles.
+        // Dentro de cada una, los ajustes unilaterales no generan otra tarjeta.
+        if (family === 'legCurl') {
+            return `${family}|${variant.equipment || 'OTRO'}|${variant.bodyPosition || 'OTRO'}`;
+        }
+        // Bisagras y gemelos: agrupar por equipamiento, sin duplicar
+        // agarres, apoyos o número de piernas.
+        if (['romanianDeadlift','deadlift','goodMorning','nordicHamstringCurl',
+             'standingCalfRaise','seatedCalfRaise','calfPressLegPress'].includes(family)) {
+            return `${family}|${variant.equipment || 'OTRO'}`;
+        }
         // Aperturas: diferencia útil de posición/recorrido y material.
         if (family === 'chestFly') {
             return `${family}|${variant.equipment || 'OTRO'}`;
@@ -120,7 +131,9 @@
                 'overheadTricepsExtension','lyingTricepsExtension',
                 'backSquat','frontSquat','hackSquat','legPress','lunge',
                 'splitSquat','legExtension','hipThrust','gluteKickback',
-                'hipAbduction','hipAdduction'
+                'hipAbduction','hipAdduction','romanianDeadlift','deadlift',
+                'goodMorning','legCurl','nordicHamstringCurl',
+                'standingCalfRaise','seatedCalfRaise','calfPressLegPress'
             ].includes(exercise.code)) {
                 results.push({
                     exercise,
@@ -250,6 +263,34 @@
                         ? 'Zancada inversa'
                         : bases[exercise.code];
                     title = chosen + (gear[main.equipment] || '');
+                } else if (['romanianDeadlift','deadlift','goodMorning',
+                            'nordicHamstringCurl','legCurl',
+                            'standingCalfRaise','seatedCalfRaise','calfPressLegPress'
+                           ].includes(exercise.code)) {
+                    const gear = {
+                        BARBELL:' con barra', DUMBBELL:' con mancuernas',
+                        KETTLEBELL:' con kettlebell', SMITH_MACHINE:' en Smith',
+                        TRAP_BAR:' con trap bar', CABLE:' en polea',
+                        MACHINE_SELECTORISED:' en máquina selectorizada',
+                        MACHINE_PLATE_LOADED:' en máquina de discos',
+                        BAND:' con banda', BODYWEIGHT:' con peso corporal'
+                    };
+                    const base = {
+                        romanianDeadlift:'Peso muerto rumano', deadlift:'Peso muerto',
+                        goodMorning:'Buenos días', nordicHamstringCurl:'Curl nórdico',
+                        legCurl:'Curl femoral', standingCalfRaise:'Elevación de gemelos de pie',
+                        seatedCalfRaise:'Elevación de gemelos sentado',
+                        calfPressLegPress:'Elevación de gemelos en prensa'
+                    }[exercise.code];
+                    if (exercise.code === 'legCurl') {
+                        const positions = {SEATED:' sentado',PRONE:' tumbado',STANDING:' de pie'};
+                        title = base + (positions[main.bodyPosition] || '') + (gear[main.equipment] || '');
+                    } else if (exercise.code === 'deadlift' && /\bsumo\b/.test(normalize(query))
+                               && group.every(item=>item.stanceType === 'SUMO')) {
+                        title = 'Peso muerto sumo' + (gear[main.equipment] || '');
+                    } else {
+                        title = base + (gear[main.equipment] || '');
+                    }
                 }
                 const detail = materials.join(' / ') +
                     (fullGroup.length > 1 ? ' · ' + fullGroup.length + ' configuraciones' : '');

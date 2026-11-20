@@ -312,3 +312,53 @@ test('aductores: aducción se filtra por ADDUCTORS, no glúteos',()=>{
   assert.equal(found.length,1);
   assert.equal(found[0].detail,'Máquina de discos' === friendly('MACHINE_SELECTORISED') ? 'Máquina de discos' : String('MACHINE_SELECTORISED'));
 });
+
+test('isquiotibiales: curl femoral sentado y tumbado tienen tarjetas distintas',()=>{
+  const ex={code:'legCurl',name:'Curl femoral',mainMuscleGroup:'HAMSTRINGS'};
+  const s=v('seated','legCurl','MACHINE_SELECTORISED','NOT_APPLICABLE','Curl femoral sentado');
+  const u=v('seatedOneLeg','legCurl','MACHINE_SELECTORISED','NOT_APPLICABLE','Curl femoral sentado unilateral');
+  const p=v('prone','legCurl','MACHINE_SELECTORISED','NOT_APPLICABLE','Curl femoral tumbado');
+  s.bodyPosition='SEATED';u.bodyPosition='SEATED';p.bodyPosition='PRONE';
+  const found=search({exercises:[ex],variants:[s,u,p],query:'curl femoral',friendly});
+  assert.equal(found.length,2);
+  assert.deepEqual(found.map(x=>x.title),[
+    'Curl femoral sentado en máquina selectorizada',
+    'Curl femoral tumbado en máquina selectorizada'
+  ]);
+  assert.equal(found[0].variantCodes.length,2);
+});
+test('isquiotibiales: peso muerto rumano sin duplicar por unilateralidad',()=>{
+  const ex={code:'romanianDeadlift',name:'Peso muerto rumano',mainMuscleGroup:'HAMSTRINGS'};
+  const b=v('bar','romanianDeadlift','BARBELL','NOT_APPLICABLE','Peso muerto rumano con barra');
+  const d=v('dumb','romanianDeadlift','DUMBBELL','NOT_APPLICABLE','Peso muerto rumano con mancuernas');
+  const u=v('dumbSingle','romanianDeadlift','DUMBBELL','NOT_APPLICABLE','Peso muerto rumano unilateral con mancuernas');
+  const found=search({exercises:[ex],variants:[b,d,u],query:'peso muerto rumano',friendly});
+  assert.deepEqual(found.map(x=>x.title),['Peso muerto rumano con barra','Peso muerto rumano con mancuernas']);
+  assert.equal(found[1].variantCodes.length,2);
+});
+test('gemelos: separar elevaciones de pie y sentadas y prensa, nunca cada apoyo',()=>{
+  const bases=[
+    {code:'standingCalfRaise',name:'Elevación de gemelos de pie',mainMuscleGroup:'CALVES'},
+    {code:'seatedCalfRaise',name:'Elevación de gemelos sentado',mainMuscleGroup:'CALVES'},
+    {code:'calfPressLegPress',name:'Elevación de gemelos en prensa',mainMuscleGroup:'CALVES'}
+  ];
+  const a=v('standing','standingCalfRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación gemelos de pie');
+  const b=v('unilateral','standingCalfRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación gemelos de pie unilateral');
+  const c=v('seated','seatedCalfRaise','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Elevación gemelos sentado');
+  const d=v('press','calfPressLegPress','MACHINE_PLATE_LOADED','NOT_APPLICABLE','Elevación gemelos prensa');
+  const found=search({exercises:bases,variants:[a,b,c,d],query:'gemelos',friendly});
+  assert.equal(found.length,3);
+  assert.equal(found[0].variantCodes.length,2);
+  assert.ok(found.some(x=>x.title==='Elevación de gemelos en prensa en máquina de discos'));
+});
+test('peso muerto convencional se puede localizar bajo FULL_BODY',()=>{
+  const ex={code:'deadlift',name:'Peso muerto',mainMuscleGroup:'FULL_BODY'};
+  const a=v('conventional','deadlift','BARBELL','NOT_APPLICABLE','Peso muerto convencional con barra');
+  const b=v('sumo','deadlift','BARBELL','NOT_APPLICABLE','Peso muerto sumo con barra');
+  a.stanceType='CONVENTIONAL';b.stanceType='SUMO';
+  assert.equal(search({exercises:[ex],variants:[a,b],query:'peso muerto',muscle:'HAMSTRINGS',friendly}).length,0);
+  const found=search({exercises:[ex],variants:[a,b],query:'peso muerto',muscle:'FULL_BODY',friendly});
+  assert.equal(found.length,1);
+  assert.equal(found[0].variantCodes.length,2);
+  assert.equal(search({exercises:[ex],variants:[a,b],query:'sumo',friendly})[0].title,'Peso muerto sumo con barra');
+});
