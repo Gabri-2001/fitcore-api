@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(25, version);
+        assertEquals(26, version);
     }
 
     @Test
@@ -420,6 +420,59 @@ class FlywayPostgresIntegrationTest {
                 WHERE code='nordicHamstringCurlBandAssisted'
                 """, String.class);
         assertEquals("FLOOR_SUPPORTED", nordicSupport);
+    }
+
+
+    @Test
+    void seedsCoreByMovementPatternInV26() {
+        Integer variants = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='CORE' AND v.active
+                """, Integer.class);
+        assertEquals(25, variants);
+
+        Integer families = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercises WHERE main_muscle_group='CORE' AND active
+                """, Integer.class);
+        assertEquals(9, families);
+
+        Integer newMappings = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_muscle_activations WHERE mapping_version=10
+                """, Integer.class);
+        assertEquals(70, newMappings);
+
+        Integer missingPrimary = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='CORE' AND v.active
+                  AND NOT EXISTS (SELECT 1 FROM exercise_muscle_activations a
+                                  WHERE a.exercise_variant_id=v.id AND a.role='PRIMARY')
+                """, Integer.class);
+        assertEquals(0, missingPrimary);
+
+        Integer activeDefaults = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='CORE' AND v.active AND v.is_default
+                """, Integer.class);
+        assertEquals(9, activeDefaults);
+
+        String pallofPattern = jdbcTemplate.queryForObject("""
+                SELECT movement_pattern FROM exercises WHERE code='pallofPress'
+                """, String.class);
+        String woodchopperPattern = jdbcTemplate.queryForObject("""
+                SELECT movement_pattern FROM exercises WHERE code='woodchopper'
+                """, String.class);
+        assertEquals("ANTI_ROTATION", pallofPattern);
+        assertEquals("TRUNK_ROTATION", woodchopperPattern);
+
+        String sidePlankUnit = jdbcTemplate.queryForObject("""
+                SELECT default_unit FROM exercises WHERE code='sidePlank'
+                """, String.class);
+        assertEquals("SECONDS", sidePlankUnit);
+
+        String visibleHangingName = jdbcTemplate.queryForObject("""
+                SELECT name FROM exercise_variants WHERE code='legRaiseHanging'
+                """, String.class);
+        assertEquals("Elevación de piernas colgado", visibleHangingName);
     }
 
 }

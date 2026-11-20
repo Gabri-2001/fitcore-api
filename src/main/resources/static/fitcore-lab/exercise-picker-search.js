@@ -84,6 +84,17 @@
              'standingCalfRaise','seatedCalfRaise','calfPressLegPress'].includes(family)) {
             return `${family}|${variant.equipment || 'OTRO'}`;
         }
+        // Core: una tarjeta por patrón y modalidad; unilateralidad, dirección
+        // y dificultad permanecen como opciones reales en Configurar.
+        if (family === 'legRaise') {
+            return `${family}|${variant.supportType === 'MACHINE_SUPPORTED' ? 'SILLA' : 'COLGADO'}`;
+        }
+        if (['crunch','pallofPress','reverseCrunch','woodchopper','deadBug'].includes(family)) {
+            return `${family}|${variant.equipment || 'OTRO'}`;
+        }
+        if (['plank','abWheel','sidePlank'].includes(family)) {
+            return family;
+        }
         // Aperturas: diferencia útil de posición/recorrido y material.
         if (family === 'chestFly') {
             return `${family}|${variant.equipment || 'OTRO'}`;
@@ -288,6 +299,31 @@
                     } else if (exercise.code === 'deadlift' && /\bsumo\b/.test(normalize(query))
                                && group.every(item=>item.stanceType === 'SUMO')) {
                         title = 'Peso muerto sumo' + (gear[main.equipment] || '');
+                    } else {
+                        title = base + (gear[main.equipment] || '');
+                    }
+                }
+                // Las modalidades de core necesitan nombres visibles y concisos.
+                else if (['crunch','legRaise','plank','pallofPress','reverseCrunch',
+                          'abWheel','sidePlank','woodchopper','deadBug'].includes(exercise.code)) {
+                    const gear = {
+                        BODYWEIGHT:'', CABLE:' en polea', BAND:' con banda',
+                        WEIGHT_PLATE:' con disco', BENCH:' en banco',
+                        MACHINE_SELECTORISED:' en máquina', AB_WHEEL:''
+                    };
+                    const base = {
+                        crunch:'Crunch abdominal', legRaise:'Elevación de piernas',
+                        plank:'Plancha frontal', pallofPress:'Press Pallof',
+                        reverseCrunch:'Crunch inverso', abWheel:'Rueda abdominal',
+                        sidePlank:'Plancha lateral', woodchopper:'Giro diagonal',
+                        deadBug:'Dead bug'
+                    }[exercise.code];
+                    if (exercise.code === 'legRaise') {
+                        title = main.supportType === 'MACHINE_SUPPORTED'
+                            ? 'Elevación de piernas en silla romana'
+                            : 'Elevación de piernas colgado';
+                    } else if (exercise.code === 'reverseCrunch' && main.equipment === 'BODYWEIGHT') {
+                        title = 'Crunch inverso en suelo';
                     } else {
                         title = base + (gear[main.equipment] || '');
                     }

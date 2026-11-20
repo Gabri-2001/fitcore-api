@@ -362,3 +362,41 @@ test('peso muerto convencional se puede localizar bajo FULL_BODY',()=>{
   assert.equal(found[0].variantCodes.length,2);
   assert.equal(search({exercises:[ex],variants:[a,b],query:'sumo',friendly})[0].title,'Peso muerto sumo con barra');
 });
+
+test('core: Pallof y woodchopper son patrones separados y no mezclan configuraciones',()=>{
+  const base=[
+    {code:'pallofPress',name:'Press Pallof',mainMuscleGroup:'CORE'},
+    {code:'woodchopper',name:'Giro diagonal (woodchopper)',mainMuscleGroup:'CORE'}
+  ];
+  const a=v('pallofCable','pallofPress','CABLE','NOT_APPLICABLE','Press Pallof de pie en polea');
+  const b=v('pallofKneeling','pallofPress','CABLE','NOT_APPLICABLE','Press Pallof medio arrodillado');
+  const c=v('woodHigh','woodchopper','CABLE','NOT_APPLICABLE','Giro diagonal arriba abajo en polea');
+  const d=v('woodLow','woodchopper','CABLE','NOT_APPLICABLE','Giro diagonal abajo arriba en polea');
+  const found=search({exercises:base,variants:[a,b,c,d],query:'',muscle:'CORE',friendly});
+  assert.equal(found.length,2);
+  assert.equal(found[0].title,'Press Pallof en polea');
+  assert.equal(found[1].title,'Giro diagonal en polea');
+  assert.deepEqual(found.map(x=>x.variantCodes.length),[2,2]);
+});
+test('core: silla romana y suspendido separados; rodillas y piernas en Configurar',()=>{
+  const ex={code:'legRaise',name:'Elevación de piernas',mainMuscleGroup:'CORE'};
+  const h=v('h','legRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación de rodillas colgado');
+  const c=v('c','legRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación de rodillas en silla romana');
+  const d=v('d','legRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación de piernas en silla romana');
+  h.supportType='FREE';c.supportType='MACHINE_SUPPORTED';d.supportType='MACHINE_SUPPORTED';
+  const found=search({exercises:[ex],variants:[h,c,d],query:'elevacion',friendly});
+  assert.equal(found.length,2);
+  assert.equal(found[0].title,'Elevación de piernas colgado');
+  assert.equal(found[1].title,'Elevación de piernas en silla romana');
+  assert.equal(found[1].variantCodes.length,2);
+});
+test('core: las planchas no crean tarjetas por dificultad ni anuncian configuración única',()=>{
+  const ex={code:'sidePlank',name:'Plancha lateral',mainMuscleGroup:'CORE'};
+  const a=v('straight','sidePlank','BODYWEIGHT','NOT_APPLICABLE','Plancha lateral sobre antebrazo');
+  const b=v('knees','sidePlank','BODYWEIGHT','NOT_APPLICABLE','Plancha lateral con rodillas apoyadas');
+  const found=search({exercises:[ex],variants:[a,b],query:'plancha lateral',friendly});
+  assert.equal(found.length,1);
+  assert.equal(found[0].variantCodes.length,2);
+  assert.equal(found[0].title,'Plancha lateral');
+  assert.ok(!found[0].detail.includes('1 configuración'));
+});
