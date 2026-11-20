@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(22, version);
+        assertEquals(23, version);
     }
 
     @Test
@@ -261,6 +261,53 @@ class FlywayPostgresIntegrationTest {
                 WHERE e.main_muscle_group = 'SHOULDERS' AND v.active AND v.is_default
                 """, Integer.class);
         assertEquals(5, shoulderDefaults);
+    }
+
+
+    @Test
+    void seedsBicepsAndTricepsVariantsWithValidMuscleMappings() {
+        Integer newVariants = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants
+                WHERE code IN ('bicepsCurlBarbellStanding', 'bicepsCurlEzBarStanding', 'bicepsCurlDumbbellInclineSeated', 'bicepsCurlDumbbellPreacherSeated', 'bicepsCurlCableStanding', 'bicepsCurlDumbbellConcentrationSeated', 'hammerCurlCableRopeStanding', 'hammerCurlDumbbellSeated', 'reverseCurlBarbellStanding', 'reverseCurlCableStanding', 'tricepsPushdownCableStraightBar', 'tricepsPushdownCableVBar', 'tricepsPushdownCableSingleArm', 'overheadTricepsExtensionDumbbellSeated', 'overheadTricepsExtensionEzBarSeated', 'overheadTricepsExtensionCableSingleArm', 'lyingTricepsExtensionDumbbellFlat', 'lyingTricepsExtensionEzBarIncline')
+                """, Integer.class);
+        assertEquals(18, newVariants);
+
+        Integer mapped = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_muscle_activations a
+                JOIN exercise_variants v ON v.id = a.exercise_variant_id
+                WHERE a.mapping_version = 7 AND v.code IN ('bicepsCurlBarbellStanding', 'bicepsCurlEzBarStanding', 'bicepsCurlDumbbellInclineSeated', 'bicepsCurlDumbbellPreacherSeated', 'bicepsCurlCableStanding', 'bicepsCurlDumbbellConcentrationSeated', 'hammerCurlCableRopeStanding', 'hammerCurlDumbbellSeated', 'reverseCurlBarbellStanding', 'reverseCurlCableStanding', 'tricepsPushdownCableStraightBar', 'tricepsPushdownCableVBar', 'tricepsPushdownCableSingleArm', 'overheadTricepsExtensionDumbbellSeated', 'overheadTricepsExtensionEzBarSeated', 'overheadTricepsExtensionCableSingleArm', 'lyingTricepsExtensionDumbbellFlat', 'lyingTricepsExtensionEzBarIncline')
+                """, Integer.class);
+        assertEquals(77, mapped);
+
+        Integer missingPrimary = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v WHERE v.code IN ('bicepsCurlBarbellStanding', 'bicepsCurlEzBarStanding', 'bicepsCurlDumbbellInclineSeated', 'bicepsCurlDumbbellPreacherSeated', 'bicepsCurlCableStanding', 'bicepsCurlDumbbellConcentrationSeated', 'hammerCurlCableRopeStanding', 'hammerCurlDumbbellSeated', 'reverseCurlBarbellStanding', 'reverseCurlCableStanding', 'tricepsPushdownCableStraightBar', 'tricepsPushdownCableVBar', 'tricepsPushdownCableSingleArm', 'overheadTricepsExtensionDumbbellSeated', 'overheadTricepsExtensionEzBarSeated', 'overheadTricepsExtensionCableSingleArm', 'lyingTricepsExtensionDumbbellFlat', 'lyingTricepsExtensionEzBarIncline')
+                AND NOT EXISTS (SELECT 1 FROM exercise_muscle_activations a
+                    WHERE a.exercise_variant_id = v.id AND a.role = 'PRIMARY')
+                """, Integer.class);
+        assertEquals(0, missingPrimary);
+
+        Integer biceps = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group = 'BICEPS' AND v.active
+                """, Integer.class);
+        Integer triceps = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group = 'TRICEPS' AND v.active
+                """, Integer.class);
+        assertEquals(13, biceps);
+        assertEquals(11, triceps);
+
+        Integer armDefaults = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group IN ('BICEPS','TRICEPS') AND v.active AND v.is_default
+                """, Integer.class);
+        assertEquals(6, armDefaults);
+
+        String preacherSupport = jdbcTemplate.queryForObject("""
+                SELECT support_type FROM exercise_variants
+                WHERE code = 'bicepsCurlDumbbellPreacherSeated'
+                """, String.class);
+        assertEquals("BENCH_SUPPORTED", preacherSupport);
     }
 
 }
