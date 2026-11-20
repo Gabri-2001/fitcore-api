@@ -34,7 +34,7 @@ test('press inclinado, plano y Smith tienen título específico coherente', () =
     assert.equal(variantTitle(base, variant('default', 'Press plano con barra', 'FLAT','BARBELL')),
         'Press de banca plano');
     assert.equal(variantTitle(base, variant('smith', 'Press de banca inclinado en Smith', 'INCLINE','SMITH_MACHINE')),
-        'Press de banca inclinado');
+        'Press de banca inclinado en Smith');
 });
 
 test('en otros grupos se utiliza el nombre de la variante, sin nombre base repetido', () => {

@@ -21,7 +21,7 @@
                 HIGH_INCLINE: 'con inclinación alta',
                 DECLINE: 'declinado'
             }[variant.benchAngle];
-            if (angle) return `${base} ${angle}`;
+            if (angle) return `${base} ${angle}${variant.equipment === 'SMITH_MACHINE' ? ' en Smith' : ''}`;
         }
         // Para cualquier otra familia conservamos el nombre específico
         // registrado. Solo quitamos el sufijo de agarre separado por coma;

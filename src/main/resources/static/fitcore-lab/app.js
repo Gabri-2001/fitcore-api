@@ -2634,32 +2634,13 @@ function matchesExerciseSearch(text, tokens) {
 }
 
 function filteredSessionExercises() {
-    const query = normalizeExerciseSearchText($('session-exercise-query')?.value || '');
-    const tokens = query ? query.split(/\s+/) : [];
-    const equipment = $('session-exercise-equipment')?.value || '';
-    const muscle = $('session-exercise-muscle')?.value || '';
-
-    return state.exercises.flatMap(exercise => {
-        if (muscle && exercise.mainMuscleGroup !== muscle) return [];
-        const variants = orderedVariantsForExercise(exercise)
-            .filter(variant => !equipment || variant.equipment === equipment);
-        if (!variants.length) return [];
-
-        const baseMatch = tokens.length > 0 && matchesExerciseSearch(
-            `${exercise.name} ${exercise.description || ''}`, tokens
-        );
-        // Sin búsqueda específica seguimos mostrando una fila por ejercicio.
-        if ((!tokens.length || baseMatch) && !equipment) return [{exercise, variant: null}];
-
-        // Si se busca una variante o se filtra por material, mostramos las
-        // combinaciones concretas para que pulsar "Smith" seleccione Smith.
-        const matchingVariants = variants.filter(variant => matchesExerciseSearch([
-            exercise.name, exercise.description, variant.name, variant.code,
-            friendly(variant.equipment), equipmentSearchAliases[variant.equipment] || '',
-            friendly(variant.benchAngle), friendly(variant.gripType),
-            friendly(variant.gripWidth)
-        ].join(' '), tokens));
-        return matchingVariants.map(variant => ({exercise, variant}));
+    return FitCoreExerciseSearch.search({
+        exercises: state.exercises,
+        variants: state.variants,
+        query: $('session-exercise-query')?.value || '',
+        equipment: $('session-exercise-equipment')?.value || '',
+        muscle: $('session-exercise-muscle')?.value || '',
+        friendly
     });
 }
 
@@ -2674,19 +2655,54 @@ function renderSessionExerciseResults() {
     const container = $('session-exercise-results');
     if (!container) return;
     const results = filteredSessionExercises();
+    const currentExerciseCode = state.sessionPicker.exercise?.code;
+    const currentVariantCode = state.sessionPicker.configuration?.variantCode;
+
+    // Si el ejercicio elegido deja de coincidir con la búsqueda o los filtros,
+    // se invalida antes de permitir añadir nada al plan o entrenamiento.
+    const selectionVisible = !currentExerciseCode || results.some(({exercise, variantCodes}) =>
+        exercise.code === currentExerciseCode &&
+        (!currentVariantCode || variantCodes.includes(currentVariantCode))
+    );
+    if (!selectionVisible) {
+        state.sessionPicker = {exercise: null, configuration: {}};
+        state.pickerConfigOpen = false;
+        state.pickerConfigMoreOpen = false;
+        renderSessionExerciseConfig();
+    }
+
     $('session-exercise-count').textContent = `${results.length} resultado${results.length === 1 ? '' : 's'}`;
-    container.innerHTML = results.length ? results.map(({exercise, variant}) => {
-        const variants = orderedVariantsForExercise(exercise);
+    container.innerHTML = results.length ? results.map(({exercise, variant, variantCodes, kind}) => {
+        const selectedCode = state.sessionPicker.configuration?.variantCode;
         const selected = state.sessionPicker.exercise?.code === exercise.code &&
-            (!variant || state.sessionPicker.configuration?.variantCode === variant.code);
-        const title = variant ? FitCoreVariantUI.variantTitle(exercise, variant) : exercise.name;
-        const detail = variant
-            ? variantConfigurationChips(variant).slice(0, 4).join(' · ')
-            : `${friendly(exercise.mainMuscleGroup)} · ${variants.length} configuraci${variants.length === 1 ? 'ón' : 'ones'}`;
+            (!selectedCode || variantCodes.includes(selectedCode));
+        const groupVariants = state.variants.filter(candidate => variantCodes.includes(candidate.code));
+        let title = kind === 'modality' && variant
+            ? FitCoreVariantUI.variantTitle(exercise, variant)
+            : exercise.name;
+        // En dominadas/jalones, la anchura no identifica a toda una modalidad.
+        if (kind === 'modality' && variantCodes.length > 1 &&
+            ['pullUp', 'latPulldown'].includes(exercise.code)) {
+            title = `${exercise.name} · ${friendly(variant.gripType)}`;
+        } else if (kind === 'modality' && variantCodes.length > 1 &&
+            !['benchPress', 'machineChestPress', 'chestFly'].includes(exercise.code) &&
+            groupVariants.some(item => item.gripType !== variant?.gripType)) {
+            title = exercise.name;
+        }
+        const materials = [...new Set(groupVariants.map(candidate => friendly(candidate.equipment)))];
+        const detail = kind === 'modality'
+            ? variantCodes.length > 1
+                ? `${materials.join(' / ')} · ${variantCodes.length} configuraciones`
+                : variantConfigurationChips(variant).slice(0, 4).join(' · ')
+            : `${friendly(exercise.mainMuscleGroup)} · ${variantCodes.length} configuraci${variantCodes.length === 1 ? 'ón' : 'ones'}`;
         const variantAttribute = variant
             ? ` data-session-variant-code="${escapeHtml(variant.code)}"`
             : '';
-        return `<button class="picker-exercise ${selected ? 'is-selected' : ''}" data-session-exercise-code="${escapeHtml(exercise.code)}"${variantAttribute}>${exerciseThumb(exercise)}<span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span><i>›</i></button>`;
+        return `<button type="button" class="picker-exercise ${selected ? 'is-selected' : ''}"
+            aria-pressed="${selected ? 'true' : 'false'}"
+            data-session-exercise-code="${escapeHtml(exercise.code)}"${variantAttribute}>
+            ${exerciseThumb(exercise)}<span><strong>${escapeHtml(title)}</strong>
+            <small>${escapeHtml(detail)}</small></span><i aria-hidden="true">›</i></button>`;
     }).join('') : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
 }
 
