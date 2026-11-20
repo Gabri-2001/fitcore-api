@@ -39,6 +39,80 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(18, version);
+        assertEquals(20, version);
+    }
+
+    @Test
+    void seedsChestVariantsAndKeepsStableDefaults() {
+        Integer chestCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM exercise_variants v
+                JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group = 'CHEST'
+                """, Integer.class);
+        assertEquals(31, chestCount);
+
+        Integer lowInclines = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants
+                WHERE bench_angle = 'LOW_INCLINE' AND code IN (
+                  'benchPressBarbellLowInclineMediumGrip',
+                  'benchPressDumbbellLowInclineNeutralGrip',
+                  'benchPressSmithLowInclineMediumGrip'
+                )
+                """, Integer.class);
+        assertEquals(3, lowInclines);
+
+        Integer newVariantsWithoutActivation = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                WHERE v.code IN (
+                  'benchPressBarbellInclineMediumGrip',
+                  'benchPressDumbbellInclineNeutralGrip',
+                  'benchPressDumbbellInclinePronatedGrip',
+                  'benchPressSmithFlatMediumGrip',
+                  'benchPressSmithInclineMediumGrip',
+                  'benchPressBarbellDeclineMediumGrip',
+                  'benchPressDumbbellDeclineNeutralGrip',
+                  'benchPressDumbbellFlatPronatedGrip',
+                  'benchPressBarbellLowInclineMediumGrip',
+                  'benchPressDumbbellLowInclineNeutralGrip',
+                  'benchPressSmithLowInclineMediumGrip',
+                  'chestFlyDumbbellFlat', 'chestFlyDumbbellIncline',
+                  'chestFlyCableLowToHigh', 'chestFlyCableHighToLow',
+                  'chestFlyCableSeated',
+                  'chestPressMachineInclinePronatedMediumGrip',
+                  'chestPressMachineDeclinePronatedMediumGrip',
+                  'chestPressMachinePlateLoadedFlatNeutralGrip'
+                ) AND NOT EXISTS (
+                  SELECT 1 FROM exercise_muscle_activations a
+                  WHERE a.exercise_variant_id = v.id AND a.role = 'PRIMARY'
+                )
+                """, Integer.class);
+        assertEquals(0, newVariantsWithoutActivation);
+
+        Integer missingDefault = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM exercises e
+                WHERE EXISTS (
+                  SELECT 1 FROM exercise_variants v
+                  WHERE v.exercise_id = e.id AND v.active = true
+                ) AND NOT EXISTS (
+                  SELECT 1 FROM exercise_variants v
+                  WHERE v.exercise_id = e.id AND v.active = true AND v.is_default = true
+                )
+                """, Integer.class);
+        assertEquals(0, missingDefault);
+
+        Integer chestDefaults = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group = 'CHEST' AND v.active AND v.is_default
+                """, Integer.class);
+        assertEquals(5, chestDefaults);
+
+        Boolean benchDefault = jdbcTemplate.queryForObject("""
+                SELECT is_default FROM exercise_variants
+                WHERE code = 'benchPressBarbellFlatMediumGrip'
+                """, Boolean.class);
+        assertEquals(Boolean.TRUE, benchDefault);
     }
 }
