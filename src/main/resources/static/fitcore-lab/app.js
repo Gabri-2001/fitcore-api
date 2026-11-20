@@ -103,6 +103,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const daysAgo = days => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 const friendly = value => value == null ? '—' : (labels[value] || String(value).toLowerCase().replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()));
 const variantValue = (key, value) => {
+    if (key === 'benchAngle') return FitCoreVariantUI.angleLabel(value);
     if (key === 'gripType' && value === 'NEUTRAL') return 'Neutro';
     if (key === 'gripWidth') return {NARROW:'Cerrada', MEDIUM:'Media', WIDE:'Abierta'}[value] || friendly(value);
     return friendly(value);
@@ -2660,9 +2661,9 @@ function renderSessionExerciseResults() {
 
     // Si el ejercicio elegido deja de coincidir con la búsqueda o los filtros,
     // se invalida antes de permitir añadir nada al plan o entrenamiento.
-    const selectionVisible = !currentExerciseCode || results.some(({exercise, variantCodes}) =>
+    const selectionVisible = !currentExerciseCode || results.some(({exercise, matchingCodes, variantCodes}) =>
         exercise.code === currentExerciseCode &&
-        (!currentVariantCode || variantCodes.includes(currentVariantCode))
+        (!currentVariantCode || (matchingCodes || variantCodes).includes(currentVariantCode))
     );
     if (!selectionVisible) {
         state.sessionPicker = {exercise: null, configuration: {}};
@@ -2672,7 +2673,7 @@ function renderSessionExerciseResults() {
     }
 
     $('session-exercise-count').textContent = `${results.length} resultado${results.length === 1 ? '' : 's'}`;
-    container.innerHTML = results.length ? results.map(({exercise, variant, variantCodes, kind}) => {
+    container.innerHTML = results.length ? results.map(({exercise, variant, variantCodes, kind, title: groupedTitle, detail: groupedDetail}) => {
         const selectedCode = state.sessionPicker.configuration?.variantCode;
         const selected = state.sessionPicker.exercise?.code === exercise.code &&
             (!selectedCode || variantCodes.includes(selectedCode));
@@ -2689,6 +2690,7 @@ function renderSessionExerciseResults() {
             groupVariants.some(item => item.gripType !== variant?.gripType)) {
             title = exercise.name;
         }
+        if (groupedTitle) title = groupedTitle;
         const materials = [...new Set(groupVariants.map(candidate => friendly(candidate.equipment)))];
         const detail = kind === 'modality'
             ? variantCodes.length > 1
@@ -2702,7 +2704,7 @@ function renderSessionExerciseResults() {
             aria-pressed="${selected ? 'true' : 'false'}"
             data-session-exercise-code="${escapeHtml(exercise.code)}"${variantAttribute}>
             ${exerciseThumb(exercise)}<span><strong>${escapeHtml(title)}</strong>
-            <small>${escapeHtml(detail)}</small></span><i aria-hidden="true">›</i></button>`;
+            <small>${escapeHtml(groupedDetail || detail)}</small></span><i aria-hidden="true">›</i></button>`;
     }).join('') : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
 }
 

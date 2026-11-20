@@ -4,6 +4,13 @@
 (function (root) {
     'use strict';
 
+    function angleLabel(value) {
+        return ({FLAT:'Plano (0°)', LOW_INCLINE:'Inclinado (≈15°)',
+            INCLINE:'Inclinado (≈30–45°)', HIGH_INCLINE:'Inclinado (≈60°)',
+            DECLINE:'Declinado (ángulo variable)', UPRIGHT:'Vertical (≈90°)'})[value]
+            || String(value ?? '');
+    }
+
     function variantTitle(exercise, variant) {
         const base = String(exercise?.name ?? '').trim();
         if (!variant) return base || 'Ejercicio';
@@ -16,9 +23,9 @@
         if (normalizedBase.includes('press de banca')) {
             const angle = {
                 FLAT: 'plano',
-                LOW_INCLINE: 'con inclinación ligera',
-                INCLINE: 'inclinado',
-                HIGH_INCLINE: 'con inclinación alta',
+                LOW_INCLINE: 'inclinado (≈15°)',
+                INCLINE: 'inclinado (≈30–45°)',
+                HIGH_INCLINE: 'inclinado (≈60°)',
                 DECLINE: 'declinado'
             }[variant.benchAngle];
             if (angle) return `${base} ${angle}${variant.equipment === 'SMITH_MACHINE' ? ' en Smith' : ''}`;
@@ -29,6 +36,6 @@
         return specific.replace(/,\s*agarre\b.*$/iu, '').trim() || base;
     }
 
-    if (typeof module !== 'undefined' && module.exports) module.exports = {variantTitle};
-    root.FitCoreVariantUI = Object.freeze({variantTitle});
+    if (typeof module !== 'undefined' && module.exports) module.exports = {variantTitle, angleLabel};
+    root.FitCoreVariantUI = Object.freeze({variantTitle, angleLabel});
 })(typeof globalThis !== 'undefined' ? globalThis : this);

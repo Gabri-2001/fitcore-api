@@ -44,17 +44,17 @@ test('press es una palabra distinta de prensa (sin mirar legPress interno)',()=>
 });
 test('busqueda general mantiene un resultado por ejercicio base',()=>{
   const rows=find('press de banca');
-  assert.equal(rows.length,1);
-  assert.equal(rows[0].kind,'base');
-  assert.equal(rows[0].variant,null);
-  assert.equal(rows[0].variantCodes.length,5);
+  assert.equal(rows.length,2);
+  assert.deepEqual(rows.map(row=>row.title),['Press de banca (barra o mancuernas)','Press de banca en Smith']);
+  assert.equal(rows[0].kind,'modality');
+  assert.equal(rows[0].variantCodes.length,4);
 });
 test('press inclinado agrupa barra y mancuernas; Smith y máquina por separado',()=>{
   const rows=find('press inclinado');
   assert.equal(rows.length,3);
   assert.equal(rows[0].kind,'modality');
   const groups=rows.map(r=>({base:r.exercise.code,equipment:r.variant.equipment,n:r.variantCodes.length}));
-  assert.ok(groups.some(g=>g.base==='benchPress'&&g.equipment==='BARBELL'&&g.n===3));
+  assert.ok(groups.some(g=>g.base==='benchPress'&&g.equipment==='BARBELL'&&g.n===4));
   assert.ok(groups.some(g=>g.base==='benchPress'&&g.equipment==='SMITH_MACHINE'&&g.n===1));
   assert.ok(groups.some(g=>g.base==='machineChestPress'&&g.n===1));
 });
@@ -67,15 +67,15 @@ test('si se filtra por mancuernas sigue siendo una sola modalidad inclinada',()=
 test('filtro general de equipamiento agrupa y preselecciona variante compatible',()=>{
   const rows=find('',{equipment:'SMITH_MACHINE'});
   assert.equal(rows.length,1);
-  assert.equal(rows[0].kind,'base');
+  assert.equal(rows[0].kind,'modality');
   assert.equal(rows[0].variant.equipment,'SMITH_MACHINE');
 });
 test('dominadas agrupa agarres relevantes sin duplicar anchuras',()=>{
   const rows=find('dominadas agarre');
-  assert.equal(rows.length,2);
-  assert.ok(rows.some(row => row.variantCodes.length === 2));
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].variantCodes.length,3);
   const byGrip = variants.filter(v=>v.exerciseCode==='pullUp').map(v=>groupKey(exercises[4],v));
-  assert.equal(new Set(byGrip).size,2);
+  assert.equal(new Set(byGrip).size,1);
 });
 test('coincidencias basadas en palabras admiten tildes y prefijos pero no subcadenas',()=>{
   assert.equal(normalize('MÁQUINA'), 'maquina');
@@ -85,8 +85,8 @@ test('coincidencias basadas en palabras admiten tildes y prefijos pero no subcad
 });
 test('los titulos distinguen Smith y conservan el formato para mancuernas',()=>{
   const bench=exercises[2];
-  assert.equal(variantTitle(bench,variants[3]),'Press de banca inclinado');
-  assert.equal(variantTitle(bench,variants[6]),'Press de banca inclinado en Smith');
+  assert.equal(variantTitle(bench,variants[3]),'Press de banca inclinado (≈30–45°)');
+  assert.equal(variantTitle(bench,variants[6]),'Press de banca inclinado (≈30–45°) en Smith');
 });
 test('la busqueda no inventa variantes y nunca cambia codigos',()=>{
   const rows=find('press inclinado');
@@ -163,3 +163,13 @@ if (fs.existsSync(appPath)) {
     });
   }
 }
+
+test('inclinación ligera queda dentro de la modalidad; no crea otra tarjeta',()=>{
+  const low={...variants[3],code:'benchPressBarbellLowInclineGrip',name:'Press con inclinación ligera',benchAngle:'LOW_INCLINE'};
+  const smith={...variants[6],code:'benchPressSmithLowInclineGrip',name:'Press con inclinación ligera en Smith',benchAngle:'LOW_INCLINE'};
+  const rows=search({exercises,variants:[...variants,low,smith],query:'press inclinado',friendly});
+  assert.equal(rows.length,3);
+  assert.ok(rows.some(x=>x.variantCodes.includes(low.code)));
+  assert.ok(rows.some(x=>x.variantCodes.includes(smith.code)));
+  assert.ok(rows.every(x=>!x.title.includes('ligera')));
+});
