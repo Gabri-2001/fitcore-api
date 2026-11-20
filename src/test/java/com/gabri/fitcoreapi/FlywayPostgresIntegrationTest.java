@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(27, version);
+        assertEquals(28, version);
     }
 
     @Test
@@ -529,6 +529,56 @@ class FlywayPostgresIntegrationTest {
                 SELECT e.main_muscle_group FROM exercises e WHERE e.code='reverseCurl'
                 """,String.class);
         assertEquals("BICEPS",earlierReverseCurl);
+    }
+
+
+    @Test
+    void seedsScapularAndRotatorCuffCatalogV28WithoutFakeSvgMuscles() {
+        Integer totalFamilies=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercises
+                WHERE main_muscle_group IN ('SCAPULAR','ROTATOR_CUFF') AND active
+                """,Integer.class);
+        assertEquals(7,totalFamilies);
+        Integer totalVariants=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group IN ('SCAPULAR','ROTATOR_CUFF') AND v.active
+                """,Integer.class);
+        assertEquals(17,totalVariants);
+        Integer mapped=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_muscle_activations WHERE mapping_version=12
+                """,Integer.class);
+        assertEquals(43,mapped);
+        Integer defaults=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group IN ('SCAPULAR','ROTATOR_CUFF') AND v.is_default AND v.active
+                """,Integer.class);
+        assertEquals(7,defaults);
+        Integer missingPrimary=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group IN ('SCAPULAR','ROTATOR_CUFF') AND v.active
+                  AND NOT EXISTS (SELECT 1 FROM exercise_muscle_activations a
+                                  WHERE a.exercise_variant_id=v.id AND a.role='PRIMARY')
+                """,Integer.class);
+        assertEquals(0,missingPrimary);
+        Integer innerRotatorNoSvg=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM muscles WHERE code='SUBSCAPULARIS'
+                AND muscle_group='ROTATOR_CUFF' AND has_svg_region=false
+                """,Integer.class);
+        assertEquals(1,innerRotatorNoSvg);
+        String externalFocus=jdbcTemplate.queryForObject("""
+                SELECT primary_focus FROM exercise_variants
+                WHERE code='shoulderExternalRotationBandStanding'
+                """,String.class);
+        String internalFocus=jdbcTemplate.queryForObject("""
+                SELECT primary_focus FROM exercise_variants
+                WHERE code='shoulderInternalRotationBandStanding'
+                """,String.class);
+        assertEquals("ROTATOR_CUFF_EXTERNAL_ROTATION",externalFocus);
+        assertEquals("ROTATOR_CUFF_INTERNAL_ROTATION",internalFocus);
+        Integer existingFacePull=jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercises WHERE code='facePull' AND main_muscle_group='SHOULDERS'
+                """,Integer.class);
+        assertEquals(1,existingFacePull);
     }
 
 }

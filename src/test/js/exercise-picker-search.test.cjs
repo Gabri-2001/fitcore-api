@@ -457,3 +457,51 @@ test('antebrazo: rodillo agrupa sentidos y suspensión agrupa agarres',()=>{
   assert.deepEqual(out.map(x=>x.variantCodes.length),[2,2]);
   assert.ok(out.every(x=>x.variantCodes.every(code=>xs.some(v=>v.code===code))));
 });
+
+test('V28: escapulares separan pared y suelo, pero agrupan las rodillas',()=>{
+  const e={code:'scapularPushUp',name:'Flexiones escapulares',mainMuscleGroup:'SCAPULAR'};
+  const a=v('standard','scapularPushUp','BODYWEIGHT','NOT_APPLICABLE','Flexiones escapulares en suelo');
+  const b=v('knees','scapularPushUp','BODYWEIGHT','NOT_APPLICABLE','Flexiones escapulares con rodillas');
+  const c=v('wall','scapularPushUp','BODYWEIGHT','NOT_APPLICABLE','Flexiones escapulares en pared');
+  a.bodyPosition='PRONE';b.bodyPosition='PRONE';c.bodyPosition='STANDING';
+  const rows=search({exercises:[e],variants:[a,b,c],query:'flexiones escapulares',muscle:'SCAPULAR',friendly});
+  assert.deepEqual(rows.map(x=>x.title),['Flexiones escapulares en suelo','Flexiones escapulares en pared']);
+  assert.deepEqual(rows.map(x=>x.variantCodes.length),[2,1]);
+  assert.ok(rows.every(x=>!x.detail.includes('1 configuración')));
+});
+test('V28: rotación interna y externa son dos familias y el equipamiento es modalidad',()=>{
+  const es=[
+    {code:'shoulderExternalRotation',name:'Rotación externa de hombro',mainMuscleGroup:'ROTATOR_CUFF'},
+    {code:'shoulderInternalRotation',name:'Rotación interna de hombro',mainMuscleGroup:'ROTATOR_CUFF'}];
+  const a=v('extCable','shoulderExternalRotation','CABLE','NOT_APPLICABLE','Rotación externa de hombro en polea');
+  const b=v('extAbducted','shoulderExternalRotation','CABLE','NOT_APPLICABLE','Rotación externa con brazo separado en polea');
+  const c=v('extBand','shoulderExternalRotation','BAND','NOT_APPLICABLE','Rotación externa de hombro con banda');
+  const d=v('intCable','shoulderInternalRotation','CABLE','NOT_APPLICABLE','Rotación interna de hombro en polea');
+  const rows=search({exercises:es,variants:[a,b,c,d],query:'',muscle:'ROTATOR_CUFF',friendly});
+  assert.equal(rows.length,3);
+  assert.deepEqual(rows.map(x=>x.title),['Rotación externa de hombro en polea','Rotación externa de hombro con banda','Rotación interna de hombro en polea']);
+  assert.equal(rows[0].variantCodes.length,2);
+  const onlyInternal=search({exercises:es,variants:[a,b,c,d],query:'rotacion interna',muscle:'ROTATOR_CUFF',friendly});
+  assert.deepEqual(onlyInternal.map(x=>x.exercise.code),['shoulderInternalRotation']);
+});
+test('V28: Y en banco y sin carga son modalidades y face pull sigue siendo hombros',()=>{
+  const es=[
+    {code:'proneYRaise',name:'Elevación en Y',mainMuscleGroup:'SCAPULAR'},
+    {code:'facePull',name:'Face pull',mainMuscleGroup:'SHOULDERS'}];
+  const a=v('dumb','proneYRaise','DUMBBELL','INCLINE','Elevación en Y con mancuernas');
+  const b=v('body','proneYRaise','BODYWEIGHT','NOT_APPLICABLE','Elevación en Y sin carga');
+  const c=v('face','facePull','CABLE','NOT_APPLICABLE','Face pull con cuerda');
+  const scaps=search({exercises:es,variants:[a,b,c],query:'',muscle:'SCAPULAR',friendly});
+  assert.deepEqual(scaps.map(x=>x.title),['Elevación en Y con mancuernas','Elevación en Y']);
+  assert.equal(search({exercises:es,variants:[a,b,c],query:'',muscle:'SHOULDERS',friendly}).length,1);
+});
+test('V28: retracción escapular en polea es distinta de remo sentado normal',()=>{
+  const es=[
+    {code:'scapularRetraction',name:'Retracción escapular con brazos extendidos',mainMuscleGroup:'SCAPULAR'},
+    {code:'seatedCableRow',name:'Remo sentado en polea',mainMuscleGroup:'BACK'}];
+  const a=v('scap','scapularRetraction','CABLE','NOT_APPLICABLE','Retracción escapular con brazos extendidos en polea');
+  const b=v('row','seatedCableRow','CABLE','NOT_APPLICABLE','Remo sentado en polea');
+  const rows=search({exercises:es,variants:[a,b],query:'',muscle:'SCAPULAR',friendly});
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].title,'Retracción escapular con brazos extendidos en polea');
+});

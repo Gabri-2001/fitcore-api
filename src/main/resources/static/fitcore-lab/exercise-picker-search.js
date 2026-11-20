@@ -109,6 +109,16 @@
         if (['deadHang','wristRoller'].includes(family)) {
             return family;
         }
+        // V28: patrones escapulares y manguito rotador; la dirección o
+        // posición del codo es configuración, no un ejercicio nuevo.
+        if (family === 'scapularPushUp') {
+            return `${family}|${variant.bodyPosition === 'STANDING' ? 'PARED' : 'SUELO'}`;
+        }
+        if (['scapularRetraction','wallSlide','proneYRaise',
+             'shoulderExternalRotation','shoulderInternalRotation'].includes(family)) {
+            return `${family}|${variant.equipment || 'OTRO'}`;
+        }
+        if (family === 'scapularPullUp') return family;
         // Aperturas: diferencia útil de posición/recorrido y material.
         if (family === 'chestFly') {
             return `${family}|${variant.equipment || 'OTRO'}`;
@@ -162,7 +172,9 @@
                 'crunch','legRaise','plank','pallofPress','reverseCrunch',
                 'abWheel','sidePlank','woodchopper','deadBug',
                 'wristCurl','wristExtension','forearmRotation','farmerCarry',
-                'deadHang','staticGripHold','wristRoller'
+                'deadHang','staticGripHold','wristRoller',
+                'scapularPushUp','scapularPullUp','scapularRetraction','wallSlide',
+                'proneYRaise','shoulderExternalRotation','shoulderInternalRotation'
             ].includes(exercise.code)) {
                 results.push({
                     exercise,
@@ -372,6 +384,30 @@
                         ? (orientation === 'pronacion' ? 'Pronación' : 'Supinación') +
                           ' de antebrazo' + (gear[main.equipment] || '')
                         : base + (gear[main.equipment] || '');
+                }
+                else if (['scapularPushUp','scapularPullUp','scapularRetraction',
+                          'wallSlide','proneYRaise','shoulderExternalRotation',
+                          'shoulderInternalRotation'].includes(exercise.code)) {
+                    const gear = {
+                        CABLE:' en polea', BAND:' con banda', DUMBBELL:' con mancuernas',
+                        BODYWEIGHT:''
+                    };
+                    const titles = {
+                        scapularPullUp:'Dominadas escapulares',
+                        scapularRetraction:'Retracción escapular con brazos extendidos',
+                        wallSlide:'Deslizamiento en pared',
+                        proneYRaise:'Elevación en Y',
+                        shoulderExternalRotation:'Rotación externa de hombro',
+                        shoulderInternalRotation:'Rotación interna de hombro'
+                    };
+                    if (exercise.code === 'scapularPushUp') {
+                        title = main.bodyPosition === 'STANDING'
+                            ? 'Flexiones escapulares en pared'
+                            : 'Flexiones escapulares en suelo';
+                    } else {
+                        title = (titles[exercise.code] || exercise.name) +
+                            (gear[main.equipment] || '');
+                    }
                 }
                 const detail = materials.join(' / ') +
                     (fullGroup.length > 1 ? ' · ' + fullGroup.length + ' configuraciones' : '');
