@@ -129,8 +129,8 @@
                 } else if (exercise.code === 'chestFly') {
                     title = 'Aperturas de pecho · ' + materials.join(' / ');
                 }
-                const detail = materials.join(' / ') + ' · ' + fullGroup.length +
-                    (fullGroup.length === 1 ? ' configuración' : ' configuraciones');
+                const detail = materials.join(' / ') +
+                    (fullGroup.length > 1 ? ' · ' + fullGroup.length + ' configuraciones' : '');
                 results.push({
                     exercise, variant: main,
                     variantCodes: fullGroup.map(item => item.code),

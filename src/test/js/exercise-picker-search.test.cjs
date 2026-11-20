@@ -181,3 +181,13 @@ test('las tarjetas de press muestran solo título, material y configuraciones', 
     assert.ok(rows.every(row => !row.detail.includes('Ángulos aprox.')));
     assert.ok(rows.every(row => !row.detail.includes('°')));
 });
+
+test('la búsqueda no anuncia una configuración única',()=>{
+  const rows=find('press inclinado');
+  const machine=rows.find(row=>row.exercise.code==='machineChestPress');
+  assert.ok(machine);
+  assert.equal(machine.variantCodes.length,1);
+  assert.ok(!machine.detail.includes('1 configuración'));
+  assert.equal(machine.detail,'Máquina de discos');
+  assert.ok(rows.some(row=>row.variantCodes.length>1 && row.detail.includes('configuraciones')));
+});

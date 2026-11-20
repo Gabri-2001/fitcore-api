@@ -2702,7 +2702,7 @@ function renderSessionExerciseResults() {
             ? variantCodes.length > 1
                 ? `${materials.join(' / ')} · ${variantCodes.length} configuraciones`
                 : variantConfigurationChips(variant).slice(0, 4).join(' · ')
-            : `${friendly(exercise.mainMuscleGroup)} · ${variantCodes.length} configuraci${variantCodes.length === 1 ? 'ón' : 'ones'}`;
+            : `${friendly(exercise.mainMuscleGroup)}${variantCodes.length > 1 ? ' · ' + variantCodes.length + ' configuraciones' : ''}`;
         const variantAttribute = variant
             ? ` data-session-variant-code="${escapeHtml(variant.code)}"`
             : '';
@@ -2745,28 +2745,34 @@ function renderVariantConfiguratorFields(controls, candidates, selectedVariant, 
         fieldAttribute = 'data-picker-variant-field',
         exactAttribute = 'data-picker-variant-code',
         moreAttribute = 'data-picker-more',
-        moreOpen = false
+        moreOpen = false,
+        allVariants = null
     } = options;
     const editable = controls.filter(control =>
         control.values.filter(value => !(control.empty || []).includes(value)).length >= 2
     );
     const primary = editable.filter(control => planPrimaryVariantKeys.has(control.key));
     const additional = editable.filter(control => !planPrimaryVariantKeys.has(control.key));
+    // Algunas variantes (p. ej. fondos inclinados/verticales) no difieren
+    // por campos configurables. Mostrar entonces la elección por ejecución,
+    // aunque el resolvedor haya reducido candidates a una sola variante.
+    const needsExecutionChoice = !editable.length && Array.isArray(allVariants) && allVariants.length > 1;
+    const variantChoices = needsExecutionChoice ? allVariants : candidates;
     const fieldHtml = control => `<label>${escapeHtml(control.label)}
         <select ${fieldAttribute}="${escapeHtml(control.key)}" aria-label="${escapeHtml(control.label)}">
             ${control.values.map(value => `<option value="${escapeHtml(value)}"
                 ${value === control.selected ? 'selected' : ''}>${escapeHtml(variantValue(control.key, value))}</option>`).join('')}
         </select></label>`;
     return `
-        ${primary.length ? primary.map(fieldHtml).join('') : '<p class="plan-advanced-no-fields">No hay ajustes principales alternativos.</p>'}
+        ${primary.length ? primary.map(fieldHtml).join('') : ''}
         ${additional.length ? `<details class="plan-advanced-more" ${moreAttribute} ${moreOpen ? 'open' : ''}>
             <summary>Más ajustes técnicos <small>(${additional.length})</small></summary>
             <p>Opciones adicionales disponibles en el catálogo.</p>
             <div class="plan-advanced-extra-fields">${additional.map(fieldHtml).join('')}</div>
         </details>` : ''}
-        ${candidates.length > 1 ? `<label class="plan-advanced-exact-choice">Variante concreta
-            <select ${exactAttribute} aria-label="Variante concreta">
-                ${candidates.map(variant => `<option value="${escapeHtml(variant.code)}"
+        ${variantChoices.length > 1 ? `<label class="plan-advanced-exact-choice">${needsExecutionChoice ? 'Tipo de ejecución' : 'Variante concreta'}
+            <select ${exactAttribute} aria-label="${needsExecutionChoice ? 'Tipo de ejecución' : 'Variante concreta'}">
+                ${variantChoices.map(variant => `<option value="${escapeHtml(variant.code)}"
                     ${variant.code === selectedVariant?.code ? 'selected' : ''}>${escapeHtml(variant.name)}</option>`).join('')}
             </select></label>` : ''}
     `;
@@ -2813,9 +2819,7 @@ function renderPlanSimpleExerciseConfig(container, exercise) {
         <strong>${escapeHtml(selected.name)}</strong>
         ${chips.length ? `<div class="configuration-chips">${chips.map(chip =>
             `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
-        <p>${canConfigure
-            ? 'Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.'
-            : 'Esta es la única configuración disponible para esta modalidad.'}</p>
+        ${canConfigure ? '<p>Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.</p>' : ''}
     </div>`;
     $('session-add-exercise').disabled = false;
 }
@@ -2852,7 +2856,8 @@ function renderPickerVariantDialog() {
             fieldAttribute:'data-picker-dialog-field',
             exactAttribute:'data-picker-dialog-variant-code',
             moreAttribute:'data-picker-dialog-more',
-            moreOpen:!!draft.moreOpen
+            moreOpen:!!draft.moreOpen,
+            allVariants: variants
         });
     const chips = selectedVariant ? variantConfigurationChips(selectedVariant).slice(0,4) : [];
     $('picker-variant-dialog-result').innerHTML = selectedVariant

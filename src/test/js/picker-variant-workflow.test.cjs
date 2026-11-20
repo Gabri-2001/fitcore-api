@@ -126,3 +126,39 @@ test('el editor posterior reutiliza los mismos controles sin alterar los código
     assert.match(events, /data-picker-dialog-field/);
     assert.match(events, /data-picker-dialog-variant-code/);
 });
+
+test('fondos con dos ejecuciones muestran selección real aunque no haya controles alternativos', () => {
+    const helper = extract('function renderVariantConfiguratorFields(', 'function availablePickerVariants(');
+    const variants = [
+        {code:'dipBodyweightForwardLean', name:'Fondos inclinados para pecho'},
+        {code:'dipBodyweightUpright', name:'Fondos verticales para tríceps'}
+    ];
+    const context = {
+        planPrimaryVariantKeys: new Set(['equipment','gripType','gripWidth','benchAngle']),
+        escapeHtml: value => String(value??''),
+        variantValue: (_,value) => value
+    };
+    vm.createContext(context);
+    vm.runInContext(helper, context);
+    const controls = [{
+        key:'benchAngle', label:'Ángulo del banco', selected:'NOT_APPLICABLE',
+        values:['NOT_APPLICABLE','UPRIGHT'], empty:['NOT_APPLICABLE']
+    }];
+    const html = context.renderVariantConfiguratorFields(controls, [variants[0]], variants[0], {
+        allVariants:variants,
+        exactAttribute:'data-picker-dialog-variant-code'
+    });
+    assert.match(html,/Tipo de ejecución/);
+    assert.match(html,/Fondos inclinados para pecho/);
+    assert.match(html,/Fondos verticales para tríceps/);
+    assert.doesNotMatch(html,/No hay ajustes principales alternativos/);
+});
+test('la opción directa tampoco aparece si solo existe una variante', () => {
+    const helper = extract('function renderVariantConfiguratorFields(', 'function availablePickerVariants(');
+    const context = {planPrimaryVariantKeys:new Set(),escapeHtml:String,variantValue:(_,v)=>v};
+    vm.createContext(context);
+    vm.runInContext(helper,context);
+    const singleton = {code:'crunchBodyweight',name:'Crunch'};
+    const html = context.renderVariantConfiguratorFields([], [singleton], singleton, {allVariants:[singleton]});
+    assert.doesNotMatch(html,/Variante concreta|Tipo de ejecución|No hay ajustes principales alternativos/);
+});
