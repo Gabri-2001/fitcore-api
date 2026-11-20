@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(20, version);
+        assertEquals(21, version);
     }
 
     @Test
@@ -115,4 +115,68 @@ class FlywayPostgresIntegrationTest {
                 """, Boolean.class);
         assertEquals(Boolean.TRUE, benchDefault);
     }
+
+    @Test
+    void seedsBackVariantsWithQualitativeActivationsAndStableDefaults() {
+        Integer backVariants = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*)
+                FROM exercise_variants v
+                JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group = 'BACK'
+                """, Integer.class);
+        assertEquals(40, backVariants);
+
+        Integer v21Variants = jdbcTemplate.queryForObject("""
+                SELECT COUNT(DISTINCT v.id)
+                FROM exercise_variants v
+                JOIN exercise_muscle_activations a ON a.exercise_variant_id = v.id
+                WHERE a.mapping_version = 5
+                """, Integer.class);
+        assertEquals(13, v21Variants);
+
+        Integer v21Activations = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_muscle_activations
+                WHERE mapping_version = 5
+                """, Integer.class);
+        assertEquals(69, v21Activations);
+
+        Integer missingPrimary = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                WHERE EXISTS (
+                    SELECT 1 FROM exercise_muscle_activations a
+                    WHERE a.exercise_variant_id = v.id AND a.mapping_version = 5
+                ) AND NOT EXISTS (
+                    SELECT 1 FROM exercise_muscle_activations a
+                    WHERE a.exercise_variant_id = v.id AND a.role = 'PRIMARY'
+                )
+                """, Integer.class);
+        assertEquals(0, missingPrimary);
+
+        Integer backDefaults = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group = 'BACK' AND v.active AND v.is_default
+                """, Integer.class);
+        assertEquals(8, backDefaults);
+
+        Integer pullUps = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.code = 'pullUp'
+                """, Integer.class);
+        assertEquals(9, pullUps);
+
+        Boolean preferredRow = jdbcTemplate.queryForObject("""
+                SELECT is_default FROM exercise_variants
+                WHERE code = 'seatedCableRowNeutralGrip'
+                """, Boolean.class);
+        assertEquals(Boolean.TRUE, preferredRow);
+
+        Boolean preferredPulldown = jdbcTemplate.queryForObject("""
+                SELECT is_default FROM exercise_variants
+                WHERE code = 'latPulldownPronatedMediumGripToChest'
+                """, Boolean.class);
+        assertEquals(Boolean.TRUE, preferredPulldown);
+    }
+
 }
