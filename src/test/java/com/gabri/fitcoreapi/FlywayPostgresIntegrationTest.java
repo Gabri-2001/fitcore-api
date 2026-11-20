@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(24, version);
+        assertEquals(25, version);
     }
 
     @Test
@@ -357,6 +357,69 @@ class FlywayPostgresIntegrationTest {
                     AND v.active AND v.is_default
                 """, Integer.class);
         assertEquals(11, defaultCount);
+    }
+
+
+    @Test
+    void seedsHamstringsAndCalvesInV25WithStableDefaults() {
+        Integer newVariants = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants WHERE code IN ('romanianDeadliftDumbbellStanding', 'romanianDeadliftDumbbellSingleLeg', 'romanianDeadliftSmithStanding', 'goodMorningSmithStanding', 'legCurlMachineSeatedUnilateral', 'legCurlMachineProneUnilateral', 'legCurlMachineStandingSingleLeg', 'legCurlCableStandingSingleLeg', 'legCurlBandStandingSingleLeg', 'nordicHamstringCurlBodyweightEccentric', 'nordicHamstringCurlBandAssisted', 'standingCalfRaiseSmithStanding', 'standingCalfRaiseDumbbellSingleLeg', 'standingCalfRaiseMachineStanding', 'standingCalfRaiseBodyweightSingleLeg', 'seatedCalfRaiseDumbbellSeated', 'seatedCalfRaisePlateSeated', 'calfPressLegPressMachinePlateLoaded', 'calfPressLegPressMachineSingleLeg', 'calfPressLegPressMachineSelectorized')
+                """, Integer.class);
+        assertEquals(20, newVariants);
+
+        Integer mappings = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_muscle_activations a
+                JOIN exercise_variants v ON v.id=a.exercise_variant_id
+                WHERE a.mapping_version=9 AND v.code IN ('romanianDeadliftDumbbellStanding', 'romanianDeadliftDumbbellSingleLeg', 'romanianDeadliftSmithStanding', 'goodMorningSmithStanding', 'legCurlMachineSeatedUnilateral', 'legCurlMachineProneUnilateral', 'legCurlMachineStandingSingleLeg', 'legCurlCableStandingSingleLeg', 'legCurlBandStandingSingleLeg', 'nordicHamstringCurlBodyweightEccentric', 'nordicHamstringCurlBandAssisted', 'standingCalfRaiseSmithStanding', 'standingCalfRaiseDumbbellSingleLeg', 'standingCalfRaiseMachineStanding', 'standingCalfRaiseBodyweightSingleLeg', 'seatedCalfRaiseDumbbellSeated', 'seatedCalfRaisePlateSeated', 'calfPressLegPressMachinePlateLoaded', 'calfPressLegPressMachineSingleLeg', 'calfPressLegPressMachineSelectorized')
+                """, Integer.class);
+        assertEquals(59, mappings);
+
+        Integer hamstrings = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='HAMSTRINGS' AND v.active
+                """, Integer.class);
+        Integer calves = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.main_muscle_group='CALVES' AND v.active
+                """, Integer.class);
+        assertEquals(15, hamstrings);
+        assertEquals(11, calves);
+
+        String deadliftGroup = jdbcTemplate.queryForObject("""
+                SELECT main_muscle_group FROM exercises WHERE code='deadlift'
+                """, String.class);
+        assertEquals("FULL_BODY", deadliftGroup);
+
+        Integer deadliftVariants = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.code='deadlift' AND v.active
+                """, Integer.class);
+        assertEquals(3, deadliftVariants);
+
+        Integer missingPrimary = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v WHERE v.code IN ('romanianDeadliftDumbbellStanding', 'romanianDeadliftDumbbellSingleLeg', 'romanianDeadliftSmithStanding', 'goodMorningSmithStanding', 'legCurlMachineSeatedUnilateral', 'legCurlMachineProneUnilateral', 'legCurlMachineStandingSingleLeg', 'legCurlCableStandingSingleLeg', 'legCurlBandStandingSingleLeg', 'nordicHamstringCurlBodyweightEccentric', 'nordicHamstringCurlBandAssisted', 'standingCalfRaiseSmithStanding', 'standingCalfRaiseDumbbellSingleLeg', 'standingCalfRaiseMachineStanding', 'standingCalfRaiseBodyweightSingleLeg', 'seatedCalfRaiseDumbbellSeated', 'seatedCalfRaisePlateSeated', 'calfPressLegPressMachinePlateLoaded', 'calfPressLegPressMachineSingleLeg', 'calfPressLegPressMachineSelectorized')
+                AND NOT EXISTS (
+                    SELECT 1 FROM exercise_muscle_activations a
+                    WHERE a.exercise_variant_id=v.id AND a.role='PRIMARY'
+                )
+                """, Integer.class);
+        assertEquals(0, missingPrimary);
+
+        Integer defaults = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+                WHERE e.code IN (
+                    'romanianDeadlift','deadlift','goodMorning','legCurl','nordicHamstringCurl',
+                    'standingCalfRaise','seatedCalfRaise','calfPressLegPress'
+                ) AND v.active AND v.is_default
+                """, Integer.class);
+        assertEquals(8, defaults);
+
+        String nordicSupport = jdbcTemplate.queryForObject("""
+                SELECT support_type FROM exercise_variants
+                WHERE code='nordicHamstringCurlBandAssisted'
+                """, String.class);
+        assertEquals("FLOOR_SUPPORTED", nordicSupport);
     }
 
 }
