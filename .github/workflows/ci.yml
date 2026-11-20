@@ -23,4 +23,4 @@ jobs:
       - name: Frontend regression tests
         run: node --test src/test/js/*.test.cjs
       - name: Test backend and database migrations
-        run: sh ./mvnw -B verify
+        run: mvn -B verify
