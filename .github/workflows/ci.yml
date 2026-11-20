@@ -23,4 +23,4 @@ jobs:
       - name: Frontend regression tests
         run: node --test src/test/js/catalog-default-selection.test.cjs
       - name: Test backend and database migrations
-        run: ./mvnw -B verify
+        run: sh ./mvnw -B verify
