@@ -354,7 +354,9 @@ function renderCatalog() {
 
 async function selectExercise(code) {
     state.selectedExercise = state.exercises.find(exercise => exercise.code === code);
-    state.variantConfiguration = {};
+    state.variantConfiguration = configurationFromVariant(
+        defaultVariantForExercise(state.selectedExercise)
+    );
     state.activations = [];
     renderCatalog();
     await previewConfiguredVariant();
