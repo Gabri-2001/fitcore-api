@@ -11,7 +11,7 @@ const state = {
     sessionTimer: null, sessionPicker: {exercise:null, configuration:{}}, sessionActivations: new Map(),
     pickerMode: 'session', planPickerDayIndex: null, planPickerAction: 'add',
     planPickerExerciseIndex: null, planPickerExerciseCode: null,
-    planAdvancedConfig: null,
+    planAdvancedConfig: null, pickerConfigOpen: false, pickerConfigMoreOpen: false,
     sessionPrevious: new Map(), restEditorExerciseId: null, rpeTarget: null,
     restTimer: {exerciseId:null, exerciseName:'', remaining:0, total:0, running:false, interval:null}
 };
@@ -1013,9 +1013,9 @@ function planStepper(field, value, min, suffix, label) {
 function exerciseEditor(exercise, index) {
     const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
     const base = state.exercises.find(item => item.code === variant?.exerciseCode);
-    const title = base?.name || variant?.name || 'Selecciona un ejercicio';
+    const title = variant ? FitCoreVariantUI.variantTitle(base, variant) : base?.name || 'Selecciona un ejercicio';
     const details = variant
-        ? [variant.name, ...variantConfigurationChips(variant).slice(0, 2)].join(' · ')
+        ? variantConfigurationChips(variant).slice(0, 4).join(' · ')
         : 'Elige una configuración del catálogo';
     const thumb = base ? exerciseThumb(base, 'plan-exercise-thumb') : '<span class="plan-exercise-thumb thumb-placeholder">FC</span>';
     const menuId = `plan-exercise-actions-${state.selectedPlanDayIndex}-${index}`;
@@ -2548,6 +2548,8 @@ async function openExercisePicker(mode = 'session', options = {}) {
             : null;
 
         state.planPickerExerciseCode = null;
+        state.pickerConfigOpen = false;
+        state.pickerConfigMoreOpen = false;
 
         state.sessionPicker = {
             exercise: action === 'add' ? null : currentExercise || null,
@@ -2571,13 +2573,13 @@ async function openExercisePicker(mode = 'session', options = {}) {
                 ? {
                     eyebrow: 'INTERCAMBIAR EJERCICIO',
                     title: 'Elige el sustituto',
-                    description: 'Selecciona otro ejercicio. FitCore aplicará una configuración válida y conservará las series, repeticiones y el descanso.',
+                    description: 'Selecciona una variante concreta o utiliza Configurar antes de intercambiar. Se conservarán las series, repeticiones y el descanso.',
                     action: 'Intercambiar ejercicio'
                 }
                 : {
                         eyebrow: 'AÑADIR AL PLAN',
                         title: 'Elige un ejercicio',
-                        description: 'Elige el ejercicio y sus objetivos. Después podrás ajustar su configuración técnica desde el menú de acciones.',
+                        description: 'Busca y elige una variante, o pulsa Configurar para cambiar material, inclinación y agarre antes de añadirla.',
                         action: 'Añadir al día'
                     };
 
@@ -2677,13 +2679,14 @@ function renderSessionExerciseResults() {
         const variants = orderedVariantsForExercise(exercise);
         const selected = state.sessionPicker.exercise?.code === exercise.code &&
             (!variant || state.sessionPicker.configuration?.variantCode === variant.code);
+        const title = variant ? FitCoreVariantUI.variantTitle(exercise, variant) : exercise.name;
         const detail = variant
-            ? `${variant.name} · ${friendly(variant.equipment)}`
+            ? variantConfigurationChips(variant).slice(0, 4).join(' · ')
             : `${friendly(exercise.mainMuscleGroup)} · ${variants.length} configuraci${variants.length === 1 ? 'ón' : 'ones'}`;
         const variantAttribute = variant
             ? ` data-session-variant-code="${escapeHtml(variant.code)}"`
             : '';
-        return `<button class="picker-exercise ${selected ? 'is-selected' : ''}" data-session-exercise-code="${escapeHtml(exercise.code)}"${variantAttribute}>${exerciseThumb(exercise)}<span><strong>${escapeHtml(exercise.name)}</strong><small>${escapeHtml(detail)}</small></span><i>›</i></button>`;
+        return `<button class="picker-exercise ${selected ? 'is-selected' : ''}" data-session-exercise-code="${escapeHtml(exercise.code)}"${variantAttribute}>${exerciseThumb(exercise)}<span><strong>${escapeHtml(title)}</strong><small>${escapeHtml(detail)}</small></span><i>›</i></button>`;
     }).join('') : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
 }
 
@@ -2704,28 +2707,101 @@ function renderSessionExerciseConfig() {
     }
 
     const {controls, selectedVariant} = resolveVariantForExercise(exercise, state.sessionPicker.configuration);
+    const pickerTitle = FitCoreVariantUI.variantTitle(exercise, selectedVariant);
     const visibleControls = controls.filter(control => control.values.length > 1 || ['equipment','attachmentType'].includes(control.key));
     const fields = visibleControls.map(control => `<label>${control.label}<select data-session-variant-config="${control.key}" ${control.values.length === 1 ? 'disabled':''}>${control.values.map(value => `<option value="${value}" ${value === control.selected ? 'selected':''}>${variantValue(control.key, value)}</option>`).join('')}</select></label>`).join('');
-    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(exercise.name)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(selectedVariant.name)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
+    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(pickerTitle)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(selectedVariant.name)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
     $('session-add-exercise').disabled = !selectedVariant;
+}
+
+// Mismos campos y misma resolución de variantes antes y después de añadir.
+// Las opciones se derivan de variantes reales; no se fabrican combinaciones.
+function renderVariantConfiguratorFields(controls, candidates, selectedVariant, options = {}) {
+    const {
+        fieldAttribute = 'data-picker-variant-field',
+        exactAttribute = 'data-picker-variant-code',
+        moreAttribute = 'data-picker-more',
+        moreOpen = false
+    } = options;
+    const editable = controls.filter(control =>
+        control.values.filter(value => !(control.empty || []).includes(value)).length >= 2
+    );
+    const primary = editable.filter(control => planPrimaryVariantKeys.has(control.key));
+    const additional = editable.filter(control => !planPrimaryVariantKeys.has(control.key));
+    const fieldHtml = control => `<label>${escapeHtml(control.label)}
+        <select ${fieldAttribute}="${escapeHtml(control.key)}" aria-label="${escapeHtml(control.label)}">
+            ${control.values.map(value => `<option value="${escapeHtml(value)}"
+                ${value === control.selected ? 'selected' : ''}>${escapeHtml(variantValue(control.key, value))}</option>`).join('')}
+        </select></label>`;
+    return `
+        ${primary.length ? primary.map(fieldHtml).join('') : '<p class="plan-advanced-no-fields">No hay ajustes principales alternativos.</p>'}
+        ${additional.length ? `<details class="plan-advanced-more" ${moreAttribute} ${moreOpen ? 'open' : ''}>
+            <summary>Más ajustes técnicos <small>(${additional.length})</small></summary>
+            <p>Opciones adicionales disponibles en el catálogo.</p>
+            <div class="plan-advanced-extra-fields">${additional.map(fieldHtml).join('')}</div>
+        </details>` : ''}
+        ${candidates.length > 1 ? `<label class="plan-advanced-exact-choice">Variante concreta
+            <select ${exactAttribute} aria-label="Variante concreta">
+                ${candidates.map(variant => `<option value="${escapeHtml(variant.code)}"
+                    ${variant.code === selectedVariant?.code ? 'selected' : ''}>${escapeHtml(variant.name)}</option>`).join('')}
+            </select></label>` : ''}
+    `;
 }
 
 function renderPlanSimpleExerciseConfig(container, exercise) {
     const variants = orderedVariantsForExercise(exercise);
     const requestedCode = state.sessionPicker.configuration?.variantCode;
-    const selectedVariant = variants.find(variant => variant.code === requestedCode)
-        || defaultVariantForExercise(exercise);
+    const currentVariant = variants.find(variant => variant.code === requestedCode) || defaultVariantForExercise(exercise);
+    if (!currentVariant) {
+        container.innerHTML = '<div class="empty-state">Este ejercicio no tiene configuraciones disponibles.</div>';
+        $('session-add-exercise').disabled = true;
+        return;
+    }
 
+    let controls = [], candidates = [];
+    let selectedVariant = currentVariant;
+    if (state.pickerConfigOpen) {
+        const resolved = resolveVariantForExercise(exercise, state.sessionPicker.configuration);
+        controls = resolved.controls;
+        candidates = resolved.candidates;
+        selectedVariant = resolved.selectedVariant;
+    }
+    if (!selectedVariant) selectedVariant = currentVariant;
     state.sessionPicker.configuration = configurationFromVariant(selectedVariant);
-    const chips = selectedVariant ? variantConfigurationChips(selectedVariant).slice(0, 4) : [];
 
-    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">EJERCICIO SELECCIONADO</p><h3>${escapeHtml(exercise.name)}</h3><small>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</small></div></div>
-        <div class="plan-simple-selection">
-            <span class="plan-simple-label">Configuración inicial</span>
-            <strong>${escapeHtml(selectedVariant?.name || 'Sin configuración disponible')}</strong>
-            ${chips.length ? `<div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
-            <p>Se aplicará automáticamente una combinación válida. Podrás cambiar agarre, apertura, material y demás opciones desde <b>Acciones → Modificar configuración</b>.</p>
-        </div>`;
+    const title = FitCoreVariantUI.variantTitle(exercise, selectedVariant);
+    const chips = variantConfigurationChips(selectedVariant).slice(0, 4);
+    const toggleLabel = state.pickerConfigOpen ? 'Cerrar configuración' : 'Configurar';
+    const editor = state.pickerConfigOpen ? `<div class="picker-config-editor" id="picker-config-editor" role="region" aria-label="Configurar variante de ${escapeHtml(exercise.name)}">
+        <p class="picker-config-help">Elige material, ángulo y agarre. Solo se muestran combinaciones disponibles.</p>
+        <div class="picker-config-fields">${renderVariantConfiguratorFields(controls, candidates, selectedVariant, {
+            fieldAttribute: 'data-picker-variant-field', exactAttribute: 'data-picker-variant-code',
+            moreAttribute: 'data-picker-more', moreOpen: state.pickerConfigMoreOpen
+        })}</div>
+        <div class="picker-config-footer"><button type="button" class="button button-secondary picker-config-reset" data-picker-reset-default>Restablecer predeterminada</button></div>
+    </div>` : '';
+
+    container.innerHTML = `<div class="picker-selected picker-selected-configurable">
+        ${exerciseThumb(exercise, 'picker-selected-thumb')}
+        <div class="picker-selected-copy"><p class="eyebrow">EJERCICIO SELECCIONADO</p>
+            <h3>${escapeHtml(title)}</h3>
+            <small>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</small>
+        </div>
+        <button type="button" class="picker-config-toggle" data-picker-toggle-config
+            aria-expanded="${state.pickerConfigOpen}" aria-controls="picker-config-editor"
+            aria-label="${escapeHtml(toggleLabel)} de ${escapeHtml(exercise.name)}" title="${escapeHtml(toggleLabel)}">
+            <span aria-hidden="true">⚙</span><span>${toggleLabel}</span>
+        </button>
+    </div>
+    <div class="plan-simple-selection">
+        <span class="plan-simple-label">Configuración seleccionada</span>
+        <strong>${escapeHtml(selectedVariant.name)}</strong>
+        ${chips.length ? `<div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
+        <p>${state.pickerConfigOpen
+            ? 'Esta variante se añadirá al plan. Puedes ajustar de nuevo los parámetros más adelante.'
+            : 'Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.'}</p>
+    </div>
+    ${editor}`;
     $('session-add-exercise').disabled = !selectedVariant;
 }
 
@@ -2823,98 +2899,12 @@ function renderPlanAdvancedConfig() {
         </div>
     `;
 
-    // Solo mostrar controles con dos o más
-    // valores significativos disponibles
-    const editable = controls.filter(control => {
-        const meaningfulValues = control.values.filter(
-            value => !(control.empty || []).includes(value)
-        );
-
-        return meaningfulValues.length >= 2;
+    fieldsContainer.innerHTML = renderVariantConfiguratorFields(controls, candidates, selectedVariant, {
+        fieldAttribute: 'data-plan-advanced-field',
+        exactAttribute: 'data-plan-advanced-variant-code',
+        moreAttribute: 'data-plan-advanced-more',
+        moreOpen: !!draft.moreOpen
     });
-
-    const primary = editable.filter(
-        control => planPrimaryVariantKeys.has(control.key)
-    );
-
-    const additional = editable.filter(
-        control => !planPrimaryVariantKeys.has(control.key)
-    );
-
-    // Reutilizar el mismo generador de campos
-    const fieldHtml = control => `
-        <label>
-            ${escapeHtml(control.label)}
-
-            <select
-                data-plan-advanced-field="${escapeHtml(control.key)}">
-
-                ${control.values.map(value => `
-                    <option
-                        value="${escapeHtml(value)}"
-                        ${value === control.selected ? 'selected' : ''}>
-                        ${escapeHtml(
-        variantValue(control.key, value)
-    )}
-                    </option>
-                `).join('')}
-
-            </select>
-        </label>
-    `;
-
-    fieldsContainer.innerHTML = `
-
-        ${primary.length
-        ? primary.map(fieldHtml).join('')
-        : `
-                <p class="plan-advanced-no-fields">
-                    Este ejercicio no tiene ajustes
-                    principales alternativos.
-                </p>
-            `
-    }
-
-        ${additional.length ? `
-            <details
-                class="plan-advanced-more"
-                ${draft.moreOpen ? 'open' : ''}>
-
-                <summary>
-                    Más ajustes técnicos
-                    <small>(${additional.length})</small>
-                </summary>
-
-                <p>
-                    Opciones menos habituales que permiten
-                    identificar otras variantes válidas.
-                </p>
-
-                <div class="plan-advanced-extra-fields">
-                    ${additional.map(fieldHtml).join('')}
-                </div>
-
-            </details>
-        ` : ''}
-
-        ${candidates.length > 1 ? `
-            <label class="plan-advanced-exact-choice">
-                Variante concreta
-
-                <select data-plan-advanced-variant-code>
-                    ${candidates.map(variant => `
-                        <option
-                            value="${escapeHtml(variant.code)}"
-                            ${variant.code === selectedVariant?.code
-        ? 'selected'
-        : ''}>
-                            ${escapeHtml(variant.name)}
-                        </option>
-                    `).join('')}
-                </select>
-            </label>
-        ` : ''}
-    `;
 
     // Resumen de la variante resultante
     resultContainer.innerHTML = selectedVariant
@@ -3043,7 +3033,7 @@ function renderSession() {
         const next = sets.length ? Math.max(...sets.map(set => set.setNumber)) + 1 : 1;
         const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
         const base = state.exercises.find(item => item.code === variant?.exerciseCode);
-        const exerciseName = base?.name || variantName(exercise.exerciseVariantCode);
+        const exerciseName = variant ? FitCoreVariantUI.variantTitle(base, variant) : base?.name || variantName(exercise.exerciseVariantCode);
         const completed = sets.length > 0 && sets.every(set => set.completed);
         const rest = sessionRestSeconds(exercise);
         const chips = variantConfigurationChips(variant);
@@ -4290,6 +4280,39 @@ function bindEvents() {
         renderSessionExerciseConfig();
     });
     $('session-exercise-config').addEventListener('change',e=>{const field=e.target.closest('[data-session-variant-config]');if(!field)return;state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;state.sessionPicker.configuration.variantCode=null;renderSessionExerciseConfig();});
+    // Configurar antes de añadir (Planes / sustituir). No crea ningún ejercicio nuevo.
+    $('session-exercise-config').addEventListener('click', event => {
+        if (state.pickerMode !== 'plan') return;
+        const toggle = event.target.closest('[data-picker-toggle-config]');
+        const reset = event.target.closest('[data-picker-reset-default]');
+        if (toggle) {
+            state.pickerConfigOpen = !state.pickerConfigOpen;
+            state.pickerConfigMoreOpen = false;
+            renderSessionExerciseConfig();
+            if (state.pickerConfigOpen) $('session-exercise-config').querySelector('[data-picker-variant-field]')?.focus();
+        } else if (reset) {
+            state.sessionPicker.configuration = configurationFromVariant(defaultVariantForExercise(state.sessionPicker.exercise));
+            renderSessionExerciseConfig();
+        }
+    });
+    $('session-exercise-config').addEventListener('change', event => {
+        if (state.pickerMode !== 'plan' || !state.pickerConfigOpen) return;
+        const field = event.target.closest('[data-picker-variant-field]');
+        const exact = event.target.closest('[data-picker-variant-code]');
+        if (!field && !exact) return;
+        state.pickerConfigMoreOpen = !!$('session-exercise-config').querySelector('[data-picker-more]')?.open;
+        if (field) {
+            state.sessionPicker.configuration[field.dataset.pickerVariantField] = field.value;
+            state.sessionPicker.configuration.variantCode = null;
+        } else {
+            const variant = state.variants.find(value => value.code === exact.value &&
+                value.exerciseCode === state.sessionPicker.exercise?.code);
+            if (!variant) return;
+            state.sessionPicker.configuration = configurationFromVariant(variant);
+        }
+        renderSessionExerciseConfig();
+    });
+
     $('plan-advanced-config-form').addEventListener('submit', savePlanAdvancedConfig);
     $('plan-advanced-config-body').addEventListener('change', event => {
         const field = event.target.closest('[data-plan-advanced-field]');

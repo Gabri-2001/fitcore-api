@@ -2898,3 +2898,37 @@ body.resting .toast-region { bottom: 190px; }
         grid-template-columns: 1fr;
     }
 }
+
+
+/* FitCore · Configuración de la variante antes de añadir al plan */
+.picker-selected-configurable { grid-template-columns: 70px minmax(0,1fr) auto; gap: 12px; }
+.picker-selected-configurable .picker-selected-copy { min-width: 0; }
+.picker-config-toggle { align-self: start; display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 11px; border: 1px solid #cfdcd5; border-radius: 10px;
+    background: white; color: var(--green-2); font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.picker-config-toggle span:first-child { font-size: 17px; line-height: 1; }
+.picker-config-toggle:hover, .picker-config-toggle[aria-expanded="true"] { background: #edf7e9; border-color: var(--green-2); }
+.picker-config-toggle:focus-visible, .picker-config-editor select:focus-visible { outline: 3px solid #b9ef65; outline-offset: 2px; }
+.picker-config-editor { margin-top: 14px; padding: 15px; border: 1px solid #d7e2dc;
+    border-radius: 14px; background: white; }
+.picker-config-help { margin: 0 0 13px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.picker-config-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.picker-config-fields label { min-width: 0; font-size: 11px; }
+.picker-config-fields select { display: block; width: 100%; margin-top: 6px; background: white; }
+.picker-config-fields .plan-advanced-more, .picker-config-fields .plan-advanced-exact-choice,
+.picker-config-fields .plan-advanced-no-fields { grid-column: 1 / -1; }
+.picker-config-fields .plan-advanced-more { padding: 12px; border: 1px solid var(--line);
+    border-radius: 11px; background: #f8faf7; }
+.picker-config-fields .plan-advanced-more summary { cursor: pointer; color: var(--green-2);
+    font-size: 11px; font-weight: 800; }
+.picker-config-fields .plan-advanced-more p { color: var(--muted); font-size: 10px; }
+.picker-config-fields .plan-advanced-extra-fields { display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 10px; }
+.picker-config-footer { display: flex; justify-content: flex-end; margin-top: 12px; }
+.picker-config-footer .button { min-height: 36px; padding: 7px 12px; font-size: 10px; }
+@media (max-width: 680px) {
+    .picker-selected-configurable { grid-template-columns: 52px minmax(0,1fr); }
+    .picker-selected-configurable .picker-selected-thumb { width: 52px; height: 52px; }
+    .picker-config-toggle { grid-column: 1 / -1; justify-content: center; }
+    .picker-config-fields, .picker-config-fields .plan-advanced-extra-fields { grid-template-columns: 1fr; }
+}

@@ -126,17 +126,48 @@ class FlywayPostgresIntegrationTest {
                 """, Integer.class);
         assertEquals(40, backVariants);
 
+        // V15 ya utilizaba mapping_version=5 para dominadas. Contar solo los
+        // codigos introducidos por V21 evita mezclar historiales de mapeo.
         Integer v21Variants = jdbcTemplate.queryForObject("""
                 SELECT COUNT(DISTINCT v.id)
                 FROM exercise_variants v
                 JOIN exercise_muscle_activations a ON a.exercise_variant_id = v.id
-                WHERE a.mapping_version = 5
+                WHERE a.mapping_version = 5 AND v.code IN (
+                    'latPulldownSingleArmKneelingNeutralGrip',
+                    'seatedCableRowPronatedWideGrip',
+                    'seatedCableRowSupinatedMediumGrip',
+                    'seatedCableRowSingleArmNeutralGrip',
+                    'machineRowSelectorisedNeutralMediumGrip',
+                    'machineRowUnilateralNeutralGrip',
+                    'barbellRowPronatedWideGripToUpperChest',
+                    'barbellRowPronatedMediumGripToHip',
+                    'oneArmDumbbellRowFreeNeutralGrip',
+                    'oneArmDumbbellRowChestSupportedIncline',
+                    'straightArmPulldownCableSingleArm',
+                    'shrugDumbbellStanding',
+                    'shrugMachineStanding'
+                )
                 """, Integer.class);
         assertEquals(13, v21Variants);
 
         Integer v21Activations = jdbcTemplate.queryForObject("""
-                SELECT COUNT(*) FROM exercise_muscle_activations
-                WHERE mapping_version = 5
+                SELECT COUNT(*) FROM exercise_muscle_activations a
+                JOIN exercise_variants v ON v.id = a.exercise_variant_id
+                WHERE a.mapping_version = 5 AND v.code IN (
+                    'latPulldownSingleArmKneelingNeutralGrip',
+                    'seatedCableRowPronatedWideGrip',
+                    'seatedCableRowSupinatedMediumGrip',
+                    'seatedCableRowSingleArmNeutralGrip',
+                    'machineRowSelectorisedNeutralMediumGrip',
+                    'machineRowUnilateralNeutralGrip',
+                    'barbellRowPronatedWideGripToUpperChest',
+                    'barbellRowPronatedMediumGripToHip',
+                    'oneArmDumbbellRowFreeNeutralGrip',
+                    'oneArmDumbbellRowChestSupportedIncline',
+                    'straightArmPulldownCableSingleArm',
+                    'shrugDumbbellStanding',
+                    'shrugMachineStanding'
+                )
                 """, Integer.class);
         assertEquals(69, v21Activations);
 
