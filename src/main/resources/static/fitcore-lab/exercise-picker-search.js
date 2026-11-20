@@ -40,8 +40,22 @@
         }
         // El tipo de agarre sí identifica una modalidad de dominada / jalón,
         // pero la anchura no genera una tarjeta adicional.
-        if (family === 'pullUp' || family === 'latPulldown') {
-            return family;
+        if (family === 'pullUp') {
+            return `${family}|${variant.gripType || 'OTRO'}`;
+        }
+        if (family === 'latPulldown') {
+            return `${family}|${variant.laterality === 'UNILATERAL' ? 'UNILATERAL' : 'BILATERAL'}`;
+        }
+        if (family === 'machineRow' || family === 'seatedCableRow') {
+            const mode = family === 'seatedCableRow'
+                ? (variant.laterality === 'UNILATERAL' ? 'UNILATERAL' : 'BILATERAL')
+                : (variant.equipment || 'OTRO');
+            return `${family}|${mode}`;
+        }
+        if (['overheadPress','lateralRaise','frontRaise','rearDeltFly','facePull'].includes(family)) {
+            const material = ['MACHINE_SELECTORISED','MACHINE_PLATE_LOADED'].includes(variant.equipment)
+                ? 'MAQUINA' : (variant.equipment || 'OTRO');
+            return `${family}|${material}`;
         }
         // Aperturas: diferencia útil de posición/recorrido y material.
         if (family === 'chestFly') {
@@ -82,7 +96,11 @@
             // Los nombres del ejercicio base deciden las búsquedas generales.
             // No usamos exercise.description ni variant.code: contienen vocablos
             // accidentales ('press' en 'legPress') y referencias técnicas.
-            if ((!tokens.length || matches(exercise.name, tokens)) && !['benchPress','machineChestPress','chestFly'].includes(exercise.code)) {
+            if ((!tokens.length || matches(exercise.name, tokens)) && ![
+                'benchPress','machineChestPress','chestFly','pullUp','latPulldown',
+                'machineRow','seatedCableRow','overheadPress','lateralRaise',
+                'frontRaise','rearDeltFly','facePull'
+            ].includes(exercise.code)) {
                 results.push({
                     exercise,
                     variant: equipment ? preferred(available) : null,
@@ -128,6 +146,35 @@
                     title = 'Press de pecho' + adj + ' en máquina';
                 } else if (exercise.code === 'chestFly') {
                     title = 'Aperturas de pecho · ' + materials.join(' / ');
+                } else if (exercise.code === 'pullUp') {
+                    const grips = {PRONATED:'pronas',SUPINATED:'supinas',NEUTRAL:'neutras'};
+                    title = 'Dominadas ' + (grips[main.gripType] || 'con agarre especial');
+                } else if (exercise.code === 'latPulldown') {
+                    title = main.laterality === 'UNILATERAL' ? 'Jalón unilateral en polea' : 'Jalón al pecho';
+                } else if (exercise.code === 'machineRow') {
+                    title = main.equipment === 'MACHINE_SELECTORISED'
+                        ? 'Remo en máquina selectorizada' : 'Remo en máquina de discos';
+                } else if (exercise.code === 'seatedCableRow') {
+                    title = main.laterality === 'UNILATERAL' ? 'Remo unilateral en polea' : 'Remo sentado en polea';
+                } else if (exercise.code === 'overheadPress') {
+                    title = main.equipment === 'SMITH_MACHINE' ? 'Press de hombros en Smith'
+                        : ['MACHINE_SELECTORISED','MACHINE_PLATE_LOADED'].includes(main.equipment)
+                        ? 'Press de hombros en máquina'
+                        : main.equipment === 'DUMBBELL' ? 'Press de hombros con mancuernas' : 'Press militar con barra';
+                } else if (exercise.code === 'lateralRaise') {
+                    title = main.equipment === 'CABLE' ? 'Elevaciones laterales en polea'
+                        : main.equipment?.startsWith('MACHINE_') ? 'Elevaciones laterales en máquina'
+                        : 'Elevaciones laterales con mancuernas';
+                } else if (exercise.code === 'frontRaise') {
+                    title = main.equipment === 'CABLE' ? 'Elevaciones frontales en polea'
+                        : main.equipment === 'WEIGHT_PLATE' ? 'Elevaciones frontales con disco'
+                        : 'Elevaciones frontales con mancuernas';
+                } else if (exercise.code === 'rearDeltFly') {
+                    title = main.equipment === 'CABLE' ? 'Aperturas de deltoide posterior en polea'
+                        : main.equipment?.startsWith('MACHINE_') ? 'Aperturas de deltoide posterior en máquina'
+                        : 'Aperturas de deltoide posterior con mancuernas';
+                } else if (exercise.code === 'facePull') {
+                    title = main.equipment === 'BAND' ? 'Face pull con banda elástica' : 'Face pull en polea';
                 }
                 const detail = materials.join(' / ') +
                     (fullGroup.length > 1 ? ' · ' + fullGroup.length + ' configuraciones' : '');
