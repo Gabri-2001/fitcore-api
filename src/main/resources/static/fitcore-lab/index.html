@@ -85,6 +85,11 @@
                     <button id="catalog-search" class="button button-primary button-block">Buscar en la API</button>
                     <div class="result-meta"><strong id="catalog-count">0 ejercicios</strong><span id="catalog-page">Una entrada por ejercicio</span></div>
                     <div id="catalog-results" class="catalog-results"><div class="empty-state">Inicia sesión para cargar el catálogo.</div></div>
+                    <nav id="catalog-pagination" class="pagination catalog-pagination" aria-label="Páginas del catálogo" hidden>
+                        <button type="button" id="catalog-prev" class="button button-secondary">Anterior</button>
+                        <span id="catalog-page-indicator" aria-live="polite">Página 1 de 1</span>
+                        <button type="button" id="catalog-next" class="button button-secondary">Siguiente</button>
+                    </nav>
                 </aside>
                 <div class="panel map-panel">
                     <div class="map-toolbar"><div><p class="eyebrow">MAPA MUSCULAR</p><h2 id="map-title">Selecciona un ejercicio</h2><p id="map-subtitle">Se mostrarán músculos primarios y secundarios.</p></div><label class="switch"><input id="map-stabilizers" type="checkbox"><span>Mostrar estabilizadores</span></label></div>

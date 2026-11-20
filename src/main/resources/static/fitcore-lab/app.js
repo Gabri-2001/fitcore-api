@@ -4,6 +4,7 @@ const SESSION_STARTED_KEY = 'fitcore.lab.session.startedAt';
 const state = {
     auth: JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'),
     logs: [], exercises: [], variants: [], catalogExercises: [], selectedExercise: null,
+    catalogPage: 0, catalogTotalPages: 0, catalogRequestId: 0,
     selectedVariant: null, variantConfiguration: {}, activations: [], svg: null,
     activePlan: null, planDays: [], selectedPlanDayIndex: 0, currentSession: null,
     sessionExercises: [], sessionSets: new Map(), sessionStartedAt: Number(localStorage.getItem(SESSION_STARTED_KEY)) || null,
@@ -283,26 +284,59 @@ const variantConfigFields = [
     {key:'laterality', label:'Ejecución', empty:['NOT_APPLICABLE']}
 ];
 
-async function searchCatalog() {
+async function searchCatalog(page = 0) {
     if (!requireAuth()) return;
-    const params = new URLSearchParams({page:'0', size:'100'});
-    const q = $('catalog-query').value.trim(), equipment = $('catalog-equipment').value, muscleGroup = $('catalog-muscle').value;
-    if (q) params.set('q', q); if (equipment) params.append('equipment', equipment); if (muscleGroup) params.append('muscleGroup', muscleGroup);
+    // La API pagina variantes, no ejercicios. La navegación permite ver todas
+    // las coincidencias sin truncar el catálogo a los primeros 100 resultados.
+    const requestId = ++state.catalogRequestId;
+    const safePage = Math.max(0, Number(page) || 0);
+    const params = new URLSearchParams({page: String(safePage), size: '50'});
+    const q = $('catalog-query').value.trim();
+    const equipment = $('catalog-equipment').value;
+    const muscleGroup = $('catalog-muscle').value;
+    if (q) params.set('q', q);
+    if (equipment) params.append('equipment', equipment);
+    if (muscleGroup) params.append('muscleGroup', muscleGroup);
     params.set('includeStabilizers', String($('catalog-stabilizers').checked));
+
     try {
         if (!state.exercises.length || !state.variants.length) {
-            [state.exercises, state.variants] = await Promise.all([api('/api/exercises'), api('/api/exercise-variants')]);
+            [state.exercises, state.variants] = await Promise.all([
+                api('/api/exercises'), api('/api/exercise-variants')
+            ]);
             updateVariantDatalist();
         }
         const result = await api(`/api/exercise-variants/search?${params}`);
+        if (requestId !== state.catalogRequestId) return;
+
         const matchingVariants = result.content || [];
         const allowedExerciseCodes = new Set(matchingVariants.map(variant => variant.exerciseCode));
-        state.catalogVariantCounts = matchingVariants.reduce((counts, variant) => counts.set(variant.exerciseCode, (counts.get(variant.exerciseCode) || 0) + 1), new Map());
+        state.catalogVariantCounts = matchingVariants.reduce(
+            (counts, variant) => counts.set(variant.exerciseCode, (counts.get(variant.exerciseCode) || 0) + 1),
+            new Map()
+        );
         state.catalogExercises = state.exercises.filter(exercise => allowedExerciseCodes.has(exercise.code));
-        $('catalog-count').textContent = `${state.catalogExercises.length} ejercicio${state.catalogExercises.length === 1 ? '':'s'}`;
-        $('catalog-page').textContent = `${matchingVariants.length} configuraciones disponibles`;
-        renderCatalog(); if (state.currentSession) renderSession(); $('metric-exercises').textContent = state.exercises.length;
-    } catch (error) { toast(error.message, true); }
+        state.catalogPage = result.page ?? safePage;
+        state.catalogTotalPages = result.totalPages ?? 0;
+        const totalVariants = result.totalElements ?? matchingVariants.length;
+        $('catalog-count').textContent = `${state.catalogExercises.length} ejercicios en esta página`;
+        $('catalog-page').textContent = `${totalVariants} configuraciones coincidentes`;
+        renderCatalog();
+        renderCatalogPagination();
+        if (state.currentSession) renderSession();
+        $('metric-exercises').textContent = state.exercises.length;
+    } catch (error) {
+        if (requestId === state.catalogRequestId) toast(error.message, true);
+    }
+}
+
+function renderCatalogPagination() {
+    const pager = $('catalog-pagination');
+    const total = state.catalogTotalPages;
+    pager.hidden = total <= 1;
+    $('catalog-page-indicator').textContent = `Página ${state.catalogPage + 1} de ${Math.max(1, total)}`;
+    $('catalog-prev').disabled = state.catalogPage <= 0;
+    $('catalog-next').disabled = state.catalogPage >= total - 1;
 }
 
 function renderCatalog() {
@@ -977,8 +1011,10 @@ function planStepper(field, value, min, suffix, label) {
 function exerciseEditor(exercise, index) {
     const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
     const base = state.exercises.find(item => item.code === variant?.exerciseCode);
-    const title = variant?.name || 'Selecciona un ejercicio';
-    const details = variant ? variantConfigurationChips(variant).slice(0, 3).join(' · ') : 'Elige una configuración del catálogo';
+    const title = base?.name || variant?.name || 'Selecciona un ejercicio';
+    const details = variant
+        ? [variant.name, ...variantConfigurationChips(variant).slice(0, 2)].join(' · ')
+        : 'Elige una configuración del catálogo';
     const thumb = base ? exerciseThumb(base, 'plan-exercise-thumb') : '<span class="plan-exercise-thumb thumb-placeholder">FC</span>';
     const menuId = `plan-exercise-actions-${state.selectedPlanDayIndex}-${index}`;
     return `<div class="exercise-editor" data-exercise="${index}">
@@ -2569,15 +2605,57 @@ async function openExercisePicker(mode = 'session', options = {}) {
 }
 
 
+// Normaliza tildes y signos para que las búsquedas sean tolerantes a variaciones.
+function normalizeExerciseSearchText(value) {
+    return String(value ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('es')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+const equipmentSearchAliases = {
+    SMITH_MACHINE: 'smith multipower maquina guiada',
+    MACHINE_SELECTORISED: 'maquina selectorizada placas',
+    MACHINE_PLATE_LOADED: 'maquina discos',
+    DUMBBELL: 'mancuerna mancuernas',
+    BARBELL: 'barra olimpica',
+    CABLE: 'polea cable'
+};
+
+function matchesExerciseSearch(text, tokens) {
+    const normalized = normalizeExerciseSearchText(text);
+    return tokens.every(token => normalized.includes(token));
+}
+
 function filteredSessionExercises() {
-    const query = $('session-exercise-query')?.value.trim().toLocaleLowerCase('es') || '';
+    const query = normalizeExerciseSearchText($('session-exercise-query')?.value || '');
+    const tokens = query ? query.split(/\s+/) : [];
     const equipment = $('session-exercise-equipment')?.value || '';
     const muscle = $('session-exercise-muscle')?.value || '';
-    return state.exercises.filter(exercise => {
-        const variants = state.variants.filter(variant => variant.exerciseCode === exercise.code);
-        return (!query || `${exercise.name} ${exercise.description || ''}`.toLocaleLowerCase('es').includes(query))
-            && (!equipment || variants.some(variant => variant.equipment === equipment))
-            && (!muscle || exercise.mainMuscleGroup === muscle);
+
+    return state.exercises.flatMap(exercise => {
+        if (muscle && exercise.mainMuscleGroup !== muscle) return [];
+        const variants = orderedVariantsForExercise(exercise)
+            .filter(variant => !equipment || variant.equipment === equipment);
+        if (!variants.length) return [];
+
+        const baseMatch = tokens.length > 0 && matchesExerciseSearch(
+            `${exercise.name} ${exercise.description || ''}`, tokens
+        );
+        // Sin búsqueda específica seguimos mostrando una fila por ejercicio.
+        if ((!tokens.length || baseMatch) && !equipment) return [{exercise, variant: null}];
+
+        // Si se busca una variante o se filtra por material, mostramos las
+        // combinaciones concretas para que pulsar "Smith" seleccione Smith.
+        const matchingVariants = variants.filter(variant => matchesExerciseSearch([
+            exercise.name, exercise.description, variant.name, variant.code,
+            friendly(variant.equipment), equipmentSearchAliases[variant.equipment] || '',
+            friendly(variant.benchAngle), friendly(variant.gripType),
+            friendly(variant.gripWidth)
+        ].join(' '), tokens));
+        return matchingVariants.map(variant => ({exercise, variant}));
     });
 }
 
@@ -2589,16 +2667,21 @@ function exerciseThumb(exercise, cssClass = 'exercise-thumb') {
 }
 
 function renderSessionExerciseResults() {
-    const container = $('session-exercise-results'); if (!container) return;
-    const exercises = filteredSessionExercises();
-    $('session-exercise-count').textContent = `${exercises.length} ejercicio${exercises.length === 1 ? '' : 's'}`;
-    container.innerHTML = exercises.length ? exercises.map(exercise => {
+    const container = $('session-exercise-results');
+    if (!container) return;
+    const results = filteredSessionExercises();
+    $('session-exercise-count').textContent = `${results.length} resultado${results.length === 1 ? '' : 's'}`;
+    container.innerHTML = results.length ? results.map(({exercise, variant}) => {
         const variants = orderedVariantsForExercise(exercise);
-        const representative = defaultVariantForExercise(exercise);
-        const detail = state.pickerMode === 'plan'
-            ? `${friendly(exercise.mainMuscleGroup)} · ${friendly(representative?.equipment)}`
-            : `${friendly(exercise.mainMuscleGroup)} · ${variants.length} configuraci${variants.length === 1 ? 'ón':'ones'}`;
-        return `<button class="picker-exercise ${state.sessionPicker.exercise?.code === exercise.code ? 'is-selected':''}" data-session-exercise-code="${escapeHtml(exercise.code)}">${exerciseThumb(exercise)}<span><strong>${escapeHtml(exercise.name)}</strong><small>${escapeHtml(detail)}</small></span><i>›</i></button>`;
+        const selected = state.sessionPicker.exercise?.code === exercise.code &&
+            (!variant || state.sessionPicker.configuration?.variantCode === variant.code);
+        const detail = variant
+            ? `${variant.name} · ${friendly(variant.equipment)}`
+            : `${friendly(exercise.mainMuscleGroup)} · ${variants.length} configuraci${variants.length === 1 ? 'ón' : 'ones'}`;
+        const variantAttribute = variant
+            ? ` data-session-variant-code="${escapeHtml(variant.code)}"`
+            : '';
+        return `<button class="picker-exercise ${selected ? 'is-selected' : ''}" data-session-exercise-code="${escapeHtml(exercise.code)}"${variantAttribute}>${exerciseThumb(exercise)}<span><strong>${escapeHtml(exercise.name)}</strong><small>${escapeHtml(detail)}</small></span><i>›</i></button>`;
     }).join('') : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
 }
 
@@ -4178,6 +4261,8 @@ function bindEvents() {
         deleteSession
     );
 
+    $('catalog-prev').addEventListener('click', () => searchCatalog(state.catalogPage - 1));
+    $('catalog-next').addEventListener('click', () => searchCatalog(state.catalogPage + 1));
     $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener(
         'click',
         () => openExercisePicker('session')
@@ -4187,11 +4272,17 @@ function bindEvents() {
         const item = event.target.closest('[data-session-exercise-code]');
         if (!item) return;
         const exercise = state.exercises.find(candidate => candidate.code === item.dataset.sessionExerciseCode);
-        const configuration = state.sessionPicker.exercise?.code === exercise?.code
-            ? state.sessionPicker.configuration
-            : state.pickerMode === 'plan'
-                ? configurationFromVariant(defaultVariantForExercise(exercise))
-                : {};
+        if (!exercise) return;
+        const matchedVariant = state.variants.find(variant =>
+            variant.code === item.dataset.sessionVariantCode && variant.exerciseCode === exercise.code
+        );
+        const configuration = matchedVariant
+            ? configurationFromVariant(matchedVariant)
+            : state.sessionPicker.exercise?.code === exercise.code
+                ? state.sessionPicker.configuration
+                : state.pickerMode === 'plan'
+                    ? configurationFromVariant(defaultVariantForExercise(exercise))
+                    : {};
         state.sessionPicker = {exercise, configuration};
         renderSessionExerciseResults();
         renderSessionExerciseConfig();

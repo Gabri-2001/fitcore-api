@@ -78,6 +78,9 @@ input:hover, select:hover, textarea:hover { border-color: #aebdb6; }
 .button-primary { color: var(--green); background: var(--lime); }.button-primary:hover { background: #afe449; }
 .button-secondary { color: var(--green); background: white; border-color: #bfcac5; }.button-secondary:hover { border-color: var(--green-2); background: #f8faf7; }
 .button-ghost { color: var(--green); background: transparent; border-color: var(--line); }.button-block { width: 100%; }
+.catalog-pagination { justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.catalog-pagination[hidden] { display: none; }
+.catalog-pagination span { color: var(--muted); font-size: 11px; font-weight: 700; }
 .text-button { padding: 4px; border: 0; color: var(--green-2); background: transparent; font-size: 11px; font-weight: 800; }.danger { color: var(--red); }
 .icon-button { display: inline-grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: white; font-weight: 900; }
 .status-pill { padding: 6px 9px; border-radius: 999px; color: #596a64; background: #edf0ed; white-space: nowrap; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
