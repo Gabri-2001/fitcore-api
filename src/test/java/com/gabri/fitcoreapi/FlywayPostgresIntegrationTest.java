@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(21, version);
+        assertEquals(22, version);
     }
 
     @Test
@@ -208,6 +208,59 @@ class FlywayPostgresIntegrationTest {
                 WHERE code = 'latPulldownPronatedMediumGripToChest'
                 """, Boolean.class);
         assertEquals(Boolean.TRUE, preferredPulldown);
+    }
+
+
+    @Test
+    void seedsShoulderVariantsAndAuditsPreviousMuscleGroups() {
+        Integer newShoulderVariants = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants
+                WHERE code IN ('overheadPressDumbbellStanding', 'overheadPressDumbbellSeated', 'overheadPressSmithSeated', 'overheadPressMachineSeated', 'lateralRaiseCableUnilateralStanding', 'lateralRaiseMachineSeated', 'lateralRaiseDumbbellSeated', 'frontRaiseCableStanding', 'frontRaisePlateStanding', 'rearDeltFlyDumbbellBentOver', 'rearDeltFlyCableStanding', 'rearDeltFlyDumbbellChestSupportedIncline', 'facePullBandStanding')
+                """, Integer.class);
+        assertEquals(13, newShoulderVariants);
+
+        Integer shoulderCount = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group = 'SHOULDERS' AND v.active
+                """, Integer.class);
+        assertEquals(18, shoulderCount);
+
+        Integer mappings = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_muscle_activations a
+                JOIN exercise_variants v ON v.id = a.exercise_variant_id
+                WHERE v.code IN ('overheadPressDumbbellStanding', 'overheadPressDumbbellSeated', 'overheadPressSmithSeated', 'overheadPressMachineSeated', 'lateralRaiseCableUnilateralStanding', 'lateralRaiseMachineSeated', 'lateralRaiseDumbbellSeated', 'frontRaiseCableStanding', 'frontRaisePlateStanding', 'rearDeltFlyDumbbellBentOver', 'rearDeltFlyCableStanding', 'rearDeltFlyDumbbellChestSupportedIncline', 'facePullBandStanding') AND a.mapping_version = 6
+                """, Integer.class);
+        assertEquals(63, mappings);
+
+        Integer missingPrimary = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                WHERE v.code IN ('overheadPressDumbbellStanding', 'overheadPressDumbbellSeated', 'overheadPressSmithSeated', 'overheadPressMachineSeated', 'lateralRaiseCableUnilateralStanding', 'lateralRaiseMachineSeated', 'lateralRaiseDumbbellSeated', 'frontRaiseCableStanding', 'frontRaisePlateStanding', 'rearDeltFlyDumbbellBentOver', 'rearDeltFlyCableStanding', 'rearDeltFlyDumbbellChestSupportedIncline', 'facePullBandStanding') AND NOT EXISTS (
+                    SELECT 1 FROM exercise_muscle_activations a
+                    WHERE a.exercise_variant_id = v.id AND a.role = 'PRIMARY'
+                )
+                """, Integer.class);
+        assertEquals(0, missingPrimary);
+
+        String uprightDipAngle = jdbcTemplate.queryForObject("""
+                SELECT bench_angle FROM exercise_variants
+                WHERE code = 'dipBodyweightUpright'
+                """, String.class);
+        assertEquals("NOT_APPLICABLE", uprightDipAngle);
+
+        Integer existingCounts = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group IN ('CHEST','BACK') AND v.active
+                """, Integer.class);
+        assertEquals(71, existingCounts);
+
+        Integer shoulderDefaults = jdbcTemplate.queryForObject("""
+                SELECT COUNT(*) FROM exercise_variants v
+                JOIN exercises e ON e.id = v.exercise_id
+                WHERE e.main_muscle_group = 'SHOULDERS' AND v.active AND v.is_default
+                """, Integer.class);
+        assertEquals(5, shoulderDefaults);
     }
 
 }
