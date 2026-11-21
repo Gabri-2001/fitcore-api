@@ -16,6 +16,10 @@ public final class WorkoutPerformanceMath {
                 || log.getReps() <= 0 || log.getWeight().signum() < 0) {
             return BigDecimal.ZERO;
         }
+        var parent=log.getWorkoutSessionExercise();
+        if(parent!=null && parent.getExerciseVariant()!=null &&
+                "BODYWEIGHT".equals(parent.getExerciseVariant().getResistanceSource()))
+            return BigDecimal.ZERO;
         return log.getWeight().multiply(BigDecimal.valueOf(log.getReps()));
     }
 }

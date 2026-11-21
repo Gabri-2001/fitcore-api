@@ -75,6 +75,10 @@ public class ExerciseSetLog extends BaseEntity {
         // Epley must not use only the extra weight of bodyweight movements.
         if (!completed || !"EXTERNAL_LOAD".equals(loadMode) ||
                 weight == null || reps == null || reps <= 0) return BigDecimal.ZERO;
-        return weight.multiply(BigDecimal.ONE.add(BigDecimal.valueOf(reps).divide(BigDecimal.valueOf(30), 6, java.math.RoundingMode.HALF_UP)));
+        if(workoutSessionExercise!=null && workoutSessionExercise.getExerciseVariant()!=null &&
+            "BODYWEIGHT".equals(workoutSessionExercise.getExerciseVariant().getResistanceSource()))
+            return BigDecimal.ZERO;
+        return weight.multiply(BigDecimal.ONE.add(BigDecimal.valueOf(reps).divide(
+                BigDecimal.valueOf(30),6,java.math.RoundingMode.HALF_UP)));
     }
 }

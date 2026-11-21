@@ -40,4 +40,13 @@ class ExerciseSetLogTest {
         external.update(3, new BigDecimal("70"), 6, null, null, false, null);
         assertThat(WorkoutPerformanceMath.externalVolume(external)).isEqualByComparingTo("0");
     }
+    @Test
+    void excludesAmbiguousLegacyBodyweightLoadFromTonnageAndOneRepMax() {
+        var parent=org.mockito.Mockito.mock(WorkoutSessionExercise.class,org.mockito.Answers.RETURNS_DEEP_STUBS);
+        org.mockito.Mockito.when(parent.getExerciseVariant().getResistanceSource()).thenReturn("BODYWEIGHT");
+        ExerciseSetLog old=new ExerciseSetLog(parent,1,new BigDecimal("82"),8,null,null,true,null);
+        assertThat(old.getWeight()).isEqualByComparingTo("82");
+        assertThat(WorkoutPerformanceMath.externalVolume(old)).isEqualByComparingTo("0");
+        assertThat(old.estimatedOneRepMax()).isEqualByComparingTo("0");
+    }
 }
