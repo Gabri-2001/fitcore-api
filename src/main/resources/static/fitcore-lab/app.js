@@ -2858,36 +2858,64 @@ function renderPlanSimpleExerciseConfig(container, exercise) {
     $('session-add-exercise').disabled = false;
 }
 
-// Reservar una geometría fija al abrir cada ejercicio. Se calcula una vez
-// usando TODAS sus variantes; el contenido puede desplazarse internamente
-// sin encoger ni recentrar el modal al cambiar material o técnica.
-function pickerVariantModalLayout(exercise, variants) {
-    const meaningful = field => [...new Set(variants.map(v => v[field.key]).filter(Boolean))]
-        .filter(value => !(field.empty || []).includes(value));
-    const keys = variantConfigFields.filter(field => meaningful(field).length >= 2)
-        .map(field => field.key);
-    const optionalPosition = FitCoreVariantUI.hasOptionalPosition(exercise, variants);
-    const visibleKeys = keys.filter(key => !(optionalPosition && key === 'bodyPosition'));
-    const main = visibleKeys.filter(key => planPrimaryVariantKeys.has(key)).length;
-    const technical = visibleKeys.filter(key => !planPrimaryVariantKeys.has(key)).length +
-        (optionalPosition ? 1 : 0);
-    const mainRows = Math.ceil(main / 2);
-    const technicalRows = Math.ceil(technical / 2);
-    // Incluye espacio para resultado, encabezado y acciones. Los detalles
-    // técnicos pueden abrirse sin que el diálogo cambie de tamaño.
-    const desktopHeight = Math.max(610, Math.min(790,
-        405 + mainRows * 75 + (technical ? 85 + technicalRows * 72 : 0) +
-        (variants.length > 1 ? 58 : 0)));
-    const mobileHeight = Math.max(620, Math.min(790,
-        475 + main * 65 + (technical ? 55 + technical * 61 : 0)));
-    return {
-        desktopHeight,
-        mobileHeight,
-        desktopFields: Math.max(150, Math.min(490,
-            mainRows * 75 + (technical ? 85 + technicalRows * 72 : 0))),
-        mobileFields: Math.max(160, Math.min(570,
-            main * 65 + (technical ? 55 + technical * 61 : 0)))
+// Medir la altura REAL de la variante más exigente de ESTE ejercicio, con
+// «Más ajustes técnicos» abierto. No usar mínimos globales ni contar opciones
+// que en realidad no se muestran para una combinación determinada.
+function measurePickerVariantHeight(exercise, variants) {
+    const modal = $('picker-variant-dialog');
+    const shell = modal.querySelector('.picker-variant-modal-shell');
+    const body = $('picker-variant-dialog-body');
+    const heading = modal.querySelector('.picker-variant-heading');
+    const actions = modal.querySelector('.picker-variant-dialog-actions');
+    const draft = state.pickerDraft;
+    if (!draft || !variants.length) return;
+
+    const before = {
+        configuration: {...draft.configuration}, moreOpen: draft.moreOpen,
+        height: modal.style.height, maxHeight: modal.style.maxHeight,
+        shellHeight: shell.style.height, shellMaxHeight: shell.style.maxHeight,
+        bodyOverflow: body.style.overflowY
     };
+    // Ocultar solo durante la medición evita saltos visuales. Dejamos que la
+    // cuadrícula crezca libremente para obtener una altura natural fiable.
+    modal.style.visibility = 'hidden';
+    modal.style.height = 'auto';
+    modal.style.maxHeight = 'none';
+    shell.style.height = 'auto';
+    shell.style.maxHeight = 'none';
+    body.style.overflowY = 'visible';
+    let maximum = 0;
+    try {
+        for (const variant of variants) {
+            draft.configuration = {
+                ...configurationFromVariant(variant),
+                _positionPreference: before.configuration._positionPreference || 'UNSPECIFIED'
+            };
+            draft.moreOpen = true;
+            renderPickerVariantDialog();
+            const details = $('picker-variant-dialog-fields')
+                .querySelector('.plan-advanced-more');
+            if (details) details.open = true;
+            const naturalHeight = heading.getBoundingClientRect().height +
+                body.scrollHeight + actions.getBoundingClientRect().height + 2;
+            maximum = Math.max(maximum, Math.ceil(naturalHeight));
+        }
+    } finally {
+        draft.configuration = before.configuration;
+        draft.moreOpen = before.moreOpen;
+        modal.style.height = before.height;
+        modal.style.maxHeight = before.maxHeight;
+        shell.style.height = before.shellHeight;
+        shell.style.maxHeight = before.shellMaxHeight;
+        body.style.overflowY = before.bodyOverflow;
+        renderPickerVariantDialog();
+        // Se calcula UNA VEZ al abrir. Los cambios de controles posteriores
+        // no modifican el tamaño; el contenido central permite scroll.
+        if (maximum > 0) {
+            modal.style.setProperty('--picker-variant-height', maximum + 'px');
+        }
+        modal.style.visibility = '';
+    }
 }
 
 function openPickerVariantDialog() {
@@ -2899,18 +2927,17 @@ function openPickerVariantDialog() {
     const selected = variants.find(v => v.code === state.sessionPicker.configuration?.variantCode)
         || variants.find(v => v.isDefault || v.defaultVariant || v.default)
         || variants[0];
-    const modalLayout = pickerVariantModalLayout(exercise, variants);
-    const modal = $('picker-variant-dialog');
-    modal.style.setProperty('--picker-variant-height-desktop', modalLayout.desktopHeight + 'px');
-    modal.style.setProperty('--picker-variant-height-mobile', modalLayout.mobileHeight + 'px');
-    modal.style.setProperty('--picker-variant-fields-desktop', modalLayout.desktopFields + 'px');
-    modal.style.setProperty('--picker-variant-fields-mobile', modalLayout.mobileFields + 'px');
     state.pickerDraft = {exerciseCode: exercise.code,
         configuration: {...configurationFromVariant(selected),
             _positionPreference:state.sessionPicker.configuration?._positionPreference || 'UNSPECIFIED'},
         moreOpen:false};
     renderPickerVariantDialog();
-    $('picker-variant-dialog').showModal();
+    const modal = $('picker-variant-dialog');
+    // Empezamos oculto, medimos dentro del top layer y mostramos una sola
+    // geometría. CSS limita la altura al viewport cuando sea necesario.
+    modal.style.visibility = 'hidden';
+    modal.showModal();
+    measurePickerVariantHeight(exercise, variants);
     $('picker-variant-dialog-body').querySelector('select:not(:disabled)')?.focus();
 }
 
