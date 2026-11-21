@@ -43,7 +43,8 @@ public class ExerciseSetLogService {
             BigDecimal addedWeightKg, BigDecimal assistanceWeightKg, String loadMode) {
         WorkoutSessionExercise exercise = ownedExercise(userId, sessionExerciseId);
         requireEditable(exercise);
-        validateMetrics(exercise, reps, durationSeconds, addedWeightKg, assistanceWeightKg, loadMode);
+        validateMetrics(exercise, weight, reps, rir, completed, durationSeconds, distanceMeters,
+                addedWeightKg, assistanceWeightKg, loadMode);
         try {
             ExerciseSetLog log = new ExerciseSetLog(exercise, setNumber, weight, reps, rir, rpe, completed, notes);
             log.updateMetrics(durationSeconds, distanceMeters, addedWeightKg, assistanceWeightKg, loadMode);
@@ -83,7 +84,8 @@ public class ExerciseSetLogService {
             BigDecimal addedWeightKg, BigDecimal assistanceWeightKg, String loadMode) {
         WorkoutSessionExercise exercise = ownedExercise(userId, sessionExerciseId);
         requireEditable(exercise);
-        validateMetrics(exercise, reps, durationSeconds, addedWeightKg, assistanceWeightKg, loadMode);
+        validateMetrics(exercise, weight, reps, rir, completed, durationSeconds, distanceMeters,
+                addedWeightKg, assistanceWeightKg, loadMode);
         ExerciseSetLog log = ownedSetLog(userId, sessionExerciseId, setLogId);
         try {
             log.update(setNumber, weight, reps, rir, rpe, completed, notes);
@@ -96,25 +98,46 @@ public class ExerciseSetLogService {
         }
     }
 
-    private void validateMetrics(WorkoutSessionExercise exercise, Integer reps, Integer durationSeconds,
-            BigDecimal addedWeightKg, BigDecimal assistanceWeightKg, String loadMode) {
+    private void validateMetrics(WorkoutSessionExercise exercise,
+            BigDecimal weight, Integer reps, Integer rir, boolean completed,
+            Integer durationSeconds, BigDecimal distanceMeters, BigDecimal addedWeightKg,
+            BigDecimal assistanceWeightKg, String loadMode) {
         String mode = loadMode == null ? "EXTERNAL_LOAD" : loadMode;
-        if (!java.util.Set.of("EXTERNAL_LOAD","BODYWEIGHT","WEIGHTED","ASSISTED").contains(mode))
-            throw new BusinessRuleException("Unsupported set load mode");
-        if ("WEIGHTED".equals(mode) != (addedWeightKg != null)
-                || "ASSISTED".equals(mode) != (assistanceWeightKg != null))
-            throw new BusinessRuleException("Lastre o asistencia incoherentes con el modo");
+        if (!java.util.Set.of("EXTERNAL_LOAD", "BODYWEIGHT", "WEIGHTED", "ASSISTED").contains(mode))
+            throw new BusinessRuleException("Modo de carga no compatible");
         var variant = exercise.getExerciseVariant();
-        if ("WEIGHTED".equals(mode) && !variant.isAllowsAddedWeight())
-            throw new BusinessRuleException("El ejercicio no admite lastre");
-        if ("ASSISTED".equals(mode) && !variant.isAllowsAssistance())
-            throw new BusinessRuleException("El ejercicio no admite asistencia");
-        if (("BODYWEIGHT".equals(mode) || "WEIGHTED".equals(mode) || "ASSISTED".equals(mode))
-                && !"BODYWEIGHT".equals(variant.getResistanceSource()))
-            throw new BusinessRuleException("El ejercicio no es de peso corporal");
-        if (durationSeconds != null && reps != null && reps > 0
-                && "SECONDS".equals(variant.getExercise().getDefaultUnit()))
-            throw new BusinessRuleException("El ejercicio se registra por tiempo, no repeticiones");
+        boolean bodyweight = "BODYWEIGHT".equals(variant.getResistanceSource());
+        boolean timed = "SECONDS".equals(variant.getExercise().getDefaultUnit());
+
+        if (weight != null && weight.signum() < 0
+                || distanceMeters != null && distanceMeters.signum() < 0)
+            throw new BusinessRuleException("El peso o la distancia no pueden ser negativos");
+
+        if ("WEIGHTED".equals(mode)) {
+            if (!bodyweight || !variant.isAllowsAddedWeight() || weight != null
+                    || addedWeightKg == null || addedWeightKg.signum() <= 0
+                    || assistanceWeightKg != null)
+                throw new BusinessRuleException("El lastre debe ser positivo y estar permitido");
+        } else if ("ASSISTED".equals(mode)) {
+            if (!bodyweight || !variant.isAllowsAssistance() || weight != null
+                    || assistanceWeightKg == null || assistanceWeightKg.signum() <= 0
+                    || addedWeightKg != null)
+                throw new BusinessRuleException("La asistencia debe ser positiva y estar permitida");
+        } else if (addedWeightKg != null || assistanceWeightKg != null
+                || "BODYWEIGHT".equals(mode) && (!bodyweight || weight != null)) {
+            throw new BusinessRuleException("Carga incompatible con el modo seleccionado");
+        }
+        if (timed) {
+            if (reps != null && reps > 0 || rir != null)
+                throw new BusinessRuleException("Este ejercicio se registra por tiempo, sin repeticiones ni RIR");
+            if (completed && (durationSeconds == null || durationSeconds <= 0))
+                throw new BusinessRuleException("Una serie temporal completada requiere segundos positivos");
+        } else {
+            if (durationSeconds != null)
+                throw new BusinessRuleException("Este ejercicio se registra por repeticiones, no por segundos");
+            if (completed && (reps == null || reps <= 0))
+                throw new BusinessRuleException("Una serie completada requiere repeticiones positivas");
+        }
     }
 
     public void delete(Long userId, Long sessionExerciseId, Long setLogId) {

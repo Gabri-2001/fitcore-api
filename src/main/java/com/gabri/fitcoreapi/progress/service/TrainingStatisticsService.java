@@ -466,12 +466,7 @@ public class TrainingStatisticsService {
     }
 
     private BigDecimal volume(ExerciseSetLog log) {
-        if (log.getReps() == null) return BigDecimal.ZERO;
-        BigDecimal load = log.getWeight();
-        if (load == null && log.getWorkoutSessionExercise().getExerciseVariant().getEquipment() == Equipment.BODYWEIGHT) {
-            load = log.getWorkoutSessionExercise().getWorkoutSession().getUser().getWeightKg();
-        }
-        return load == null ? BigDecimal.ZERO : load.multiply(BigDecimal.valueOf(log.getReps()));
+        return com.gabri.fitcoreapi.workout.domain.WorkoutPerformanceMath.externalVolume(log);
     }
 
     private BigDecimal rounded(BigDecimal value) {

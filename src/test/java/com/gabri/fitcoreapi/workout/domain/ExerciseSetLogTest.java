@@ -25,4 +25,19 @@ class ExerciseSetLogTest {
         assertThat(log.getAddedWeightKg()).isEqualByComparingTo("5");
         assertThat(log.estimatedOneRepMax()).isEqualByComparingTo("0");
     }
+    @Test
+    void externalVolumeNeverTreatsBodyMassOrAddedKgAsMachineTonnage() {
+        ExerciseSetLog unweighted = new ExerciseSetLog(null, 1, null, 12, null, null, true, null);
+        unweighted.updateMetrics(null, null, null, null, "BODYWEIGHT");
+        assertThat(WorkoutPerformanceMath.externalVolume(unweighted)).isEqualByComparingTo("0");
+
+        ExerciseSetLog weighted = new ExerciseSetLog(null, 2, null, 8, null, null, true, null);
+        weighted.updateMetrics(null, null, new BigDecimal("10"), null, "WEIGHTED");
+        assertThat(WorkoutPerformanceMath.externalVolume(weighted)).isEqualByComparingTo("0");
+
+        ExerciseSetLog external = new ExerciseSetLog(null, 3, new BigDecimal("70"), 6, null, null, true, null);
+        assertThat(WorkoutPerformanceMath.externalVolume(external)).isEqualByComparingTo("420");
+        external.update(3, new BigDecimal("70"), 6, null, null, false, null);
+        assertThat(WorkoutPerformanceMath.externalVolume(external)).isEqualByComparingTo("0");
+    }
 }

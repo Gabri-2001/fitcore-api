@@ -178,8 +178,9 @@ public class WorkoutSessionExercise extends BaseEntity {
         }
         List<ExerciseSetLog> completedLogs = setLogs.stream().filter(ExerciseSetLog::isCompleted).toList();
         performedSets = completedLogs.size();
-        performedReps = completedLogs.stream().map(ExerciseSetLog::getReps)
-                .filter(java.util.Objects::nonNull).mapToInt(Integer::intValue).sum();
+        boolean hasReps = completedLogs.stream().anyMatch(log -> log.getReps() != null);
+        performedReps = hasReps ? completedLogs.stream().map(ExerciseSetLog::getReps)
+                .filter(java.util.Objects::nonNull).mapToInt(Integer::intValue).sum() : null;
         performedWeightKg = completedLogs.stream().map(ExerciseSetLog::getWeight)
                 .filter(java.util.Objects::nonNull).max(BigDecimal::compareTo).orElse(null);
         completed = !completedLogs.isEmpty() && completedLogs.size() == setLogs.size();

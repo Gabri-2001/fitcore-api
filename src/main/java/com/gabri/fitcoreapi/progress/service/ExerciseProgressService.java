@@ -33,7 +33,7 @@ public class ExerciseProgressService {
         for (ExerciseSetLog log : values) {
             var date = log.getWorkoutSessionExercise().getWorkoutSession().getSessionDate();
             var fields = WeekFields.ISO;
-            String key = date.getYear() + "-W" + String.format("%02d", date.get(fields.weekOfWeekBasedYear()));
+            String key = date.get(fields.weekBasedYear()) + "-W" + String.format("%02d", date.get(fields.weekOfWeekBasedYear()));
             weekly.merge(key, volume(log), BigDecimal::add);
         }
         return new ProgressOverviewResponse(values.size(), totalVolume(values), bestOneRepMax(values), weekly);
@@ -60,11 +60,11 @@ public class ExerciseProgressService {
         return new ExerciseProgressResponse(code, maxWeight, maxReps, totalVolume(values), bestOneRepMax(values), values.size(), history);
     }
 
-    private List<ExerciseSetLog> completed(Long userId) { return logs.findByWorkoutSessionExerciseWorkoutSessionUserIdAndCompletedTrue(userId); }
+    private List<ExerciseSetLog> completed(Long userId) { return logs.findCompletedForProgress(userId); }
     private String variantCode(ExerciseSetLog log) { return log.getWorkoutSessionExercise().getExerciseVariant().getCode(); }
     private String exerciseCode(ExerciseSetLog log) { return log.getWorkoutSessionExercise().getExerciseVariant().getExercise().getCode(); }
     private BigDecimal volume(ExerciseSetLog log) {
-        return log.getWeight() == null || log.getReps() == null ? BigDecimal.ZERO : log.getWeight().multiply(BigDecimal.valueOf(log.getReps()));
+        return com.gabri.fitcoreapi.workout.domain.WorkoutPerformanceMath.externalVolume(log);
     }
     private BigDecimal totalVolume(List<ExerciseSetLog> values) { return rounded(values.stream().map(this::volume).reduce(BigDecimal.ZERO, BigDecimal::add)); }
     private BigDecimal bestOneRepMax(List<ExerciseSetLog> values) { return rounded(values.stream().map(ExerciseSetLog::estimatedOneRepMax).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO)); }

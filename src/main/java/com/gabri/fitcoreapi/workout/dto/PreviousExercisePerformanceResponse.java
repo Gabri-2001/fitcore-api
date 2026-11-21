@@ -32,10 +32,17 @@ public record PreviousExercisePerformanceResponse(
             Integer setNumber,
             BigDecimal weight,
             Integer reps,
-            BigDecimal rpe
+            BigDecimal rpe,
+            Integer durationSeconds,
+            BigDecimal distanceMeters,
+            BigDecimal addedWeightKg,
+            BigDecimal assistanceWeightKg,
+            String loadMode
     ) {
         private static PreviousSetResponse from(ExerciseSetLog set) {
-            return new PreviousSetResponse(set.getSetNumber(), set.getWeight(), set.getReps(), set.getRpe());
+            return new PreviousSetResponse(set.getSetNumber(), set.getWeight(), set.getReps(),
+                    set.getRpe(), set.getDurationSeconds(), set.getDistanceMeters(),
+                    set.getAddedWeightKg(), set.getAssistanceWeightKg(), set.getLoadMode());
         }
     }
 }

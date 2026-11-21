@@ -14,6 +14,20 @@ public interface ExerciseSetLogRepository extends JpaRepository<ExerciseSetLog, 
             Long id, Long workoutSessionExerciseId, Long userId);
     List<ExerciseSetLog> findByWorkoutSessionExerciseWorkoutSessionUserIdAndCompletedTrue(Long userId);
 
+    // Consistent with the statistics dashboard: only finalised sessions.
+    // Fetch the variant and exercise to prevent lazy-loading surprises.
+    @Query("""
+            select log from ExerciseSetLog log
+            join fetch log.workoutSessionExercise se
+            join fetch se.workoutSession session
+            join fetch se.exerciseVariant variant
+            join fetch variant.exercise exercise
+            where session.user.id = :userId
+              and log.completed = true
+              and session.status = com.gabri.fitcoreapi.workout.domain.WorkoutSessionStatus.COMPLETED
+            """)
+    List<ExerciseSetLog> findCompletedForProgress(@Param("userId") Long userId);
+
     @Query("""
             select log from ExerciseSetLog log
             join fetch log.workoutSessionExercise sessionExercise
