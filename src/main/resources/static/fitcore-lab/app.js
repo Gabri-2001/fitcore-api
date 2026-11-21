@@ -104,6 +104,12 @@ const today = () => new Date().toISOString().slice(0, 10);
 const daysAgo = days => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 const friendly = value => value == null ? '—' : (labels[value] || String(value).toLowerCase().replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()));
 const variantValue = (key, value) => {
+    if (key === 'requiredFacility') return ({
+        NONE:'Sin requisito especial',WALL:'Necesita pared',
+        PULL_UP_BAR:'Barra de dominadas',PARALLEL_BARS:'Paralelas',
+        BENCH:'Banco',CAPTAINS_CHAIR:'Silla romana',
+        ANKLE_ANCHOR:'Anclaje de tobillos'
+    })[value] || friendly(value);
     if (key === 'benchAngle') return FitCoreVariantUI.angleLabel(value);
     if (key === 'gripType' && value === 'NEUTRAL') return 'Neutro';
     if (key === 'gripWidth') return {NARROW:'Cerrada', MEDIUM:'Media', WIDE:'Abierta'}[value] || friendly(value);
@@ -279,6 +285,7 @@ const variantConfigFields = [
     {key:'bodyPosition', label:'Posición corporal', empty:['NOT_APPLICABLE']},
     {key:'trajectory', label:'Trayectoria', empty:['NOT_APPLICABLE']},
     {key:'supportType', label:'Tipo de apoyo', empty:['NOT_APPLICABLE']},
+    {key:'requiredFacility', label:'Superficie o instalación necesaria', empty:[]},
     {key:'stanceType', label:'Colocación de los pies', empty:['NOT_APPLICABLE']},
     {key:'footPlacement', label:'Posición de los pies', empty:['NOT_APPLICABLE']},
     {key:'kneePosition', label:'Posición de las rodillas', empty:['NOT_APPLICABLE']},
