@@ -3207,20 +3207,31 @@ async function loadSessionExercises() {
     } catch (error) { toast(error.message, true); }
 }
 
-function sessionBodyweightLoadCell(variant, set, number) {
-    const mode = ['BODYWEIGHT','WEIGHTED','ASSISTED'].includes(set?.loadMode)
-        ? set.loadMode : 'BODYWEIGHT';
-    const kg = mode==='WEIGHTED' ? set?.addedWeightKg :
-        mode==='ASSISTED' ? set?.assistanceWeightKg : null;
-    return `<div class='set-bodyweight-load'><select data-set-load-mode aria-label='Tipo de carga de la serie ${number}'>
-        <option value='BODYWEIGHT' ${mode==='BODYWEIGHT'?'selected':''}>Peso corporal</option>
-        ${variant.allowsAddedWeight ? `<option value='WEIGHTED' ${mode==='WEIGHTED'?'selected':''}>Lastrada</option>` : ''}
-        ${variant.allowsAssistance ? `<option value='ASSISTED' ${mode==='ASSISTED'?'selected':''}>Asistida</option>` : ''}
-    </select><input data-set-extra-weight type='number' data-numeric-mode='decimal'
-        inputmode='decimal' min='0' step='0.25' placeholder='kg adicionales'
-        value='${kg ?? ''}' aria-label='Kg de lastre o asistencia'
-        ${mode==='BODYWEIGHT'?'hidden':''}></div>`;
+function sessionBodyweightLoadCell(variant,set,number) {
+    // Weight recorded before explicit lastre existed must stay unclassified.
+    const legacy=set?.loadMode==='EXTERNAL_LOAD' && set?.weight!=null;
+    const mode=legacy?'EXTERNAL_LOAD':
+        ['BODYWEIGHT','WEIGHTED','ASSISTED'].includes(set?.loadMode)
+        ? set.loadMode:'BODYWEIGHT';
+    const kg=mode==='WEIGHTED'?set?.addedWeightKg:
+        mode==='ASSISTED'?set?.assistanceWeightKg:null;
+    return `<div class="set-bodyweight-load">
+        <select data-set-load-mode aria-label="Modo de carga de la serie ${number}">
+            <option value="BODYWEIGHT" ${mode==='BODYWEIGHT'?'selected':''}>Peso corporal</option>
+            ${variant.allowsAddedWeight?`<option value="WEIGHTED" ${mode==='WEIGHTED'?'selected':''}>Lastrada</option>`:''}
+            ${variant.allowsAssistance?`<option value="ASSISTED" ${mode==='ASSISTED'?'selected':''}>Asistida</option>`:''}
+            ${legacy?`<option value="EXTERNAL_LOAD" selected>Registro histórico (kg sin clasificar)</option>`:''}
+        </select>
+        ${legacy?`<input data-set-weight data-numeric-mode="decimal" type="number"
+            inputmode="decimal" min="0" step="0.25" value="${set.weight}"
+            aria-label="Peso histórico sin clasificar" ${mode==='EXTERNAL_LOAD'?'':'hidden'}>`:''}
+        <input data-set-extra-weight type="number" data-numeric-mode="decimal"
+            inputmode="decimal" min="0" step="0.25" placeholder="kg adicionales"
+            value="${kg ?? ''}" aria-label="Kg de lastre o asistencia"
+            ${mode==='WEIGHTED'||mode==='ASSISTED'?'':'hidden'}>
+    </div>`;
 }
+
 function renderSession() {
     const active =
         state.currentSession?.status === 'IN_PROGRESS';
@@ -3354,7 +3365,7 @@ function renderSession() {
             <th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set">
                 <td><span class="set-number">${next}</span><input data-set-number type="hidden" value="${next}"></td>
                 <td class="previous-performance">${previousSetLabel(previousByNumber.get(next))}</td>
-                <td>${bodyweight ? sessionBodyweightLoadCell(variant,lastSet,next) : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo">'}</td>
+                <td>${bodyweight ? sessionBodyweightLoadCell(variant,lastSet?.loadMode==='EXTERNAL_LOAD' ? {loadMode:'BODYWEIGHT'} : lastSet,next) : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo">'}</td>
                 <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (lastSet?.durationSeconds ?? firstSuggestion?.durationSeconds ?? '') : suggestedReps}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='number' inputmode='decimal' min='0' step='0.1' placeholder='Distancia (m)' value='${lastSet?.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
                 <td>${durationBased ? '—' : `<input data-set-rir data-numeric-mode="integer"
                     data-numeric-max="10" type="number" inputmode="numeric"
@@ -3525,7 +3536,10 @@ function sessionElapsedSeconds() { return state.sessionStartedAt ? Math.max(0, M
 function calculateSessionVolume() {
     let volumeGrams=0,totalReps=0,totalTimedSeconds=0,totalDistanceMeters=0;
     let completedSets=0,setsWithoutVolume=0,bodyweightSets=0;
-    for(const sets of state.sessionSets.values()) {
+    for(const [exerciseId,sets] of state.sessionSets) {
+        const sessionExercise=state.sessionExercises.find(e=>e.id===Number(exerciseId));
+        const variant=state.variants.find(v=>v.code===sessionExercise?.exerciseVariantCode);
+        const bodyweightVariant=variant?.resistanceSource==='BODYWEIGHT';
         for(const set of sets||[]) {
             if(set.completed!==true)continue;
             completedSets++;
@@ -3538,7 +3552,7 @@ function calculateSessionVolume() {
             if(validReps)totalReps+=reps;
             if(Number.isSafeInteger(seconds)&&seconds>0)totalTimedSeconds+=seconds;
             if(Number.isFinite(distance)&&distance>0)totalDistanceMeters+=distance;
-            if(mode==='BODYWEIGHT'||mode==='WEIGHTED'||mode==='ASSISTED'){
+            if(bodyweightVariant || mode==='BODYWEIGHT'||mode==='WEIGHTED'||mode==='ASSISTED'){
                 bodyweightSets++;
                 continue;
             }
@@ -3727,6 +3741,13 @@ async function updateSet(
 }
 
 
+function requiredExtraWeight(container,label) {
+    const value=validatedNumericValue(container.querySelector('[data-set-extra-weight]'),
+        label,false,0);
+    if(value==null||value<=0)throw new Error(label+' debe ser mayor que cero.');
+    return value;
+}
+
 function setBody(container) {
     const completion = container.querySelector('[data-set-complete]');
     return {
@@ -3738,11 +3759,9 @@ function setBody(container) {
         loadMode:container.querySelector('[data-set-load-mode]')?.value ||
             (container.querySelector('[data-set-weight]') ? 'EXTERNAL_LOAD' : 'BODYWEIGHT'),
         addedWeightKg:container.querySelector('[data-set-load-mode]')?.value === 'WEIGHTED'
-            ? validatedNumericValue(container.querySelector('[data-set-extra-weight]'),
-                'El lastre',false,0) : null,
+            ? requiredExtraWeight(container,'El lastre') : null,
         assistanceWeightKg:container.querySelector('[data-set-load-mode]')?.value === 'ASSISTED'
-            ? validatedNumericValue(container.querySelector('[data-set-extra-weight]'),
-                'La asistencia',false,0) : null,
+            ? requiredExtraWeight(container,'La asistencia') : null,
         rir:container.querySelector('[data-set-rir]') ? validatedNumericValue(container.querySelector('[data-set-rir]'), 'El RIR', true, 0, 10) : null,
         rpe:optionalNumber(container.querySelector('[data-set-rpe]').value),
         completed:completion ? completion.checked : false,
@@ -4734,10 +4753,14 @@ function bindEvents() {
     $('session-exercises').addEventListener('change',e=>{
         const mode=e.target.closest('[data-set-load-mode]');
         if(!mode)return;
-        const kg=mode.closest('.set-bodyweight-load')?.querySelector('[data-set-extra-weight]');
-        if(!kg)return;
-        kg.hidden=mode.value==='BODYWEIGHT';
-        if(kg.hidden)kg.value='';
+        const wrapper=mode.closest('.set-bodyweight-load');
+        const kg=wrapper?.querySelector('[data-set-extra-weight]');
+        const legacy=wrapper?.querySelector('[data-set-weight]');
+        if(kg){
+            kg.hidden=!['WEIGHTED','ASSISTED'].includes(mode.value);
+            if(kg.hidden)kg.value='';
+        }
+        if(legacy)legacy.hidden=mode.value!=='EXTERNAL_LOAD';
     });
     $('rest-settings-form').addEventListener('submit',saveRestSettings);
     document.querySelectorAll('[data-rest-preset]').forEach(button=>button.addEventListener('click',()=>{const total=Number(button.dataset.restPreset);$('rest-minutes').value=Math.floor(total/60);$('rest-seconds').value=total%60;}));
