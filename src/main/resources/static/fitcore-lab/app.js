@@ -2772,7 +2772,8 @@ function renderVariantConfiguratorFields(controls, candidates, selectedVariant, 
         exactAttribute = 'data-picker-variant-code',
         moreAttribute = 'data-picker-more',
         moreOpen = false,
-        allVariants = null
+        allVariants = null,
+        extraTechnicalFields = []
     } = options;
     const editable = controls.filter(control =>
         !(options.hideBodyPosition && control.key === 'bodyPosition') &&
@@ -2780,6 +2781,10 @@ function renderVariantConfiguratorFields(controls, candidates, selectedVariant, 
     );
     const primary = editable.filter(control => planPrimaryVariantKeys.has(control.key));
     const additional = editable.filter(control => !planPrimaryVariantKeys.has(control.key));
+    // Ajustes específicos del UI (p. ej. «Sin especificar / De pie /
+    // Sentado») también pertenecen al desplegable técnico.
+    const extraFields = extraTechnicalFields.filter(Boolean);
+    const additionalCount = additional.length + extraFields.length;
     // Algunas variantes (p. ej. fondos inclinados/verticales) no difieren
     // por campos configurables. Mostrar entonces la elección por ejecución,
     // aunque el resolvedor haya reducido candidates a una sola variante.
@@ -2792,10 +2797,10 @@ function renderVariantConfiguratorFields(controls, candidates, selectedVariant, 
         </select></label>`;
     return `
         ${primary.length ? primary.map(fieldHtml).join('') : ''}
-        ${additional.length ? `<details class="plan-advanced-more" ${moreAttribute} ${moreOpen ? 'open' : ''}>
-            <summary>Más ajustes técnicos <small>(${additional.length})</small></summary>
+        ${additionalCount ? `<details class="plan-advanced-more" ${moreAttribute} ${moreOpen ? 'open' : ''}>
+            <summary>Más ajustes técnicos <small>(${additionalCount})</small></summary>
             <p>Opciones adicionales disponibles en el catálogo.</p>
-            <div class="plan-advanced-extra-fields">${additional.map(fieldHtml).join('')}</div>
+            <div class="plan-advanced-extra-fields">${extraFields.join('')}${additional.map(fieldHtml).join('')}</div>
         </details>` : ''}
         ${variantChoices.length > 1 ? `<label class="plan-advanced-exact-choice">${needsExecutionChoice ? 'Tipo de ejecución' : 'Variante concreta'}
             <select ${exactAttribute} aria-label="${needsExecutionChoice ? 'Tipo de ejecución' : 'Variante concreta'}">
@@ -2883,14 +2888,17 @@ function renderPickerVariantDialog() {
         <div><p class="eyebrow">EJERCICIO SELECCIONADO</p>
         <h3>${escapeHtml(exercise.name)}</h3>
         <p>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</p></div>`;
+    const optionalPosition = FitCoreVariantUI.hasOptionalPosition(exercise, variants);
     $('picker-variant-dialog-fields').innerHTML =
-        pickerPositionOptions(exercise, variants, draft.configuration, 'data-picker-dialog-position') +
         renderVariantConfiguratorFields(controls, candidates, selectedVariant, {
             fieldAttribute:'data-picker-dialog-field',
             exactAttribute:'data-picker-dialog-variant-code',
             moreAttribute:'data-picker-dialog-more',
             moreOpen:!!draft.moreOpen,
-            hideBodyPosition:FitCoreVariantUI.hasOptionalPosition(exercise, variants),
+            hideBodyPosition:optionalPosition,
+            extraTechnicalFields: optionalPosition
+                ? [pickerPositionOptions(exercise, variants, draft.configuration,
+                    'data-picker-dialog-position')] : [],
             allVariants: variants
         });
     const chips = selectedVariant ? variantConfigurationChips(selectedVariant, {

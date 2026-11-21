@@ -206,3 +206,57 @@ test('posición corporal solo se edita en Configurar; no en el resumen del plan'
     assert.match(modal,/data-picker-dialog-position/);
     assert.match(source,/hideBodyPosition: preference === 'UNSPECIFIED'/);
 });
+
+test('posición opcional queda dentro de Más ajustes técnicos, debajo del material',()=>{
+  const helper=extract('function renderVariantConfiguratorFields(', 'function availablePickerVariants(');
+  const ctx={
+    planPrimaryVariantKeys:new Set(['equipment','gripType','gripWidth','benchAngle']),
+    escapeHtml:String,
+    variantValue:(_,value)=>value
+  };
+  vm.createContext(ctx);
+  vm.runInContext(helper,ctx);
+  const controls=[
+    {key:'equipment',label:'Material o equipo',values:['DUMBBELL','BARBELL'],selected:'DUMBBELL',empty:[]},
+    {key:'supportType',label:'Tipo de apoyo',values:['FREE','BENCH_SUPPORTED'],selected:'FREE',empty:[]},
+    {key:'bodyPosition',label:'Posición corporal',values:['STANDING','SEATED'],selected:'SEATED',empty:[]}
+  ];
+  const position='<label>Posición corporal<select data-picker-dialog-position><option value="UNSPECIFIED">Sin especificar</option><option value="STANDING">De pie</option><option value="SEATED">Sentado</option></select></label>';
+  const output=ctx.renderVariantConfiguratorFields(controls,[],null,{
+    hideBodyPosition:true,
+    extraTechnicalFields:[position],
+    allVariants:[]
+  });
+  const start=output.indexOf('<details class="plan-advanced-more"');
+  const end=output.indexOf('</details>',start);
+  const technical=output.slice(start,end);
+  assert.ok(output.indexOf('Material o equipo')<start);
+  assert.match(technical,/Más ajustes técnicos <small>\(2\)<\/small>/);
+  assert.match(technical,/data-picker-dialog-position/);
+  assert.match(technical,/Tipo de apoyo/);
+  assert.ok(technical.indexOf('data-picker-dialog-position')<technical.indexOf('Tipo de apoyo'));
+  assert.equal((output.match(/Posición corporal/g)||[]).length,1);
+  assert.doesNotMatch(output.slice(0,start),/Posición corporal/);
+});
+
+test('si solo existe ajuste de postura, el apartado técnico se conserva (1)',()=>{
+  const helper=extract('function renderVariantConfiguratorFields(', 'function availablePickerVariants(');
+  const ctx={planPrimaryVariantKeys:new Set(['equipment']),escapeHtml:String,variantValue:(_,v)=>v};
+  vm.createContext(ctx);
+  vm.runInContext(helper,ctx);
+  const output=ctx.renderVariantConfiguratorFields([],[],null,{
+    extraTechnicalFields:['<label>Posición corporal<select data-picker-dialog-position></select></label>'],
+    allVariants:[]
+  });
+  assert.match(output,/Más ajustes técnicos <small>\(1\)<\/small>/);
+  assert.match(output,/<div class="plan-advanced-extra-fields"><label>Posición corporal/);
+  assert.doesNotMatch(output,/<details[^>]+open>/);
+});
+
+test('el diálogo no muestra postura como ajuste principal',()=>{
+  const modal=extract('function renderPickerVariantDialog(', 'function closePickerVariantDialog(');
+  assert.match(modal,/extraTechnicalFields: optionalPosition/);
+  assert.match(modal,/pickerPositionOptions\(/);
+  assert.doesNotMatch(modal,/pickerPositionOptions\([\s\S]*?\) \+\s*renderVariantConfiguratorFields/);
+  assert.match(modal,/hideBodyPosition:optionalPosition/);
+});
