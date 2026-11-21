@@ -52,8 +52,9 @@ public class ExerciseProgressService {
         List<ExerciseSetLog> values = all.stream().filter(filter).toList();
         if (values.isEmpty()) throw new ResourceNotFoundException(
                 "No exercise progress found for code: " + code);
-        BigDecimal maxWeight = values.stream().map(ExerciseSetLog::getWeight)
-                .filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        BigDecimal maxWeight = values.stream().filter(this::hasUnambiguousExternalWeight)
+                .map(ExerciseSetLog::getWeight).filter(Objects::nonNull)
+                .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
         int maxReps = values.stream().map(ExerciseSetLog::getReps)
                 .filter(Objects::nonNull).max(Integer::compareTo).orElse(0);
         Integer maxDuration = values.stream().map(ExerciseSetLog::getDurationSeconds)
@@ -73,7 +74,8 @@ public class ExerciseProgressService {
 
         var history = values.stream().map(log -> new ExerciseProgressResponse.ProgressPoint(
                 log.getWorkoutSessionExercise().getWorkoutSession().getSessionDate(),
-                variantCode(log), log.getWeight(), log.getReps(), volume(log),
+                variantCode(log), hasUnambiguousExternalWeight(log) ? log.getWeight() : null,
+                log.getReps(), volume(log),
                 rounded(log.estimatedOneRepMax()), log.getDurationSeconds(),
                 log.getDistanceMeters(), log.getAddedWeightKg(), log.getAssistanceWeightKg(),
                 log.getLoadMode()))
@@ -82,6 +84,13 @@ public class ExerciseProgressService {
         return new ExerciseProgressResponse(code, maxWeight, maxReps,
                 totalVolume(values), bestOneRepMax(values), values.size(), history,
                 maxDuration, maxLastre, minAssistance, totalDistance, timedSets, repetitionSets);
+    }
+
+    private boolean hasUnambiguousExternalWeight(ExerciseSetLog log) {
+        var sessionExercise=log.getWorkoutSessionExercise();
+        return "EXTERNAL_LOAD".equals(log.getLoadMode()) &&
+                sessionExercise!=null && sessionExercise.getExerciseVariant()!=null &&
+                !"BODYWEIGHT".equals(sessionExercise.getExerciseVariant().getResistanceSource());
     }
 
     private List<ExerciseSetLog> completed(Long userId) { return logs.findCompletedForProgress(userId); }
