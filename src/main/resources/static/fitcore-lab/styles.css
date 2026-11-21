@@ -3138,9 +3138,16 @@ body.resting .toast-region { bottom: 190px; }
 #view-plans .plan-session-context[hidden] {display:none;}
 
 @container (max-width: 360px) {
-    #view-plans .plan-day-muscle-button {grid-template-columns:1fr;gap:6px;}
-    #view-plans .plan-day-muscle-mini {height:195px;}
-    #view-plans .plan-day-muscle-copy {padding:0 8px;}
+    .plan-day-muscle-button {grid-template-columns:1fr;gap:6px;}
+    .plan-day-muscle-mini {height:195px;}
+    .plan-day-muscle-copy {padding:0 8px;}
+    .plan-day-muscle-list {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+/* Contenedor por columna: no se usa un selector de ancestros dentro del
+   @container porque #view-plans está fuera de ese contexto de consulta. */
+@media (min-width:1191px) and (max-width:1450px) {
+    #view-plans .plan-day-muscle-button {grid-template-columns:1fr;}
+    #view-plans .plan-day-muscle-mini {height:210px;}
     #view-plans .plan-day-muscle-list {grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 @media (max-width: 1190px) {
