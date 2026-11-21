@@ -239,9 +239,13 @@
                                     required>
                         </label>
 
+                        <label class="plan-day-auto-toggle">
+                            <input type="checkbox" id="plan-new-day-auto" checked>
+                            <span>Clasificar automáticamente según los ejercicios</span>
+                        </label>
                         <label>
-                            Tipo de entrenamiento
-                            <select id="plan-new-day-type" required>
+                            Tipo de entrenamiento (si eliges manual)
+                            <select id="plan-new-day-type" disabled required>
                                 <option value="FULL_BODY">Cuerpo completo</option>
                                 <option value="PUSH">Empuje</option>
                                 <option value="PULL">Tirón</option>
@@ -251,6 +255,10 @@
                                 <option value="CARDIO">Cardio</option>
                                 <option value="MOBILITY">Movilidad</option>
                                 <option value="REST">Descanso</option>
+                                <option value="ARMS">Brazos</option>
+                                <option value="CORE">Core</option>
+                                <option value="MIXED">Mixto</option>
+                                <option value="CONDITIONING">Acondicionamiento</option>
                             </select>
                         </label>
 
@@ -316,8 +324,13 @@
                                     placeholder="Ej. Piernas y glúteos">
                         </label>
 
+                        <label class="plan-day-auto-toggle">
+                            <input type="checkbox" id="plan-edit-day-auto">
+                            <span>Clasificación automática según ejercicios y series</span>
+                        </label>
+                        <div id="plan-edit-classification-preview" class="plan-edit-classification-preview" aria-live="polite"></div>
                         <fieldset class="plan-edit-type-fieldset">
-                            <legend>Tipo de entrenamiento</legend>
+                            <legend>Tipo de entrenamiento manual</legend>
 
                             <div
                                     id="plan-edit-day-types"
@@ -1042,6 +1055,7 @@
 <script src="./exercise-picker-search.js" defer></script>
 <script src="./exercise-progress-ui.js" defer></script>
 <script src="./plan-session-summary.js" defer></script>
+<script src="./day-classifier.js" defer></script>
 <script src="./rest-wheel.js" defer></script>
 <script src="./app.js" defer></script>
 
