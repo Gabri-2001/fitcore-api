@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(34, version);
+        assertEquals(35, version);
     }
 
     @Test
@@ -596,6 +596,18 @@ class FlywayPostgresIntegrationTest {
                   AND e.main_muscle_group='TRICEPS' AND e.active
                 """,Integer.class);
         assertEquals(3,tricepsFamilies);
+    }
+
+    @Test
+    void addsManualClassificationFlagWithoutChangingHistoricDays() {
+        Integer legacyManual = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM workout_days WHERE day_type_manual IS NULL", Integer.class);
+        assertEquals(0, legacyManual);
+        Integer column = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM information_schema.columns
+            WHERE table_name = 'workout_days' AND column_name = 'day_type_manual'
+            """, Integer.class);
+        assertEquals(1, column);
     }
 
     @Test
