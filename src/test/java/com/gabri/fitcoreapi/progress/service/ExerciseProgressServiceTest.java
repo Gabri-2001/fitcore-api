@@ -16,6 +16,7 @@ class ExerciseProgressServiceTest {
         var repository=mock(ExerciseSetLogRepository.class);
         var timed=log("plankBodyweight", "plank", "2026-11-01");
         when(timed.getDurationSeconds()).thenReturn(75);
+        when(timed.getReps()).thenReturn((Integer) null);
         when(timed.getLoadMode()).thenReturn("BODYWEIGHT");
         var weighted=log("pullUpPronated", "pullUp", "2026-11-02");
         when(weighted.getReps()).thenReturn(6);
