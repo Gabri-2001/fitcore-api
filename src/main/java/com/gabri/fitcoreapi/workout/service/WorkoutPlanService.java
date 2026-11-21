@@ -194,6 +194,7 @@ public class WorkoutPlanService {
                 .sorted(java.util.Comparator.comparing(WorkoutDay::getDayOrder))
                 .forEach(sourceDay -> {
                     WorkoutDay day = new WorkoutDay(sourceDay.getName(), sourceDay.getDayOrder(), sourceDay.getDayType());
+                    day.setDayTypeManual(sourceDay.isDayTypeManual());
                     sourceDay.getWorkoutExercises().stream()
                             .sorted(java.util.Comparator.comparing(WorkoutExercise::getExerciseOrder))
                             .forEach(sourceExercise -> day.addWorkoutExercise(new WorkoutExercise(
@@ -211,6 +212,7 @@ public class WorkoutPlanService {
                 throw new BusinessRuleException("Workout day order must be unique within a plan");
             }
             WorkoutDay day = new WorkoutDay(dayRequest.getName(), dayRequest.getDayOrder(), dayRequest.getDayType());
+            day.setDayTypeManual(dayRequest.isDayTypeManual());
             var exerciseOrders = new HashSet<Integer>();
             for (var exerciseRequest : dayRequest.getExercises()) {
                 if (!exerciseOrders.add(exerciseRequest.getExerciseOrder())) {
