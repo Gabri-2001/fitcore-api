@@ -352,3 +352,20 @@ test('la variante específica se muestra como dato de selección, no como títul
   assert.match(nodes['session-exercise-results'].innerHTML,/data-session-variant-code="supMedium"/);
   assert.match(nodes['session-exercise-results'].innerHTML,/aria-pressed="true"/);
 });
+
+test('press no devuelve extensión de tríceps tumbado, pero press francés sí',()=>{
+  const tr=e('lyingTricepsExtension','Extensión de tríceps tumbado','TRICEPS');
+  const press=e('benchPress','Press de banca','CHEST');
+  const vs=[v('tr','lyingTricepsExtension','EZ_BAR','Extensión tumbada con barra Z'),
+            v('p','benchPress','BARBELL','Press de banca plano')];
+  assert.deepEqual(find([tr,press],vs,'press').map(x=>x.exercise.code),['benchPress']);
+  assert.deepEqual(find([tr,press],vs,'press francés').map(x=>x.exercise.code),['lyingTricepsExtension']);
+});
+test('curl de bíceps de pie y sentado se encuentran en la misma familia',()=>{
+  const ex=e('bicepsCurl','Curl de bíceps','BICEPS');
+  const vs=[v('standing','bicepsCurl','DUMBBELL','Curl de bíceps de pie con mancuernas',{bodyPosition:'STANDING'}),
+            v('seated','bicepsCurl','DUMBBELL','Curl de bíceps sentado con mancuernas',{bodyPosition:'SEATED'})];
+  assert.equal(find([ex],vs,'curl').length,1);
+  assert.equal(find([ex],vs,'curl biceps de pie')[0].variant.code,'standing');
+  assert.equal(find([ex],vs,'curl biceps sentado')[0].variant.code,'seated');
+});

@@ -2701,6 +2701,41 @@ function renderSessionExerciseResults() {
         : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
 }
 
+function requestedPickerPosition() {
+    const q = normalizeExerciseSearchText($('session-exercise-query')?.value || '');
+    if (/\bde pie\b/.test(q)) return 'STANDING';
+    if (/\bsentad[oa]s?\b/.test(q)) return 'SEATED';
+    return 'UNSPECIFIED';
+}
+
+function pickerPositionOptions(exercise, variants, configuration, attribute) {
+    if (!FitCoreVariantUI.hasOptionalPosition(exercise, variants)) return '';
+    const chosen = configuration._positionPreference || 'UNSPECIFIED';
+    return `<label>Posición corporal
+        <select ${attribute} aria-label="Posición corporal">
+            <option value="UNSPECIFIED" ${chosen === 'UNSPECIFIED' ? 'selected' : ''}>Sin especificar</option>
+            <option value="STANDING" ${chosen === 'STANDING' ? 'selected' : ''}>De pie</option>
+            <option value="SEATED" ${chosen === 'SEATED' ? 'selected' : ''}>Sentado</option>
+        </select></label>`;
+}
+
+// Preferencia de interfaz: nunca se crea una variante ni posición física ficticia.
+function selectPickerPosition(exercise, variants, configuration, preference) {
+    if (!['UNSPECIFIED','STANDING','SEATED'].includes(preference)) return configuration;
+    if (preference === 'UNSPECIFIED') return {...configuration, _positionPreference:preference};
+    const current = variants.find(v => v.code === configuration.variantCode);
+    const candidates = variants.filter(v => v.bodyPosition === preference);
+    if (!candidates.length) return configuration;
+    const sameEquipment = candidates.filter(v => v.equipment === current?.equipment);
+    const next = FitCoreExerciseSearch.preferred(sameEquipment.length ? sameEquipment : candidates);
+    return {...configurationFromVariant(next), _positionPreference:preference};
+}
+
+function pickerVariantTitle(exercise, variant, configuration = {}) {
+    return FitCoreVariantUI.variantTitle(exercise, variant, {
+        showPosition: ['STANDING','SEATED'].includes(configuration._positionPreference)
+    });
+}
 function renderSessionExerciseConfig() {
     const container = $('session-exercise-config'); const exercise = state.sessionPicker.exercise;
     if (!exercise) {
@@ -2718,10 +2753,12 @@ function renderSessionExerciseConfig() {
     }
 
     const {controls, selectedVariant} = resolveVariantForExercise(exercise, state.sessionPicker.configuration);
-    const pickerTitle = FitCoreVariantUI.variantTitle(exercise, selectedVariant);
+    const optionalPositionField = pickerPositionOptions(exercise,
+        availablePickerVariants(exercise), state.sessionPicker.configuration, 'data-session-position');
+    const pickerTitle = pickerVariantTitle(exercise, selectedVariant, state.sessionPicker.configuration);
     const visibleControls = controls.filter(control => control.values.length > 1 || ['equipment','attachmentType'].includes(control.key));
     const fields = visibleControls.map(control => `<label>${control.label}<select data-session-variant-config="${control.key}" ${control.values.length === 1 ? 'disabled':''}>${control.values.map(value => `<option value="${value}" ${value === control.selected ? 'selected':''}>${variantValue(control.key, value)}</option>`).join('')}</select></label>`).join('');
-    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(pickerTitle)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(selectedVariant.name)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
+    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(pickerTitle)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${optionalPositionField}${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(pickerTitle)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
     $('session-add-exercise').disabled = !selectedVariant;
 }
 
@@ -2781,9 +2818,12 @@ function renderPlanSimpleExerciseConfig(container, exercise) {
         $('session-add-exercise').disabled = true;
         return;
     }
-    state.sessionPicker.configuration = configurationFromVariant(selected);
-    const title = FitCoreVariantUI.variantTitle(exercise, selected);
+    const preference = state.sessionPicker.configuration?._positionPreference || 'UNSPECIFIED';
+    state.sessionPicker.configuration = {...configurationFromVariant(selected), _positionPreference:preference};
+    const title = pickerVariantTitle(exercise, selected, state.sessionPicker.configuration);
     const chips = variantConfigurationChips(selected).slice(0, 4);
+    const positionField = pickerPositionOptions(exercise, variants,
+        state.sessionPicker.configuration, 'data-picker-position');
     const canConfigure = variants.length > 1;
     const button = canConfigure ? `<button type="button" class="picker-config-toggle"
         data-picker-toggle-config aria-haspopup="dialog" aria-controls="picker-variant-dialog"
@@ -2800,7 +2840,8 @@ function renderPlanSimpleExerciseConfig(container, exercise) {
     </div>
     <div class="plan-simple-selection">
         <span class="plan-simple-label">Configuración seleccionada</span>
-        <strong>${escapeHtml(selected.name)}</strong>
+        <strong>${escapeHtml(title)}</strong>
+        ${positionField}
         ${chips.length ? `<div class="configuration-chips">${chips.map(chip =>
             `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
         ${canConfigure ? '<p>Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.</p>' : ''}
@@ -2817,7 +2858,10 @@ function openPickerVariantDialog() {
     const selected = variants.find(v => v.code === state.sessionPicker.configuration?.variantCode)
         || variants.find(v => v.isDefault || v.defaultVariant || v.default)
         || variants[0];
-    state.pickerDraft = {exerciseCode: exercise.code, configuration: configurationFromVariant(selected), moreOpen:false};
+    state.pickerDraft = {exerciseCode: exercise.code,
+        configuration: {...configurationFromVariant(selected),
+            _positionPreference:state.sessionPicker.configuration?._positionPreference || 'UNSPECIFIED'},
+        moreOpen:false};
     renderPickerVariantDialog();
     $('picker-variant-dialog').showModal();
     $('picker-variant-dialog-body').querySelector('select:not(:disabled)')?.focus();
@@ -2836,6 +2880,7 @@ function renderPickerVariantDialog() {
         <h3>${escapeHtml(exercise.name)}</h3>
         <p>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</p></div>`;
     $('picker-variant-dialog-fields').innerHTML =
+        pickerPositionOptions(exercise, variants, draft.configuration, 'data-picker-dialog-position') +
         renderVariantConfiguratorFields(controls, candidates, selectedVariant, {
             fieldAttribute:'data-picker-dialog-field',
             exactAttribute:'data-picker-dialog-variant-code',
@@ -2846,7 +2891,7 @@ function renderPickerVariantDialog() {
     const chips = selectedVariant ? variantConfigurationChips(selectedVariant).slice(0,4) : [];
     $('picker-variant-dialog-result').innerHTML = selectedVariant
         ? `<span>Configuración resultante</span>
-            <strong>${escapeHtml(selectedVariant.name)}</strong>
+            <strong>${escapeHtml(pickerVariantTitle(exercise, selectedVariant, draft.configuration))}</strong>
             ${chips.length ? `<div class="configuration-chips">${chips.map(chip =>
                 `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
             <small>Solo se pueden aplicar variantes existentes en el catálogo.</small>`
@@ -2867,7 +2912,8 @@ function applyPickerVariantDialog() {
     const variants = availablePickerVariants(exercise);
     const {selectedVariant} = resolveVariantForExercise(exercise, draft.configuration, variants);
     if (!selectedVariant || !variants.some(v => v.code === selectedVariant.code)) return;
-    state.sessionPicker.configuration = configurationFromVariant(selectedVariant);
+    state.sessionPicker.configuration = {...configurationFromVariant(selectedVariant),
+        _positionPreference:draft.configuration._positionPreference || 'UNSPECIFIED'};
     closePickerVariantDialog();
     renderSessionExerciseConfig();
     renderSessionExerciseResults(true);
@@ -4343,6 +4389,10 @@ function bindEvents() {
                 : state.pickerMode === 'plan'
                     ? configurationFromVariant(defaultVariantForExercise(exercise))
                     : {};
+        const queryPosition = requestedPickerPosition();
+        configuration._positionPreference = queryPosition !== 'UNSPECIFIED' ? queryPosition :
+            state.sessionPicker.exercise?.code === exercise.code
+                ? configuration._positionPreference || 'UNSPECIFIED' : 'UNSPECIFIED';
         state.sessionPicker = {exercise, configuration};
         // Buscar una variante específica la preselecciona; nunca restringe
         // las opciones que se pueden abrir después desde «Configurar».
@@ -4350,7 +4400,21 @@ function bindEvents() {
         renderSessionExerciseResults();
         renderSessionExerciseConfig();
     });
-    $('session-exercise-config').addEventListener('change',e=>{const field=e.target.closest('[data-session-variant-config]');if(!field)return;state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;state.sessionPicker.configuration.variantCode=null;renderSessionExerciseConfig();});
+    $('session-exercise-config').addEventListener('change',e=>{
+        const position=e.target.closest('[data-picker-position], [data-session-position]');
+        if (position) {
+            state.sessionPicker.configuration = selectPickerPosition(
+                state.sessionPicker.exercise, availablePickerVariants(state.sessionPicker.exercise),
+                state.sessionPicker.configuration, position.value);
+            renderSessionExerciseConfig();
+            return;
+        }
+        const field=e.target.closest('[data-session-variant-config]');
+        if(!field)return;
+        state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;
+        state.sessionPicker.configuration.variantCode=null;
+        renderSessionExerciseConfig();
+    });
 
     $('session-exercise-config').addEventListener('click', event => {
         if (event.target.closest('[data-picker-toggle-config]')) openPickerVariantDialog();
@@ -4363,6 +4427,13 @@ function bindEvents() {
     $('picker-variant-dialog-body').addEventListener('change', event => {
         const draft = state.pickerDraft;
         if (!draft) return;
+        const position = event.target.closest('[data-picker-dialog-position]');
+        if (position) {
+            draft.configuration = selectPickerPosition(state.sessionPicker.exercise,
+                availablePickerVariants(state.sessionPicker.exercise), draft.configuration, position.value);
+            renderPickerVariantDialog();
+            return;
+        }
         const field = event.target.closest('[data-picker-dialog-field]');
         const exact = event.target.closest('[data-picker-dialog-variant-code]');
         if (!field && !exact) return;
@@ -4375,7 +4446,8 @@ function bindEvents() {
             const variant = availablePickerVariants(state.sessionPicker.exercise)
                 .find(item => item.code === exact.value);
             if (!variant) return;
-            draft.configuration = configurationFromVariant(variant);
+            const preference = draft.configuration._positionPreference || 'UNSPECIFIED';
+            draft.configuration = {...configurationFromVariant(variant), _positionPreference:preference};
         }
         renderPickerVariantDialog();
         if (field) $('picker-variant-dialog-fields')
@@ -4386,7 +4458,7 @@ function bindEvents() {
         const variants = availablePickerVariants(state.sessionPicker.exercise);
         const selected = variants.find(v => v.isDefault || v.defaultVariant || v.default) || variants[0];
         if (!selected) return;
-        state.pickerDraft.configuration = configurationFromVariant(selected);
+        state.pickerDraft.configuration = {...configurationFromVariant(selected), _positionPreference:'UNSPECIFIED'};
         renderPickerVariantDialog();
     });
     $('picker-variant-apply').addEventListener('click', applyPickerVariantDialog);

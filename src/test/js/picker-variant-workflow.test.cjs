@@ -162,3 +162,24 @@ test('la opción directa tampoco aparece si solo existe una variante', () => {
     const html = context.renderVariantConfiguratorFields([], [singleton], singleton, {allVariants:[singleton]});
     assert.doesNotMatch(html,/Variante concreta|Tipo de ejecución|No hay ajustes principales alternativos/);
 });
+
+test('posición opcional acorta título y preserva variantes distintas en el catálogo',()=>{
+  const UI=require(path.join(staticDir,'exercise-variant-ui.js'));
+  const ex={code:'bicepsCurl',name:'Curl de bíceps'};
+  const stand={name:'Curl de bíceps de pie con mancuernas',bodyPosition:'STANDING'};
+  const seated={name:'Curl de bíceps sentado con mancuernas',bodyPosition:'SEATED'};
+  assert.equal(UI.variantTitle(ex,stand),'Curl de bíceps con mancuernas');
+  assert.equal(UI.variantTitle(ex,seated),'Curl de bíceps con mancuernas');
+  assert.equal(UI.variantTitle(ex,seated,{showPosition:true}),'Curl de bíceps sentado con mancuernas');
+  assert.equal(UI.hasOptionalPosition(ex,[stand,seated]),true);
+  const leg={code:'legCurl',name:'Curl femoral'};
+  assert.equal(UI.variantTitle(leg,{name:'Curl femoral sentado en máquina',bodyPosition:'SEATED'}),
+      'Curl femoral sentado en máquina');
+});
+test('selector de posición muestra Sin especificar y se conecta al configurador',()=>{
+  assert.match(source,/function pickerPositionOptions\(/);
+  assert.match(source,/Sin especificar/);
+  assert.match(source,/data-picker-dialog-position/);
+  assert.match(source,/data-picker-position/);
+  assert.match(source,/function selectPickerPosition\(/);
+});
