@@ -30,7 +30,7 @@ const cases=[
   ],
   [
     "single-squat",
-    "MIXED",
+    "LOWER",
     [
       [
         "backSquatBarbellMediumStance",
@@ -515,7 +515,7 @@ const cases=[
   ],
   [
     "unknown-code",
-    "UPPER",
+    "PUSH",
     [
       [
         "benchPressBarbellFlatMediumGrip",
