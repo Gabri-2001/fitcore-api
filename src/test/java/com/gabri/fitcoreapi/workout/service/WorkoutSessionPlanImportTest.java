@@ -2,7 +2,6 @@ package com.gabri.fitcoreapi.workout.service;
 
 import com.gabri.fitcoreapi.common.exception.BusinessRuleException;
 import com.gabri.fitcoreapi.common.i18n.MessageResolver;
-import com.gabri.fitcoreapi.exercise.domain.Exercise;
 import com.gabri.fitcoreapi.exercise.domain.ExerciseVariant;
 import com.gabri.fitcoreapi.user.domain.User;
 import com.gabri.fitcoreapi.user.repository.UserRepository;
@@ -52,9 +51,7 @@ class WorkoutSessionPlanImportTest {
     private WorkoutExercise planned(String code, int order, int sets, Integer reps, Integer duration,
                                     int rest, String resistanceSource) {
         ExerciseVariant variant = mock(ExerciseVariant.class);
-        Exercise exercise = mock(Exercise.class);
         when(variant.getResistanceSource()).thenReturn(resistanceSource);
-        when(variant.getExercise()).thenReturn(exercise);
         WorkoutExercise planned = new WorkoutExercise(variant, sets, reps, rest, order, duration, null);
         return planned;
     }
