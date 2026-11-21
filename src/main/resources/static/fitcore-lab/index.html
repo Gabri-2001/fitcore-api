@@ -1010,15 +1010,27 @@
     <div class="muscle-dialog-layout"><div id="session-muscle-map" class="session-muscle-map"><div class="map-loader">Preparando mapa…</div></div><div><div class="map-legend compact"><span><i class="primary"></i>Primario</span><span><i class="secondary"></i>Secundario</span></div><div id="session-muscle-list" class="session-muscle-list"></div></div></div>
     <div class="dialog-actions"><button class="button button-primary" data-close-muscles>Cerrar</button></div>
 </dialog>
-<dialog id="rest-settings-dialog" class="compact-dialog">
+<dialog id="rest-settings-dialog" class="compact-dialog rest-wheel-dialog" aria-labelledby="rest-settings-heading">
     <form id="rest-settings-form">
-        <div class="dialog-heading compact"><div><p class="eyebrow">TEMPORIZADOR</p><h2>Configurar descanso</h2><p id="rest-exercise-name"></p></div><button type="button" class="icon-button" data-close-rest aria-label="Cerrar">×</button></div>
-        <div class="rest-settings-body">
-            <div class="rest-time-fields"><label>Minutos<input id="rest-minutes" type="number" min="0" max="60" value="1" required></label><span>:</span><label>Segundos<input id="rest-seconds" type="number" min="0" max="59" value="30" required></label></div>
-            <div class="rest-presets" aria-label="Descansos habituales"><button type="button" data-rest-preset="60">1:00</button><button type="button" data-rest-preset="90">1:30</button><button type="button" data-rest-preset="120">2:00</button><button type="button" data-rest-preset="150">2:30</button><button type="button" data-rest-preset="180">3:00</button></div>
-            <p>El contador se reiniciará automáticamente al marcar una serie como hecha.</p>
+        <div class="dialog-heading compact rest-wheel-heading">
+            <div><p class="eyebrow">ENTRENAMIENTO</p><h2 id="rest-settings-heading">Temporizador de descanso</h2>
+                <p id="rest-exercise-name"></p></div>
+            <button type="button" class="icon-button" data-close-rest aria-label="Cerrar">×</button>
         </div>
-        <div class="dialog-actions"><button type="button" class="button button-secondary" data-close-rest>Cancelar</button><button class="button button-primary" type="submit">Guardar descanso</button></div>
+        <div class="rest-wheel-body">
+            <div class="rest-wheel-viewport">
+                <div id="rest-wheel-list" class="rest-wheel-list" role="listbox" tabindex="0"
+                    aria-label="Duración del descanso" aria-describedby="rest-wheel-help">
+                </div>
+                <div class="rest-wheel-selection" aria-hidden="true"></div>
+            </div>
+            <input id="rest-selected-seconds" type="hidden" value="0">
+            <p id="rest-wheel-help">Desliza para cambiar el tiempo. Hasta 2 minutos, de 5 en 5 segundos; después, de 15 en 15.</p>
+        </div>
+        <div class="dialog-actions rest-wheel-actions">
+            <button type="button" class="button button-secondary" data-close-rest>Cancelar</button>
+            <button class="button button-primary" type="submit">Listo</button>
+        </div>
     </form>
 </dialog>
 <dialog id="rpe-dialog" class="rpe-dialog">
@@ -1036,6 +1048,7 @@
 <script src="./exercise-picker-search.js" defer></script>
 <script src="./exercise-progress-ui.js" defer></script>
 <script src="./plan-session-summary.js" defer></script>
+<script src="./rest-wheel.js" defer></script>
 <script src="./app.js" defer></script>
 
 

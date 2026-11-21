@@ -3322,11 +3322,11 @@ function renderSession() {
             return `<tr data-set-row="${set.id}" class="${set.completed ? 'is-complete':''}">
                 <td><span class="set-number">${set.setNumber}</span><input data-set-number type="hidden" value="${set.setNumber}"></td>
                 <td class="previous-performance">${previousSetLabel(prior)}</td>
-                <td>${bodyweight ? sessionBodyweightLoadCell(variant,set,set.setNumber) : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + (set.weight ?? '') + '" aria-label="Peso externo">'}</td>
-                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (set.durationSeconds ?? '') : (set.reps ?? '')}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'} de la serie ${set.setNumber}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='number' inputmode='decimal' min='0' step='0.1' placeholder='Distancia (m)' value='${set.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
+                <td>${bodyweight ? sessionBodyweightLoadCell(variant,set,set.setNumber) : '<input data-set-weight data-numeric-mode="decimal" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" min="0" step="0.25" value="' + (set.weight ?? '') + '" aria-label="Peso externo">'}</td>
+                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next" min="0" step="1" value="${durationBased ? (set.durationSeconds ?? '') : (set.reps ?? '')}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'} de la serie ${set.setNumber}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='text' inputmode='decimal' autocomplete='off' enterkeyhint='next' min='0' step='0.1' placeholder='Distancia (m)' value='${set.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
                 <td>${durationBased ? '<span title="No aplicable a isométricos">—</span>' :
                     `<input data-set-rir data-numeric-mode="integer" data-numeric-max="10"
-                        type="number" inputmode="numeric" min="0" max="10" step="1"
+                        type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next" min="0" max="10" step="1"
                         value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}">`}</td>
                 <td>${rpeControl(effectiveRpe, `RPE de la serie ${set.setNumber}`, set.rpe == null && effectiveRpe != null)}</td>
                 <td><label class="complete-check"><input data-set-complete type="checkbox" ${set.completed ? 'checked':''}><span>✓</span></label></td>
@@ -3335,7 +3335,7 @@ function renderSession() {
         }).join('');
         return `<article class="session-card" data-session-exercise="${exercise.id}" data-exercise-name="${escapeHtml(exerciseName)}">
             <div class="session-card-head"><div class="session-exercise-identity">${base ? exerciseThumb(base, 'session-exercise-thumb') : '<span class="session-exercise-thumb thumb-placeholder">FC</span>'}<div><div class="session-title-line"><h3>${escapeHtml(exerciseName)}</h3><span class="status-pill" data-state="${completed?'COMPLETED':''}">${completed?'Completado':'En curso'}</span></div><div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div><small>${escapeHtml(variant?.name || variantName(exercise.exerciseVariantCode))}</small></div></div><button class="icon-button danger" data-remove-session-exercise aria-label="Quitar ejercicio">×</button></div>
-            <div class="exercise-tools"><button class="rest-setting" data-edit-rest><span>⏱ Descanso</span><strong>${formatDuration(rest)}</strong><small>Modificar</small></button><span>Series registradas: <strong>${sets.length}</strong></span><span>Anterior: <strong>${previous.sessionDate ? new Date(`${previous.sessionDate}T00:00:00`).toLocaleDateString('es-ES') : 'Sin registros'}</strong></span></div>
+            <div class="exercise-tools"><button class="rest-setting" data-edit-rest><span>⏱ Descanso</span><strong>${FitCoreRestWheel.label(rest)}</strong><small>Elegir tiempo</small></button><span>Series registradas: <strong>${sets.length}</strong></span><span>Anterior: <strong>${previous.sessionDate ? new Date(`${previous.sessionDate}T00:00:00`).toLocaleDateString('es-ES') : 'Sin registros'}</strong></span></div>
             <div class="set-table-wrap"><table class="set-table"><thead><tr><th>Serie</th><th>Anterior</th>
 
 <th>
@@ -3379,10 +3379,10 @@ function renderSession() {
             <th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set">
                 <td><span class="set-number">${next}</span><input data-set-number type="hidden" value="${next}"></td>
                 <td class="previous-performance">${previousSetLabel(previousByNumber.get(next))}</td>
-                <td>${bodyweight ? sessionBodyweightLoadCell(variant,lastSet?.loadMode==='EXTERNAL_LOAD' ? {loadMode:'BODYWEIGHT'} : lastSet,next) : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo">'}</td>
-                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (lastSet?.durationSeconds ?? firstSuggestion?.durationSeconds ?? '') : suggestedReps}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='number' inputmode='decimal' min='0' step='0.1' placeholder='Distancia (m)' value='${lastSet?.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
+                <td>${bodyweight ? sessionBodyweightLoadCell(variant,lastSet?.loadMode==='EXTERNAL_LOAD' ? {loadMode:'BODYWEIGHT'} : lastSet,next) : '<input data-set-weight data-numeric-mode="decimal" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo">'}</td>
+                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next" min="0" step="1" value="${durationBased ? (lastSet?.durationSeconds ?? firstSuggestion?.durationSeconds ?? '') : suggestedReps}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='text' inputmode='decimal' autocomplete='off' enterkeyhint='next' min='0' step='0.1' placeholder='Distancia (m)' value='${lastSet?.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
                 <td>${durationBased ? '—' : `<input data-set-rir data-numeric-mode="integer"
-                    data-numeric-max="10" type="number" inputmode="numeric"
+                    data-numeric-max="10" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next"
                     min="0" max="10" step="1" value="${suggestedRir}"
                     aria-label="RIR de la nueva serie">`}</td>
                 <td>${rpeControl(null, 'RPE de la nueva serie', false)}</td><td><span class="pending-set" title="La serie se crea sin completar">Pendiente</span></td>
@@ -3535,7 +3535,7 @@ function variantConfigurationChips(variant, options = {}) {
 }
 
 function sessionRestSeconds(exercise) {
-    return exercise.restSeconds ?? 90;
+    return exercise.restSeconds ?? 0;
 }
 
 function formatDuration(seconds) { const value = Math.max(0, Number(seconds) || 0); return `${Math.floor(value / 60)}:${String(value % 60).padStart(2,'0')}`; }
@@ -3791,7 +3791,7 @@ function requiredInteger(rawValue, label, minimum) {
 }
 
 function validatedNumericValue(input, label, integer, minimum, maximum = null) {
-    const rawValue = input.value.trim();
+    const rawValue = input.value.trim().replace(',', '.');
     if (rawValue === '') return null;
     const pattern = integer ? /^\d+$/ : /^\d+(?:\.\d+)?$/;
     if (!pattern.test(rawValue)) throw new Error(`${label} solo admite ${integer ? 'números enteros' : 'números'}.`);
@@ -3808,14 +3808,15 @@ function blockInvalidNumericKey(event) {
     if (!input || event.ctrlKey || event.metaKey || event.altKey) return;
     const allowedControlKeys = ['Backspace','Delete','Tab','Enter','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
     if (allowedControlKeys.includes(event.key) || /^\d$/.test(event.key)) return;
-    if (input.dataset.numericMode === 'decimal' && event.key === '.' && !input.value.includes('.')) return;
+    if (input.dataset.numericMode === 'decimal' && (event.key === '.' || event.key === ',')
+        && !/[.,]/.test(input.value)) return;
     event.preventDefault();
 }
 
 function blockInvalidNumericInsert(event) {
     const input = event.target.closest('[data-numeric-mode]');
     if (!input || !event.inputType?.startsWith('insert') || event.data == null) return;
-    const allowed = input.dataset.numericMode === 'decimal' ? /^[0-9.]+$/ : /^\d+$/;
+    const allowed = input.dataset.numericMode === 'decimal' ? /^[0-9.,]+$/ : /^\d+$/;
     if (!allowed.test(event.data)) event.preventDefault();
 }
 
@@ -3823,36 +3824,94 @@ function blockInvalidNumericPaste(event) {
     const input = event.target.closest('[data-numeric-mode]');
     if (!input) return;
     const pasted = event.clipboardData?.getData('text').trim() || '';
-    const allowed = input.dataset.numericMode === 'decimal' ? /^\d+(?:\.\d+)?$/ : /^\d+$/;
+    const allowed = input.dataset.numericMode === 'decimal' ? /^\d+(?:[.,]\d+)?$/ : /^\d+$/;
     const maximum = optionalNumber(input.dataset.numericMax);
-    if (!allowed.test(pasted) || (maximum != null && Number(pasted) > maximum)) {
+    if (!allowed.test(pasted) || (maximum != null && Number(pasted.replace(',', '.')) > maximum)) {
         event.preventDefault();
         toast(maximum == null ? 'Ese campo solo admite números.' : `Ese campo admite valores de 0 a ${maximum}.`, true);
     }
 }
 
-function openRestEditor(card) {
-    const exerciseId = Number(card.dataset.sessionExercise);
-    const exercise = state.sessionExercises.find(item => item.id === exerciseId);
-    if (!exercise) return;
-    state.restEditorExerciseId = exerciseId;
-    $('rest-exercise-name').textContent = card.dataset.exerciseName;
-    $('rest-minutes').value = Math.floor(sessionRestSeconds(exercise) / 60);
-    $('rest-seconds').value = sessionRestSeconds(exercise) % 60;
-    $('rest-settings-dialog').showModal();
-}
 
+const REST_WHEEL_ROW_HEIGHT=56;
+let restWheelValues=FitCoreRestWheel.options();
+let restWheelSelected=0;
+let restWheelScrollFrame=0;
+
+function updateRestWheelSelection(seconds, shouldScroll=false) {
+    const list=$('rest-wheel-list');
+    if(!list)return;
+    const value=FitCoreRestWheel.nearest(seconds,restWheelValues);
+    restWheelSelected=value;
+    $('rest-selected-seconds').value=String(value);
+    list.querySelectorAll('[data-rest-wheel-value]').forEach(item=>{
+        const current=Number(item.dataset.restWheelValue)===value;
+        item.classList.toggle('is-selected',current);
+        item.setAttribute('aria-selected',String(current));
+    });
+    list.setAttribute('aria-valuetext',FitCoreRestWheel.label(value));
+    if(shouldScroll) {
+        const index=restWheelValues.indexOf(value);
+        list.scrollTo({top:index*REST_WHEEL_ROW_HEIGHT,behavior:'instant'});
+    }
+}
+function openRestEditor(card) {
+    const exerciseId=Number(card.dataset.sessionExercise);
+    const exercise=state.sessionExercises.find(item=>item.id===exerciseId);
+    if(!exercise)return;
+    state.restEditorExerciseId=exerciseId;
+    $('rest-exercise-name').textContent=card.dataset.exerciseName;
+    const seconds=sessionRestSeconds(exercise);
+    restWheelValues=FitCoreRestWheel.options(seconds);
+    $('rest-wheel-list').innerHTML=restWheelValues.map(value=>
+        `<button type="button" role="option" tabindex="-1"
+                class="rest-wheel-option" data-rest-wheel-value="${value}"
+                aria-selected="false">${FitCoreRestWheel.label(value)}</button>`
+    ).join('');
+    $('rest-settings-dialog').showModal();
+    updateRestWheelSelection(seconds,true);
+    $('rest-wheel-list').focus({preventScroll:true});
+}
+function updateRestWheelFromScroll() {
+    if(restWheelScrollFrame)cancelAnimationFrame(restWheelScrollFrame);
+    restWheelScrollFrame=requestAnimationFrame(()=>{
+        restWheelScrollFrame=0;
+        const list=$('rest-wheel-list');
+        const index=Math.min(restWheelValues.length-1,
+            Math.max(0,Math.round(list.scrollTop/REST_WHEEL_ROW_HEIGHT)));
+        updateRestWheelSelection(restWheelValues[index]);
+    });
+}
+function handleRestWheelKeys(event) {
+    const list=$('rest-wheel-list');
+    const index=restWheelValues.indexOf(restWheelSelected);
+    let next=index;
+    if(event.key==='ArrowDown')next=index+1;
+    else if(event.key==='ArrowUp')next=index-1;
+    else if(event.key==='Home')next=0;
+    else if(event.key==='End')next=restWheelValues.length-1;
+    else if(event.key==='PageDown')next=index+5;
+    else if(event.key==='PageUp')next=index-5;
+    else return;
+    event.preventDefault();
+    next=Math.max(0,Math.min(restWheelValues.length-1,next));
+    updateRestWheelSelection(restWheelValues[next]);
+    list.scrollTo({top:next*REST_WHEEL_ROW_HEIGHT,behavior:'smooth'});
+}
 async function saveRestSettings(event) {
     event.preventDefault();
-    const minutes = Math.max(0, Number($('rest-minutes').value) || 0);
-    const seconds = Math.max(0, Number($('rest-seconds').value) || 0);
-    const restSeconds = Math.min(3600, minutes * 60 + seconds);
+    const restSeconds=restWheelSelected;
+    if(!restWheelValues.includes(restSeconds))return;
     try {
-        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${state.restEditorExerciseId}/rest`, {method:'PATCH', body:JSON.stringify({restSeconds})});
+        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${state.restEditorExerciseId}/rest`,
+            {method:'PATCH',body:JSON.stringify({restSeconds})});
         $('rest-settings-dialog').close();
+        if(restSeconds===0 && state.restTimer.exerciseId===state.restEditorExerciseId)
+            stopRestTimer();
         await loadSessionExercises();
-        toast(`Descanso actualizado a ${formatDuration(restSeconds)}.`);
-    } catch (error) { toast(error.message, true); }
+        toast(restSeconds===0?'Temporizador apagado.':
+            'Descanso actualizado a '+FitCoreRestWheel.label(restSeconds)+'.');
+    }catch(error){toast(error.message,true);}
 }
 
 function openRpeEditor(button) {
@@ -3885,7 +3944,7 @@ function applyRpeValue() {
 
 function startRestTimer(exercise, exerciseName) {
     const duration = sessionRestSeconds(exercise);
-    if (duration <= 0) return toast('Descanso desactivado para este ejercicio.');
+    if (duration <= 0) return; // Apagado: no mostrar temporizador ni avisos.
     clearRestTimerInterval();
     Object.assign(state.restTimer, {exerciseId:exercise.id, exerciseName:exerciseName || 'Ejercicio', remaining:duration, total:duration, running:true});
     state.restTimer.interval = setInterval(() => {
@@ -4772,6 +4831,27 @@ function bindEvents() {
     document.querySelectorAll('[data-close-rest]').forEach(button=>button.addEventListener('click',()=>$('rest-settings-dialog').close())); document.querySelectorAll('[data-close-rpe]').forEach(button=>button.addEventListener('click',()=>$('rpe-dialog').close()));
     $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-edit-rest]'))openRestEditor(card);else if(e.target.closest('[data-rpe-picker]'))openRpeEditor(e.target.closest('[data-rpe-picker]'));else if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
     $('session-exercises').addEventListener('change',async e=>{const completion=e.target.closest('[data-set-complete]');if(!completion)return;const row=completion.closest('[data-set-row]'),card=completion.closest('.session-card');await updateSet(card,row,row.dataset.setRow,completion.checked);});
+    // Teclado nativo del móvil: al tocar un valor se selecciona entero,
+    // como una calculadora. Enter avanza al próximo campo de la misma serie.
+    $('session-exercises').addEventListener('focusin',event=>{
+        const input=event.target.closest('[data-numeric-mode]');
+        if(!input)return;
+        input.classList.add('is-editing');
+        requestAnimationFrame(()=>{if(document.activeElement===input)input.select();});
+    });
+    $('session-exercises').addEventListener('focusout',event=>{
+        const input=event.target.closest('[data-numeric-mode]');
+        input?.classList.remove('is-editing');
+    });
+    $('session-exercises').addEventListener('keydown',event=>{
+        const input=event.target.closest('[data-numeric-mode]');
+        if(!input || event.key!=='Enter')return;
+        event.preventDefault();
+        const row=input.closest('tr');
+        const editable=[...(row?.querySelectorAll('[data-numeric-mode]:not([hidden])')||[])];
+        const next=editable[editable.indexOf(input)+1];
+        if(next)next.focus();else input.blur();
+    });
     $('session-exercises').addEventListener('keydown',blockInvalidNumericKey);
     $('session-exercises').addEventListener('beforeinput',blockInvalidNumericInsert);
     $('session-exercises').addEventListener('paste',blockInvalidNumericPaste);
@@ -4789,7 +4869,17 @@ function bindEvents() {
         if(legacy)legacy.hidden=mode.value!=='EXTERNAL_LOAD';
     });
     $('rest-settings-form').addEventListener('submit',saveRestSettings);
-    document.querySelectorAll('[data-rest-preset]').forEach(button=>button.addEventListener('click',()=>{const total=Number(button.dataset.restPreset);$('rest-minutes').value=Math.floor(total/60);$('rest-seconds').value=total%60;}));
+    $('rest-wheel-list').addEventListener('scroll',updateRestWheelFromScroll,{passive:true});
+    $('rest-wheel-list').addEventListener('keydown',handleRestWheelKeys);
+    $('rest-wheel-list').addEventListener('click',event=>{
+        const item=event.target.closest('[data-rest-wheel-value]');
+        if(!item)return;
+        const value=Number(item.dataset.restWheelValue);
+        const index=restWheelValues.indexOf(value);
+        if(index<0)return;
+        updateRestWheelSelection(value);
+        $('rest-wheel-list').scrollTo({top:index*REST_WHEEL_ROW_HEIGHT,behavior:'smooth'});
+    });
     $('rpe-value').addEventListener('input',e=>updateRpePreview(e.target.value)); $('rpe-apply').addEventListener('click',applyRpeValue);
     $('rest-timer-toggle').addEventListener('click',toggleRestTimer); $('rest-timer-minus').addEventListener('click',()=>adjustRestTimer(-15)); $('rest-timer-plus').addEventListener('click',()=>adjustRestTimer(15)); $('rest-timer-skip').addEventListener('click',completeRestTimer);
     $('rest-finished-close').addEventListener('click',()=>{ $('rest-finished-dialog').close(); stopRestTimer(); });
