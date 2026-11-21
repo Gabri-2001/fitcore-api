@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(32, version);
+        assertEquals(33, version);
     }
 
     @Test
@@ -651,5 +651,25 @@ class FlywayPostgresIntegrationTest {
             WHERE table_name IN ('endurance_activities','endurance_laps','endurance_samples')
             """,Integer.class);
         assertEquals(3,count);
+    }
+    @Test
+    void seedsBodyweightConditioningAndIsometricsV33() {
+        Integer variants = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants WHERE code IN (
+            'airSquatBodyweight','gluteBridgeBodyweightFloor','wallSitBodyweight',
+            'hollowHoldBodyweight','mountainClimberBodyweightAlternating',
+            'burpeeBodyweightStandard','jumpingJackBodyweightStandard','pushUpKneesBodyweight')
+            """,Integer.class);
+        assertEquals(8,variants);
+        Integer wall = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants
+            WHERE code='wallSitBodyweight'
+              AND resistance_source='BODYWEIGHT'
+              AND required_facility='WALL'
+            """,Integer.class);
+        assertEquals(1,wall);
+        String unit=jdbcTemplate.queryForObject(
+            "SELECT default_unit FROM exercises WHERE code='hollowHold'",String.class);
+        assertEquals("SECONDS",unit);
     }
 }

@@ -47,5 +47,6 @@ public enum MovementPattern {
     GRIP_ISOMETRIC,
 
     CARRY,
+    FULL_BODY_CONDITIONING,
     ISOLATION
 }
