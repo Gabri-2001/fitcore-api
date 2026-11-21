@@ -3838,6 +3838,9 @@ const REST_WHEEL_ROW_HEIGHT=56;
 let restWheelValues=FitCoreRestWheel.options();
 let restWheelSelected=0;
 let restWheelScrollFrame=0;
+let restWheelContext=null;
+let restWheelPointer=null;
+let restWheelIgnoreClickUntil=0;
 
 function updateRestWheelSelection(seconds, shouldScroll=false) {
     const list=$('rest-wheel-list');
@@ -3856,22 +3859,37 @@ function updateRestWheelSelection(seconds, shouldScroll=false) {
         list.scrollTo({top:index*REST_WHEEL_ROW_HEIGHT,behavior:'instant'});
     }
 }
+function openRestWheelEditor({mode,seconds,exerciseName='',input=null}) {
+    restWheelContext={mode,input};
+    $('rest-context-label').textContent=mode==='session'?'ENTRENAMIENTO':'PLANES';
+    $('rest-exercise-name').textContent=exerciseName;
+    restWheelValues=FitCoreRestWheel.options(Math.max(0,Number(seconds)||0));
+    $('rest-wheel-list').innerHTML=restWheelValues.map(value=>
+        `<button type="button" role="option" tabindex="-1" class="rest-wheel-option"
+             data-rest-wheel-value="${value}" aria-selected="false">${FitCoreRestWheel.label(value)}</button>`
+    ).join('');
+    $('rest-settings-dialog').showModal();
+    updateRestWheelSelection(seconds,true);
+    $('rest-wheel-list').focus({preventScroll:true});
+}
 function openRestEditor(card) {
     const exerciseId=Number(card.dataset.sessionExercise);
     const exercise=state.sessionExercises.find(item=>item.id===exerciseId);
     if(!exercise)return;
     state.restEditorExerciseId=exerciseId;
-    $('rest-exercise-name').textContent=card.dataset.exerciseName;
-    const seconds=sessionRestSeconds(exercise);
-    restWheelValues=FitCoreRestWheel.options(seconds);
-    $('rest-wheel-list').innerHTML=restWheelValues.map(value=>
-        `<button type="button" role="option" tabindex="-1"
-                class="rest-wheel-option" data-rest-wheel-value="${value}"
-                aria-selected="false">${FitCoreRestWheel.label(value)}</button>`
-    ).join('');
-    $('rest-settings-dialog').showModal();
-    updateRestWheelSelection(seconds,true);
-    $('rest-wheel-list').focus({preventScroll:true});
+    openRestWheelEditor({mode:'session',seconds:sessionRestSeconds(exercise),
+        exerciseName:card.dataset.exerciseName});
+}
+function openPlanRestEditor(row) {
+    const input=row?.querySelector('[data-exercise-rest]');
+    if(!input)return;
+    openRestWheelEditor({mode:'plan-row',seconds:Number(input.value),
+        exerciseName:row.querySelector('.plan-exercise-name')?.textContent||'',input});
+}
+function openPlanPickerRestEditor() {
+    const input=$('plan-picker-rest');
+    openRestWheelEditor({mode:'plan-picker',seconds:Number(input.value),
+        exerciseName:state.sessionPicker.exercise?.name||'Nuevo ejercicio',input});
 }
 function updateRestWheelFromScroll() {
     if(restWheelScrollFrame)cancelAnimationFrame(restWheelScrollFrame);
@@ -3883,6 +3901,47 @@ function updateRestWheelFromScroll() {
         updateRestWheelSelection(restWheelValues[index]);
     });
 }
+function startRestWheelPointerDrag(event) {
+    if(!['mouse','pen'].includes(event.pointerType)||event.button!==0)return;
+    const list=$('rest-wheel-list');
+    restWheelPointer={id:event.pointerId,startY:event.clientY,startTop:list.scrollTop,
+        lastY:event.clientY,lastAt:performance.now(),velocity:0,dragging:false};
+}
+function moveRestWheelPointerDrag(event) {
+    const drag=restWheelPointer;
+    if(!drag||drag.id!==event.pointerId)return;
+    const delta=event.clientY-drag.startY;
+    if(!drag.dragging&&Math.abs(delta)<5)return;
+    const list=$('rest-wheel-list');
+    if(!drag.dragging){
+        drag.dragging=true;
+        list.classList.add('is-dragging');
+        list.setPointerCapture(event.pointerId);
+    }
+    event.preventDefault();
+    const now=performance.now();
+    drag.velocity=(event.clientY-drag.lastY)/Math.max(1,now-drag.lastAt);
+    drag.lastY=event.clientY;drag.lastAt=now;
+    list.scrollTop=drag.startTop-delta;
+}
+function finishRestWheelPointerDrag(event) {
+    const drag=restWheelPointer;
+    if(!drag||drag.id!==event.pointerId)return;
+    restWheelPointer=null;
+    if(!drag.dragging)return;
+    const list=$('rest-wheel-list');
+    list.classList.remove('is-dragging');
+    if(list.hasPointerCapture(event.pointerId))list.releasePointerCapture(event.pointerId);
+    restWheelIgnoreClickUntil=performance.now()+300;
+    const momentum=event.type==='pointercancel'?0:Math.max(-280,Math.min(280,drag.velocity*160));
+    const max=(restWheelValues.length-1)*REST_WHEEL_ROW_HEIGHT;
+    const target=Math.max(0,Math.min(max,
+        Math.round((list.scrollTop-momentum)/REST_WHEEL_ROW_HEIGHT)*REST_WHEEL_ROW_HEIGHT));
+    updateRestWheelSelection(restWheelValues[Math.round(target/REST_WHEEL_ROW_HEIGHT)]);
+    const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    list.scrollTo({top:target,behavior:reducedMotion?'instant':'smooth'});
+}
+
 function handleRestWheelKeys(event) {
     const list=$('rest-wheel-list');
     const index=restWheelValues.indexOf(restWheelSelected);
@@ -3903,6 +3962,22 @@ async function saveRestSettings(event) {
     event.preventDefault();
     const restSeconds=restWheelSelected;
     if(!restWheelValues.includes(restSeconds))return;
+    const context=restWheelContext;
+    if(context?.mode==='plan-row'){
+        if(!context.input?.isConnected)return;
+        context.input.value=String(restSeconds);
+        $('rest-settings-dialog').close();
+        syncPlanEditor();renderPlanDays();
+        return;
+    }
+    if(context?.mode==='plan-picker'){
+        if(!context.input?.isConnected)return;
+        context.input.value=String(restSeconds);
+        $('plan-picker-rest-button').textContent=FitCoreRestWheel.label(restSeconds);
+        $('rest-settings-dialog').close();
+        return;
+    }
+    if(context?.mode!=='session')return;
     try {
         await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${state.restEditorExerciseId}/rest`,
             {method:'PATCH',body:JSON.stringify({restSeconds})});
@@ -4578,6 +4653,10 @@ function bindEvents() {
         const menuToggle = event.target.closest('[data-plan-row-menu-toggle]');
         const menuAction = event.target.closest('[data-plan-exercise-action]');
 
+        if(event.target.closest('[data-edit-plan-rest]')){
+            openPlanRestEditor(event.target.closest('.exercise-editor'));
+            return;
+        }
         if (menuToggle) {
             togglePlanRowMenu(menuToggle);
             return;
@@ -4870,9 +4949,15 @@ function bindEvents() {
         if(legacy)legacy.hidden=mode.value!=='EXTERNAL_LOAD';
     });
     $('rest-settings-form').addEventListener('submit',saveRestSettings);
+    $('plan-picker-rest-button').addEventListener('click',openPlanPickerRestEditor);
+    $('rest-wheel-list').addEventListener('pointerdown',startRestWheelPointerDrag);
+    $('rest-wheel-list').addEventListener('pointermove',moveRestWheelPointerDrag);
+    $('rest-wheel-list').addEventListener('pointerup',finishRestWheelPointerDrag);
+    $('rest-wheel-list').addEventListener('pointercancel',finishRestWheelPointerDrag);
     $('rest-wheel-list').addEventListener('scroll',updateRestWheelFromScroll,{passive:true});
     $('rest-wheel-list').addEventListener('keydown',handleRestWheelKeys);
     $('rest-wheel-list').addEventListener('click',event=>{
+        if(performance.now()<restWheelIgnoreClickUntil){event.preventDefault();return;}
         const item=event.target.closest('[data-rest-wheel-value]');
         if(!item)return;
         const value=Number(item.dataset.restWheelValue);
