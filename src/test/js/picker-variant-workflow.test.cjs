@@ -73,7 +73,10 @@ test('el selector permite configurar solo cuando hay variantes alternativas', ()
 test('Cancelar deja la selección original y Aplicar confirma el borrador', () => {
     const section = extract('function availablePickerVariants(', 'async function openPlanAdvancedConfigDialog(');
     const nodes = {
-        'picker-variant-dialog': {open:false,showModal(){this.open=true;},close(){this.open=false;}},
+        'picker-variant-dialog': {
+            open:false, style:{values:{},setProperty(key,value){this.values[key]=value;}},
+            showModal(){this.open=true;},close(){this.open=false;}
+        },
         'picker-variant-dialog-body': {querySelector(){return null;}},
         'picker-variant-title': {textContent:''},
         'picker-variant-identity': {innerHTML:''},
@@ -88,6 +91,11 @@ test('Cancelar deja la selección original y Aplicar confirma el borrador', () =
             variant('default','Press plano con barra','FLAT','BARBELL'),
             variant('incline','Press inclinado con mancuernas','INCLINE','DUMBBELL')
         ],
+        variantConfigFields:[
+            {key:'equipment',always:true,empty:[]},
+            {key:'benchAngle',empty:['NOT_APPLICABLE']}
+        ],
+        planPrimaryVariantKeys:new Set(['equipment','gripType','gripWidth','benchAngle']),
         configurationFromVariant:v=>({variantCode:v.code,equipment:v.equipment,benchAngle:v.benchAngle}),
         resolveVariantForExercise:(_,config,options)=>({
             controls:[],candidates:options,
@@ -106,6 +114,9 @@ test('Cancelar deja la selección original y Aplicar confirma el borrador', () =
     vm.createContext(context);
     vm.runInContext(section,context);
     context.openPickerVariantDialog();
+    const modalHeight=nodes['picker-variant-dialog'].style.values['--picker-variant-height-desktop'];
+    assert.match(modalHeight,/^\\d+px$/);
+    assert.ok(Number.parseInt(modalHeight,10)>=610);
     context.state.pickerDraft.configuration.variantCode='incline';
     context.closePickerVariantDialog();
     assert.equal(context.state.sessionPicker.configuration.variantCode,'default');
