@@ -62,7 +62,7 @@ const muscleSvgMap = {
 const enums = {
     equipment: ['BARBELL','DUMBBELL','EZ_BAR','CABLE','MACHINE_SELECTORISED','MACHINE_PLATE_LOADED','SMITH_MACHINE','BODYWEIGHT','TRAP_BAR','KETTLEBELL','WEIGHT_PLATE','BENCH','BAND','MEDICINE_BALL','AB_WHEEL','WRIST_ROLLER','NONE'],
     muscles: ['CHEST','BACK','SHOULDERS','SCAPULAR','ROTATOR_CUFF','BICEPS','TRICEPS','FOREARMS','QUADRICEPS','HAMSTRINGS','GLUTES','ADDUCTORS','CALVES','CORE','NECK','FULL_BODY'],
-    dayTypes: ['PUSH','PULL','LEGS','UPPER','LOWER','FULL_BODY','CARDIO','MOBILITY','REST']
+    dayTypes: ['PUSH','PULL','LEGS','UPPER','LOWER','FULL_BODY','CARDIO','MOBILITY','REST','ARMS','CORE','MIXED','CONDITIONING']
 };
 
 const labels = {
@@ -474,8 +474,8 @@ function variantName(code) {
 function addPlanDay(source = null) {
     syncPlanEditor();
     state.planDays.push(source ? {
-        id: source.id, name:source.name, dayType:source.dayType, exercises:(source.exercises || []).map(x => ({id:x.id, exerciseVariantCode:x.exerciseVariantCode, sets:x.sets, reps:x.reps, targetDurationSeconds:x.targetDurationSeconds, targetDistanceMeters:x.targetDistanceMeters, restSeconds:x.restSeconds}))
-    } : {name:'Nueva sesión', dayType:'FULL_BODY', exercises:[]});
+        id: source.id, name:source.name, dayType:source.dayType, dayTypeManual:source.dayTypeManual ?? true, exercises:(source.exercises || []).map(x => ({id:x.id, exerciseVariantCode:x.exerciseVariantCode, sets:x.sets, reps:x.reps, targetDurationSeconds:x.targetDurationSeconds, targetDistanceMeters:x.targetDistanceMeters, restSeconds:x.restSeconds}))
+    } : {name:'Nueva sesión', dayType:'FULL_BODY', dayTypeManual:false, exercises:[]});
     state.selectedPlanDayIndex = state.planDays.length - 1;
     renderPlanMode();
 }
@@ -488,6 +488,8 @@ function openPlanNewDayDialog() {
         `Día ${state.planDays.length + 1}`;
 
     $('plan-new-day-type').value = 'FULL_BODY';
+    $('plan-new-day-auto').checked=true;
+    $('plan-new-day-type').disabled=true;
 
     $('plan-new-day-dialog').showModal();
     $('plan-new-day-name').focus();
@@ -512,6 +514,7 @@ function submitPlanNewDay(event) {
     addPlanDay({
         name,
         dayType,
+        dayTypeManual:!$('plan-new-day-auto').checked,
         exercises: []
     });
 
@@ -1289,6 +1292,7 @@ function duplicateSelectedPlanDay() {
     const copy = {
         name: `${day.name} (copia)`,
         dayType: day.dayType,
+        dayTypeManual: day.dayTypeManual ?? true,
 
         // Copiar los ejercicios sin reutilizar
         // los identificadores de base de datos
@@ -1378,11 +1382,14 @@ async function deleteSelectedPlanDay() {
 
 function planPayload() {
     syncPlanEditor();
-    return {name:$('plan-name').value.trim(), description:$('plan-description').value.trim() || null, days:state.planDays.map((day,di) => ({name:day.name, dayOrder:di+1, dayType:day.dayType, exercises:day.exercises.map((e,ei) => ({exerciseVariantCode:e.exerciseVariantCode, sets:e.sets, reps:e.reps, targetDurationSeconds:e.targetDurationSeconds, targetDistanceMeters:e.targetDistanceMeters, restSeconds:e.restSeconds, exerciseOrder:ei+1}))}))};
+    return {name:$('plan-name').value.trim(), description:$('plan-description').value.trim() || null, days:state.planDays.map((day,di) => ({name:day.name, dayOrder:di+1, dayType:day.dayType, dayTypeManual:day.dayTypeManual !== false, exercises:day.exercises.map((e,ei) => ({exerciseVariantCode:e.exerciseVariantCode, sets:e.sets, reps:e.reps, targetDurationSeconds:e.targetDurationSeconds, targetDistanceMeters:e.targetDistanceMeters, restSeconds:e.restSeconds, exerciseOrder:ei+1}))}))};
 }
 
 async function savePlan() {
-    if (!requireAuth()) return; const payload = planPayload();
+    if (!requireAuth()) return;
+    syncPlanEditor();
+    await Promise.all(state.planDays.map((day,index)=>refreshPlanDayClassification(index,false)));
+    const payload = planPayload();
     if (!payload.name || !payload.days.length || payload.days.some(d => !d.name || d.exercises.some(e => !e.exerciseVariantCode || e.sets < 1 ||
                 (exerciseDefaultUnit(e.exerciseVariantCode)==='SECONDS'
                     ? !(e.targetDurationSeconds>=1) : !(e.reps>=1))))) return toast('Completa el nombre, los días y todos los ejercicios.', true);
@@ -1412,6 +1419,7 @@ async function loadActivePlan(silent = false) {
                 id: day.id,
                 name: day.name,
                 dayType: day.dayType,
+                dayTypeManual:day.dayTypeManual ?? true,
 
                 exercises: [...(day.exercises || [])]
                     .sort(
