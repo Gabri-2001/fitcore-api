@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(31, version);
+        assertEquals(32, version);
     }
 
     @Test
@@ -644,5 +644,12 @@ class FlywayPostgresIntegrationTest {
             """,Integer.class);
         assertEquals(1,nullableReps);
         assertEquals(2,timed);
+    }
+    @Test void createsEnduranceTablesForActivitiesLapsAndSensors() {
+        Integer count=jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM information_schema.tables
+            WHERE table_name IN ('endurance_activities','endurance_laps','endurance_samples')
+            """,Integer.class);
+        assertEquals(3,count);
     }
 }
