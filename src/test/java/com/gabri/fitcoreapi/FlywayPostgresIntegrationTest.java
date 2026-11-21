@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(33, version);
+        assertEquals(34, version);
     }
 
     @Test
@@ -671,5 +671,93 @@ class FlywayPostgresIntegrationTest {
         String unit=jdbcTemplate.queryForObject(
             "SELECT default_unit FROM exercises WHERE code='hollowHold'",String.class);
         assertEquals("SECONDS",unit);
+    }
+
+    @Test
+    void seedsAdductorFamiliesV34WithoutDuplicatingExistingAdduction() {
+        Integer families = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercises
+            WHERE main_muscle_group = 'ADDUCTORS'
+              AND code IN ('hipAdduction','copenhagenPlank','adductorSqueeze') AND active
+            """, Integer.class);
+        assertEquals(3, families);
+
+        Integer variants = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants
+            WHERE code IN (
+                'hipAdductionCableStandingSingleLeg',
+                'hipAdductionBandStandingSingleLeg',
+                'hipAdductionBodyweightSideLying',
+                'copenhagenPlankShortLeverBench',
+                'copenhagenPlankLongLeverBench',
+                'adductorSqueezeBallSupine',
+                'adductorSqueezeBallSeated'
+            )
+            """, Integer.class);
+        assertEquals(7, variants);
+
+        Integer mappings = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_muscle_activations
+            WHERE mapping_version = 14
+            """, Integer.class);
+        assertEquals(14, mappings);
+
+        Integer missingPrimary = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants v
+            JOIN exercises e ON e.id = v.exercise_id
+            WHERE e.main_muscle_group = 'ADDUCTORS' AND v.active
+              AND NOT EXISTS (
+                  SELECT 1 FROM exercise_muscle_activations a
+                  WHERE a.exercise_variant_id = v.id AND a.role = 'PRIMARY'
+              )
+            """, Integer.class);
+        assertEquals(0, missingPrimary);
+
+        Integer defaults = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants v
+            JOIN exercises e ON e.id = v.exercise_id
+            WHERE e.main_muscle_group = 'ADDUCTORS' AND v.active AND v.is_default
+            """, Integer.class);
+        assertEquals(3, defaults);
+
+        Integer duplicateDefaults = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM (
+                SELECT e.id FROM exercises e JOIN exercise_variants v ON v.exercise_id = e.id
+                WHERE e.main_muscle_group = 'ADDUCTORS' AND v.active AND v.is_default
+                GROUP BY e.id HAVING COUNT(*) <> 1
+            ) candidates
+            """, Integer.class);
+        assertEquals(0, duplicateDefaults);
+
+        Integer isoTimers = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercises
+            WHERE code IN ('copenhagenPlank','adductorSqueeze')
+              AND default_unit = 'SECONDS' AND calories_estimation_type = 'DURATION_BASED'
+            """, Integer.class);
+        assertEquals(2, isoTimers);
+
+        Integer isometricLoads = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants v
+            WHERE v.code IN (
+                'copenhagenPlankShortLeverBench','copenhagenPlankLongLeverBench',
+                'adductorSqueezeBallSupine','adductorSqueezeBallSeated'
+            ) AND v.contraction_type = 'ISOMETRIC'
+              AND v.resistance_source = 'BODYWEIGHT'
+            """, Integer.class);
+        assertEquals(4, isometricLoads);
+
+        Integer copenhagenBenches = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants
+            WHERE code IN ('copenhagenPlankShortLeverBench','copenhagenPlankLongLeverBench')
+              AND required_facility = 'BENCH'
+            """, Integer.class);
+        assertEquals(2, copenhagenBenches);
+
+        String originalDefault = jdbcTemplate.queryForObject("""
+            SELECT code FROM exercise_variants
+            WHERE exercise_id = (SELECT id FROM exercises WHERE code = 'hipAdduction')
+              AND is_default = true
+            """, String.class);
+        assertEquals("hipAdductionMachineSeated", originalDefault);
     }
 }
