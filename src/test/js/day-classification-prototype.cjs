@@ -74,10 +74,12 @@ function classifyDay(items, catalog) {
       &&(groups.CHEST||0)+(groups.SHOULDERS||0)>=3&&(groups.BACK||0)>=3
       &&Math.min(pushes,pulls)/Math.max(pushes,pulls)>=.45){
       data.structure='UPPER';
-    }else if(pushes>=4&&pushes/Math.max(1,pushes+pulls)>=.75
+    }else if(pushes>=4&&((patterns.HORIZONTAL_PUSH||0)+(patterns.VERTICAL_PUSH||0))>=3
+       &&pushes/Math.max(1,pushes+pulls)>=.75
        &&(groups.CHEST||0)+(groups.SHOULDERS||0)+(groups.TRICEPS||0)>=upper*.7){
       data.structure='PUSH';
-    }else if(pulls>=4&&pulls/Math.max(1,pushes+pulls)>=.75
+    }else if(pulls>=4&&((patterns.HORIZONTAL_PULL||0)+(patterns.VERTICAL_PULL||0))>=3
+       &&pulls/Math.max(1,pushes+pulls)>=.75
        &&(groups.BACK||0)+(groups.BICEPS||0)+(groups.SCAPULAR||0)>=upper*.65){
       data.structure='PULL';
     }else{
