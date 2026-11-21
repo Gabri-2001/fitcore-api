@@ -545,6 +545,24 @@
                 <label>Desde<input id="stats-from" type="date"></label><label>Hasta<input id="stats-to" type="date"></label><button id="stats-load" class="button button-primary">Actualizar</button>
             </div>
             <div class="metric-grid stats-grid"><article class="metric"><span>Entrenamientos</span><strong id="stat-workouts">—</strong><small id="stat-workouts-change">Periodo seleccionado</small></article><article class="metric"><span>Duración</span><strong id="stat-duration">—</strong><small id="stat-duration-change">Minutos acumulados</small></article><article class="metric"><span>Volumen</span><strong id="stat-volume">—</strong><small id="stat-volume-change">Carga total</small></article><article class="metric"><span>Series</span><strong id="stat-sets">—</strong><small id="stat-sets-change">Series completadas</small></article></div>
+            <article class="panel exercise-progress-panel" aria-labelledby="exercise-progress-title">
+                <div class="section-heading">
+                    <div><p class="eyebrow">EVOLUCIÓN POR EJERCICIO</p>
+                    <h2 id="exercise-progress-title">Historial de rendimiento</h2>
+                    <p>Compara una misma configuración y modalidad de carga. Solo se incluyen sesiones completadas.</p></div>
+                </div>
+                <div class="exercise-progress-controls">
+                    <label>Ejercicio<select id="exercise-progress-family"><option value="">Elige un ejercicio</option></select></label>
+                    <label>Configuración<select id="exercise-progress-variant"><option value="">Elige una variante</option></select></label>
+                    <label>Indicador<select id="exercise-progress-metric"><option value="">Elige un indicador</option></select></label>
+                </div>
+                <div id="exercise-progress-highlights" class="exercise-progress-highlights" aria-live="polite"></div>
+                <div id="exercise-progress-chart" class="exercise-progress-chart">
+                    <p class="empty-state">Selecciona un ejercicio para consultar su evolución.</p>
+                </div>
+                <p class="exercise-progress-footnote">El lastre, la asistencia y el peso corporal no se suman al volumen externo.
+                    El 1RM es una estimación orientativa únicamente para series con carga externa.</p>
+            </article>
             <div class="progress-layout">
                 <article class="panel"><div class="section-heading"><div><p class="eyebrow">DISTRIBUCIÓN</p><h2>Trabajo por grupo muscular</h2></div></div><div id="muscle-distribution" class="distribution"><div class="empty-state">Completa sesiones para ver datos.</div></div></article>
                 <article class="panel"><div class="section-heading"><div><p class="eyebrow">OBJETIVO VS. REALIDAD</p><h2>Alineación del entrenamiento</h2></div><span id="goal-status" class="status-pill">Sin datos</span></div><div id="goal-assessment" class="goal-assessment"><div class="empty-state">Crea un objetivo y registra progreso.</div></div></article>
@@ -1006,6 +1024,7 @@
 </dialog>
 <script src="./exercise-variant-ui.js" defer></script>
 <script src="./exercise-picker-search.js" defer></script>
+<script src="./exercise-progress-ui.js" defer></script>
 <script src="./app.js" defer></script>
 
 

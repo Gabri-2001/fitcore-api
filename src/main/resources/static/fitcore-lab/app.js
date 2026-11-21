@@ -13,6 +13,7 @@ const state = {
     planPickerExerciseIndex: null, planPickerExerciseCode: null,
     planAdvancedConfig: null, pickerConfigOpen: false, pickerConfigMoreOpen: false,
     pickerDraft: null, pickerGroupCodes: null,
+    exerciseProgress: null, exerciseProgressRequest: 0,
     sessionPrevious: new Map(), restEditorExerciseId: null, rpeTarget: null,
     restTimer: {exerciseId:null, exerciseName:'', remaining:0, total:0, running:false, interval:null}
 };
@@ -4058,8 +4059,83 @@ async function deleteSession() {
     catch (error) { toast(error.message, true); }
 }
 
+function refreshExerciseProgressOptions() {
+    const families = $('exercise-progress-family');
+    if (!families) return;
+    const options=state.exercises.filter(e=>
+        state.variants.some(v=>v.exerciseCode===e.code && v.active!==false));
+    const previous=families.value;
+    families.innerHTML='<option value="">Elige un ejercicio</option>'+
+        options.map(e=>'<option value="'+escapeHtml(e.code)+'">'+escapeHtml(e.name)+'</option>').join('');
+    families.value=options.some(e=>e.code===previous)?previous:'';
+    refreshExerciseProgressVariants();
+}
+function refreshExerciseProgressVariants() {
+    const family=$('exercise-progress-family').value;
+    const variants=state.variants.filter(v=>v.exerciseCode===family && v.active!==false);
+    const select=$('exercise-progress-variant'),current=select.value;
+    select.innerHTML='<option value="">Elige una configuración</option>'+
+        variants.map(v=>'<option value="'+escapeHtml(v.code)+'">'+escapeHtml(v.name)+'</option>').join('');
+    select.value=variants.some(v=>v.code===current)?current:'';
+    if(!select.value && variants.length===1)select.value=variants[0].code;
+}
+async function loadExerciseProgress() {
+    const code=$('exercise-progress-variant').value;
+    const token=++state.exerciseProgressRequest;
+    if(!code){
+        state.exerciseProgress=null;
+        $('exercise-progress-metric').innerHTML='<option value="">Elige un indicador</option>';
+        $('exercise-progress-highlights').innerHTML='';
+        $('exercise-progress-chart').innerHTML='<p class="empty-state">Selecciona una configuración para consultar el historial.</p>';
+        return;
+    }
+    $('exercise-progress-chart').innerHTML='<p class="empty-state">Cargando historial…</p>';
+    try {
+        const result=await api('/api/users/'+state.auth.userId+
+            '/progress/exercise-variants/'+encodeURIComponent(code));
+        if(token!==state.exerciseProgressRequest)return;
+        state.exerciseProgress=result;
+        const metrics=FitCoreProgressUI.available(result.history);
+        const select=$('exercise-progress-metric'),current=select.value;
+        select.innerHTML=metrics.map(m=>'<option value="'+m.id+'">'+escapeHtml(m.label)+'</option>').join('');
+        select.value=metrics.some(m=>m.id===current)?current:(metrics[0]?.id||'');
+        renderExerciseProgress();
+    }catch(err){
+        if(token!==state.exerciseProgressRequest)return;
+        state.exerciseProgress=null;
+        $('exercise-progress-metric').innerHTML='';
+        $('exercise-progress-highlights').innerHTML='';
+        $('exercise-progress-chart').innerHTML='<p class="empty-state">'+
+            (err.status===404?'Todavía no existen series completadas para esta configuración.':
+                escapeHtml(err.message))+'</p>';
+    }
+}
+function renderExerciseProgress() {
+    const result=state.exerciseProgress;
+    if(!result)return;
+    const id=$('exercise-progress-metric').value;
+    const chart=FitCoreProgressUI.chartData(result.history,id);
+    const format=(v,unit)=>v==null?'—':Number(v).toLocaleString('es-ES',{maximumFractionDigits:2})+' '+unit;
+    const metric=chart?.spec;
+    const scores=[
+        ['Series completadas',result.completedSets],
+        ['Mejor '+(metric?.label||'registro'),
+            chart?.points.length ? format(metric.lowerBetter?
+                Math.min(...chart.points.map(p=>p.value)):
+                Math.max(...chart.points.map(p=>p.value)),metric.unit):'—'],
+        ['Variantes de registro',result.timedSets+' temporales · '+result.repetitionSets+' por reps']
+    ];
+    $('exercise-progress-highlights').innerHTML=scores.map(([title,value])=>
+        '<div class="exercise-progress-highlight"><small>'+escapeHtml(String(title))+
+        '</small><strong>'+escapeHtml(String(value))+'</strong></div>').join('');
+    $('exercise-progress-chart').innerHTML=chart?.svg ||
+        '<p class="empty-state">No hay series con este indicador para la configuración elegida.</p>';
+}
+
 async function loadProgressDashboard() {
     await Promise.allSettled([loadStats(), loadProgressHistory()]);
+    refreshExerciseProgressOptions();
+    if ($('exercise-progress-variant').value) await loadExerciseProgress();
 }
 
 async function loadStats() {
@@ -4711,6 +4787,11 @@ function bindEvents() {
     $('rest-finished-close').addEventListener('click',()=>{ $('rest-finished-dialog').close(); stopRestTimer(); });
     $('endurance-form').addEventListener('submit',saveEnduranceActivity);
     $('endurance-refresh').addEventListener('click',loadEnduranceActivities);
+    $('exercise-progress-family').addEventListener('change',()=>{
+        refreshExerciseProgressVariants();void loadExerciseProgress();
+    });
+    $('exercise-progress-variant').addEventListener('change',()=>void loadExerciseProgress());
+    $('exercise-progress-metric').addEventListener('change',renderExerciseProgress);
     $('stats-load').addEventListener('click',loadStats); $('goal-form').addEventListener('submit',saveGoal); $('progress-form').addEventListener('submit',saveProgress);
     $('recommendation-generate').addEventListener('click',generateRecommendation); $('recommendation-filter').addEventListener('change',loadRecommendations); $('recommendation-list').addEventListener('click',e=>{const button=e.target.closest('[data-decision]'),card=e.target.closest('[data-recommendation]');if(button&&card)decideRecommendation(card.dataset.recommendation,button.dataset.decision);});
     $('log-clear').addEventListener('click',()=>{state.logs=[];renderLogs();}); $('log-copy').addEventListener('click',async()=>{await navigator.clipboard.writeText(JSON.stringify(state.logs,null,2));toast('Registro copiado.');});
