@@ -2,8 +2,8 @@
 -- No se modifican identificadores, registros previos ni migraciones aplicadas.
 -- Se distinguen los movimientos dinámicos (repeticiones) de los isométricos (segundos).
 -- Las activaciones son descripciones anatómicas cualitativas, NO porcentajes EMG.
--- Fuentes de referencia: ACE Standing Hip Adduction; University of Melbourne HAD3;
--- BJSM doi:10.1136/bjsports-2022-106100 (conceptos clínicos de aductores).
+-- Referencias orientativas: PMC10569248 (progresión de Copenhagen),
+-- PMC5867683 (aducción isométrica con balón) y PMID 41931009 (variantes de palanca corta/larga).
 
 INSERT INTO exercises (
     code, name, exercise_category, main_muscle_group, movement_pattern,
@@ -69,12 +69,12 @@ FROM (VALUES
      'MEDICINE_BALL', 'SUPINE', 'BILATERAL', 'NOT_APPLICABLE', 'FLOOR_SUPPORTED', 'NOT_APPLICABLE',
      'NO_ATTACHMENT', 'FLEXED', 'ISOMETRIC', false, NULL, 'COMMON',
      'Mantener una presión cómoda y constante sobre un balón entre las rodillas, sin valorar la carga por los kilogramos del balón.',
-     'EXTERNAL_LOAD', 'NONE', true),
+     'BODYWEIGHT', 'NONE', true),
     ('adductorSqueezeBallSeated', 'Apretón de balón entre rodillas sentado', 'adductorSqueeze',
      'MEDICINE_BALL', 'SEATED', 'BILATERAL', 'NOT_APPLICABLE', 'BENCH_SUPPORTED', 'NOT_APPLICABLE',
      'NO_ATTACHMENT', 'FLEXED', 'ISOMETRIC', false, NULL, 'COMMON',
      'Presión isométrica entre rodillas en posición sentada; registrar duración, no repeticiones ni peso transportado.',
-     'EXTERNAL_LOAD', 'BENCH', false)
+     'BODYWEIGHT', 'BENCH', false)
 ) AS seed (
     code, name, exercise_code, equipment, body_position, laterality,
     trajectory, support_type, stance_type, attachment_type, knee_position,
