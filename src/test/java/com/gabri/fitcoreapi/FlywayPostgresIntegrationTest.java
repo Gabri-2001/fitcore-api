@@ -608,8 +608,9 @@ class FlywayPostgresIntegrationTest {
         Integer wall = jdbcTemplate.queryForObject("""
             SELECT COUNT(*) FROM exercise_variants WHERE equipment='BODYWEIGHT'
             AND required_facility='WALL'""",Integer.class);
-        assertEquals(50,all);
-        assertEquals(28,noEquipment);
+        // V34 adds two bench-supported Copenhagen variations and one floor adduction.
+        assertEquals(53,all);
+        assertEquals(29,noEquipment);
         assertEquals(3,wall);
         Integer facilityViolations = jdbcTemplate.queryForObject("""
             SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
