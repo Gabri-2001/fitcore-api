@@ -3238,3 +3238,18 @@ body.resting .toast-region { bottom: 190px; }
 @media(prefers-reduced-motion:reduce) {
     .rest-wheel-option {transition:none;}
 }
+
+/* Control de descanso compartido entre Planes y Entrenamiento */
+#view-plans .plan-rest-cell {min-width:0;padding:0 5px;}
+.plan-rest-trigger {display:flex;align-items:center;justify-content:center;
+    width:100%;min-width:0;min-height:39px;padding:7px 8px;
+    border:1px solid #cdd8d2;border-radius:10px;background:#fff;
+    color:var(--green);font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;}
+.plan-rest-trigger:hover {border-color:#97bd8d;background:var(--lime-soft);}
+.plan-rest-trigger:focus-visible {outline:3px solid rgba(189,241,90,.75);outline-offset:2px;}
+.plan-rest-control {min-width:0;display:flex;flex-direction:column;gap:5px;}
+.plan-rest-control label {font-size:12px;font-weight:750;}
+#plan-picker-rest-button {min-height:40px;}
+.rest-wheel-list {cursor:grab;user-select:none;-webkit-user-select:none;}
+.rest-wheel-list.is-dragging {cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto;}
+.rest-wheel-list.is-dragging .rest-wheel-option {cursor:grabbing;}
