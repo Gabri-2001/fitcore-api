@@ -3256,6 +3256,8 @@ function renderSession() {
         const next = sets.length ? Math.max(...sets.map(set => set.setNumber)) + 1 : 1;
         const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
         const base = state.exercises.find(item => item.code === variant?.exerciseCode);
+        const durationBased = base?.defaultUnit === 'SECONDS';
+        const bodyweight = variant?.resistanceSource === 'BODYWEIGHT';
         const exerciseName = variant ? FitCoreVariantUI.variantTitle(base, variant) : base?.name || variantName(exercise.exerciseVariantCode);
         const completed = sets.length > 0 && sets.every(set => set.completed);
         const rest = sessionRestSeconds(exercise);
@@ -3271,8 +3273,8 @@ function renderSession() {
             return `<tr data-set-row="${set.id}" class="${set.completed ? 'is-complete':''}">
                 <td><span class="set-number">${set.setNumber}</span><input data-set-number type="hidden" value="${set.setNumber}"></td>
                 <td class="previous-performance">${previousSetLabel(prior)}</td>
-                <td><input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="${set.weight ?? ''}" aria-label="Peso de la serie ${set.setNumber}"></td>
-                <td><input data-set-reps data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${set.reps ?? ''}" aria-label="Repeticiones de la serie ${set.setNumber}"></td>
+                <td>${bodyweight ? '<span>Peso corporal</span>' : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + (set.weight ?? '') + '" aria-label="Peso externo"></td>'}</td>
+                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (set.durationSeconds ?? '') : (set.reps ?? '')}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'} de la serie ${set.setNumber}"></td>
                 <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}"></td>
                 <td>${rpeControl(effectiveRpe, `RPE de la serie ${set.setNumber}`, set.rpe == null && effectiveRpe != null)}</td>
                 <td><label class="complete-check"><input data-set-complete type="checkbox" ${set.completed ? 'checked':''}><span>✓</span></label></td>
@@ -3296,7 +3298,7 @@ function renderSession() {
     </span>
 </th>
 
-<th>Reps</th>
+<th>${durationBased ? 'Tiempo (s)' : 'Reps'}</th>
 
 <th>
     <span class="set-help-label">
@@ -3325,8 +3327,8 @@ function renderSession() {
             <th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set">
                 <td><span class="set-number">${next}</span><input data-set-number type="hidden" value="${next}"></td>
                 <td class="previous-performance">${previousSetLabel(previousByNumber.get(next))}</td>
-                <td><input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="${suggestedWeight}" aria-label="Peso de la nueva serie"></td>
-                <td><input data-set-reps data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${suggestedReps}" aria-label="Repeticiones de la nueva serie"></td>
+                <td>${bodyweight ? '<span>Peso corporal</span>' : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo"></td>'}</td>
+                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (lastSet?.durationSeconds ?? firstSuggestion?.durationSeconds ?? '') : suggestedReps}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'}"></td>
                 <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${suggestedRir}" aria-label="RIR de la nueva serie"></td>
                 <td>${rpeControl(null, 'RPE de la nueva serie', false)}</td><td><span class="pending-set" title="La serie se crea sin completar">Pendiente</span></td>
                 <td><button class="button button-primary add-set-button" data-add-set>+ Añadir serie</button></td>
@@ -3738,9 +3740,11 @@ function setBody(container) {
     const completion = container.querySelector('[data-set-complete]');
     return {
         setNumber:requiredInteger(container.querySelector('[data-set-number]').value, 'El número de serie', 1),
-        weight:validatedNumericValue(container.querySelector('[data-set-weight]'), 'El peso', false, 0),
-        reps:validatedNumericValue(container.querySelector('[data-set-reps]'), 'Las repeticiones', true, 0),
-        rir:validatedNumericValue(container.querySelector('[data-set-rir]'), 'El RIR', true, 0, 10),
+        weight:container.querySelector('[data-set-weight]') ? validatedNumericValue(container.querySelector('[data-set-weight]'), 'El peso', false, 0) : null,
+        reps:container.querySelector('[data-set-reps]') ? validatedNumericValue(container.querySelector('[data-set-reps]'), 'Las repeticiones', true, 0) : null,
+        durationSeconds:container.querySelector('[data-set-duration]') ? validatedNumericValue(container.querySelector('[data-set-duration]'), 'El tiempo en segundos', true, 0) : null,
+        loadMode:container.querySelector('[data-set-weight]') ? 'EXTERNAL_LOAD' : 'BODYWEIGHT',
+        rir:container.querySelector('[data-set-rir]') ? validatedNumericValue(container.querySelector('[data-set-rir]'), 'El RIR', true, 0, 10) : null,
         rpe:optionalNumber(container.querySelector('[data-set-rpe]').value),
         completed:completion ? completion.checked : false,
         notes:null
