@@ -14,7 +14,7 @@ class EnduranceActivityResponseTest {
     activity.addLap(new EnduranceLap(1,new BigDecimal("1000"),365,140));
     var dto=EnduranceActivityResponse.from(activity);
     assertEquals(360,dto.averagePaceSecondsPerKm());
-    assertEquals(0,dto.averageSpeedKmh().compareTo(new BigDecimal("10.80")));
+    assertEquals(0,dto.averageSpeedKmh().compareTo(new BigDecimal("10.00")));
     assertEquals(1,dto.laps().size());
     assertEquals(1980,dto.elapsedSeconds());
  }
