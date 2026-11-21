@@ -534,7 +534,6 @@
                         <div class="live-metric">
                             <span>Volumen</span>
                             <strong id="session-volume">0 kg</strong>
-                            <small id="session-volume-reps">0 reps</small>
                         </div>
 
                         <div class="live-metric"><span>Series</span><strong id="session-series">0</strong></div>
@@ -901,16 +900,12 @@
                         Tiempo por serie (s)
                         <input id="plan-picker-duration" type="number" min="1" max="86400" step="1" value="45">
                     </label>
-                    <label>
-                        Descanso (s)
-                        <input id="plan-picker-rest"
-                               type="number"
-                               min="0"
-                               max="3600"
-                               step="1"
-                               value="90"
-                               required>
-                    </label>
+                    <div class="plan-rest-control">
+                        <label for="plan-picker-rest-button">Descanso</label>
+                        <input id="plan-picker-rest" type="hidden" value="0">
+                        <button id="plan-picker-rest-button" type="button" class="plan-rest-trigger"
+                                aria-haspopup="dialog" aria-controls="rest-settings-dialog">Apagado</button>
+                    </div>
                 </div>
 
                 <p>
@@ -1013,19 +1008,18 @@
 <dialog id="rest-settings-dialog" class="compact-dialog rest-wheel-dialog" aria-labelledby="rest-settings-heading">
     <form id="rest-settings-form">
         <div class="dialog-heading compact rest-wheel-heading">
-            <div><p class="eyebrow">ENTRENAMIENTO</p><h2 id="rest-settings-heading">Temporizador de descanso</h2>
+            <div><p class="eyebrow" id="rest-context-label">ENTRENAMIENTO</p><h2 id="rest-settings-heading">Temporizador de descanso</h2>
                 <p id="rest-exercise-name"></p></div>
             <button type="button" class="icon-button" data-close-rest aria-label="Cerrar">×</button>
         </div>
         <div class="rest-wheel-body">
             <div class="rest-wheel-viewport">
                 <div id="rest-wheel-list" class="rest-wheel-list" role="listbox" tabindex="0"
-                    aria-label="Duración del descanso" aria-describedby="rest-wheel-help">
+                    aria-label="Duración del descanso">
                 </div>
                 <div class="rest-wheel-selection" aria-hidden="true"></div>
             </div>
             <input id="rest-selected-seconds" type="hidden" value="0">
-            <p id="rest-wheel-help">Desliza para cambiar el tiempo. Hasta 2 minutos, de 5 en 5 segundos; después, de 15 en 15.</p>
         </div>
         <div class="dialog-actions rest-wheel-actions">
             <button type="button" class="button button-secondary" data-close-rest>Cancelar</button>
