@@ -55,7 +55,7 @@ test('rest supports mouse dragging and keeps natural touch scroll',()=>{
  assert.match(app,/function startRestWheelPointerDrag/);
  assert.match(app,/function moveRestWheelPointerDrag/);
  assert.match(app,/setPointerCapture/);
- assert.match(styles,/rest-wheel-list\\.is-dragging/);
+ assert.match(styles,/rest-wheel-list\.is-dragging/);
  assert.match(styles,/touch-action:pan-y/);
  assert.doesNotMatch(html,/rest-wheel-help|Desliza para cambiar el tiempo/);
 });
@@ -65,11 +65,11 @@ test('plan and training share the same rest picker and labels',()=>{
  assert.match(app,/function openPlanPickerRestEditor/);
  assert.match(html,/id="plan-picker-rest-button"/);
  assert.match(html,/id="plan-picker-rest" type="hidden" value="0"/);
- assert.doesNotMatch(html,/Descanso \\(s\\)/);
+ assert.doesNotMatch(html,/Descanso \(s\)/);
 });
 test('workout summary renders only kilograms without changing the calculation',()=>{
  assert.doesNotMatch(html,/id="session-volume-reps"/);
- assert.match(app,/volumeGrams\\+=Math\\.round\\(weight\\*1000\\)\\*reps/);
- assert.match(app,/result\\.volumeKg\\.toLocaleString/);
+ assert.match(app,/volumeGrams\+=Math\.round\(weight\*1000\)\*reps/);
+ assert.match(app,/result\.volumeKg\.toLocaleString/);
  assert.doesNotMatch(app,/kg·reps/);
 });
