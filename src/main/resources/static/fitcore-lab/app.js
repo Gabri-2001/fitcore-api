@@ -2824,9 +2824,11 @@ function renderPlanSimpleExerciseConfig(container, exercise) {
     const preference = state.sessionPicker.configuration?._positionPreference || 'UNSPECIFIED';
     state.sessionPicker.configuration = {...configurationFromVariant(selected), _positionPreference:preference};
     const title = pickerVariantTitle(exercise, selected, state.sessionPicker.configuration);
-    const chips = variantConfigurationChips(selected).slice(0, 4);
-    const positionField = pickerPositionOptions(exercise, variants,
-        state.sessionPicker.configuration, 'data-picker-position');
+    const chips = variantConfigurationChips(selected, {
+        hideBodyPosition: preference === 'UNSPECIFIED' &&
+            FitCoreVariantUI.optionalPosition(exercise, selected)
+    }).slice(0, 4);
+    // La posición se ajusta exclusivamente desde «Configurar».
     const canConfigure = variants.length > 1;
     const button = canConfigure ? `<button type="button" class="picker-config-toggle"
         data-picker-toggle-config aria-haspopup="dialog" aria-controls="picker-variant-dialog"
@@ -2844,7 +2846,6 @@ function renderPlanSimpleExerciseConfig(container, exercise) {
     <div class="plan-simple-selection">
         <span class="plan-simple-label">Configuración seleccionada</span>
         <strong>${escapeHtml(title)}</strong>
-        ${positionField}
         ${chips.length ? `<div class="configuration-chips">${chips.map(chip =>
             `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
         ${canConfigure ? '<p>Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.</p>' : ''}
@@ -2892,7 +2893,10 @@ function renderPickerVariantDialog() {
             hideBodyPosition:FitCoreVariantUI.hasOptionalPosition(exercise, variants),
             allVariants: variants
         });
-    const chips = selectedVariant ? variantConfigurationChips(selectedVariant).slice(0,4) : [];
+    const chips = selectedVariant ? variantConfigurationChips(selectedVariant, {
+        hideBodyPosition: draft.configuration._positionPreference === 'UNSPECIFIED' &&
+            FitCoreVariantUI.optionalPosition(exercise, selectedVariant)
+    }).slice(0,4) : [];
     $('picker-variant-dialog-result').innerHTML = selectedVariant
         ? `<span>Configuración resultante</span>
             <strong>${escapeHtml(pickerVariantTitle(exercise, selectedVariant, draft.configuration))}</strong>
@@ -3352,9 +3356,14 @@ function syncRpeFromRir(input) {
     button.title = value == null ? 'Seleccionar RPE manualmente' : 'RPE automático desde RIR';
 }
 
-function variantConfigurationChips(variant) {
+function variantConfigurationChips(variant, options = {}) {
     if (!variant) return [];
-    return [friendly(variant.equipment), ...variantConfigFields.slice(1).filter(field => variant[field.key] && !(field.empty || []).includes(variant[field.key])).slice(0,3).map(field => variantValue(field.key, variant[field.key]))];
+    return [friendly(variant.equipment),
+        ...variantConfigFields.slice(1)
+            .filter(field =>
+                !(options.hideBodyPosition && field.key === 'bodyPosition') &&
+                variant[field.key] && !(field.empty || []).includes(variant[field.key]))
+            .slice(0, 3).map(field => variantValue(field.key, variant[field.key]))];
 }
 
 function sessionRestSeconds(exercise) {

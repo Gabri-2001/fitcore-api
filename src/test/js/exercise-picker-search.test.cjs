@@ -353,12 +353,13 @@ test('la variante específica se muestra como dato de selección, no como títul
   assert.match(nodes['session-exercise-results'].innerHTML,/aria-pressed="true"/);
 });
 
-test('press no devuelve extensión de tríceps tumbado, pero press francés sí',()=>{
+test('press incluye su sinónimo press francés y prioriza nombres de press',()=>{
   const tr=e('lyingTricepsExtension','Extensión de tríceps tumbado','TRICEPS');
   const press=e('benchPress','Press de banca','CHEST');
   const vs=[v('tr','lyingTricepsExtension','EZ_BAR','Extensión tumbada con barra Z'),
             v('p','benchPress','BARBELL','Press de banca plano')];
-  assert.deepEqual(find([tr,press],vs,'press').map(x=>x.exercise.code),['benchPress']);
+  assert.deepEqual(find([tr,press],vs,'press').map(x=>x.exercise.code),
+    ['benchPress','lyingTricepsExtension']);
   assert.deepEqual(find([tr,press],vs,'press francés').map(x=>x.exercise.code),['lyingTricepsExtension']);
 });
 test('curl de bíceps de pie y sentado se encuentran en la misma familia',()=>{
@@ -368,4 +369,12 @@ test('curl de bíceps de pie y sentado se encuentran en la misma familia',()=>{
   assert.equal(find([ex],vs,'curl').length,1);
   assert.equal(find([ex],vs,'curl biceps de pie')[0].variant.code,'standing');
   assert.equal(find([ex],vs,'curl biceps sentado')[0].variant.code,'seated');
+});
+
+test('escribir «francés» sin press también localiza la extensión tumbada',()=>{
+  const tr=e('lyingTricepsExtension','Extensión de tríceps tumbado','TRICEPS');
+  const variants=[v('ez','lyingTricepsExtension','EZ_BAR',
+    'Extensión de tríceps tumbado con barra Z')];
+  assert.deepEqual(find([tr],variants,'frances').map(x=>x.title),
+    ['Extensión de tríceps tumbado']);
 });

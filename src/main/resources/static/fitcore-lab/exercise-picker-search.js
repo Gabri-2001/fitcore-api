@@ -140,14 +140,9 @@
             const filtered = all.filter(variant => !equipment || variant.equipment === equipment);
             if (!filtered.length) return;
 
-            // "press" genérico solo busca ejercicios cuyo nombre público
-            // contiene press. "Press francés" requiere el término "francés".
-            const pressRequested = tokens.includes('press');
-            const namedPress = matches([exercise.name, titleFor(exercise)].join(' '), ['press']);
-            const frenchPress = exercise.code === 'lyingTricepsExtension' &&
-                tokens.some(token => token.startsWith('franc'));
-            if (pressRequested && !namedPress && !frenchPress) return;
-
+            // "Press francés" es un alias válido de extensión tumbada.
+            // La consulta genérica "press" también debe poder encontrarlo;
+            // los presses cuyo nombre oficial incluye "press" irán primero.
             const matched = tokens.length
                 ? filtered.filter(variant =>
                     matches(variantSearchText(exercise, variant, friendly), tokens))
@@ -178,6 +173,13 @@
                         : friendly(exercise.mainMuscleGroup)
             });
         });
+        if (tokens.length === 1 && tokens[0] === 'press') {
+            results.sort((a, b) => {
+                const named = item => matches([item.exercise.name,
+                    titleFor(item.exercise)].join(' '), ['press']) ? 1 : 0;
+                return named(b) - named(a);
+            });
+        }
         return results;
     }
 

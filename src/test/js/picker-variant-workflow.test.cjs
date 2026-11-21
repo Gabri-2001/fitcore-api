@@ -182,6 +182,27 @@ test('selector de posición muestra Sin especificar y se conecta al configurador
   assert.match(source,/function pickerPositionOptions\(/);
   assert.match(source,/Sin especificar/);
   assert.match(source,/data-picker-dialog-position/);
-  assert.match(source,/data-picker-position/);
+  const simple = extract('function renderPlanSimpleExerciseConfig(', 'function openPickerVariantDialog(');
+  assert.doesNotMatch(simple,/data-picker-position/);
+  assert.match(source,/data-picker-dialog-position/);
   assert.match(source,/function selectPickerPosition\(/);
+});
+
+test('curl de concentración se presenta como curl de bíceps sentado sin cambiar el código',()=>{
+    const exercise={code:'bicepsCurl',name:'Curl de bíceps'};
+    const variant={code:'bicepsCurlDumbbellConcentrationSeated',
+        name:'Curl de concentración sentado con mancuerna',
+        bodyPosition:'SEATED',equipment:'DUMBBELL'};
+    assert.equal(variantTitle(exercise,variant),'Curl de bíceps sentado');
+    assert.equal(variant.code,'bicepsCurlDumbbellConcentrationSeated');
+    assert.equal(variantTitle(exercise,variant,{showPosition:true}),'Curl de bíceps sentado');
+});
+test('posición corporal solo se edita en Configurar; no en el resumen del plan',()=>{
+    const simple=extract('function renderPlanSimpleExerciseConfig(', 'function openPickerVariantDialog(');
+    const modal=extract('function renderPickerVariantDialog(', 'function closePickerVariantDialog(');
+    assert.doesNotMatch(simple,/pickerPositionOptions\(/);
+    assert.doesNotMatch(simple,/data-picker-position/);
+    assert.match(modal,/pickerPositionOptions\(/);
+    assert.match(modal,/data-picker-dialog-position/);
+    assert.match(source,/hideBodyPosition: preference === 'UNSPECIFIED'/);
 });

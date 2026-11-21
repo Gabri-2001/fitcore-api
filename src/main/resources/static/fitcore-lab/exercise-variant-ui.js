@@ -46,6 +46,17 @@
         if (!variant) return base || 'Ejercicio';
 
         const specific = String(variant.name ?? '').trim() || base;
+
+        // «Curl de concentración» describe una ejecución con el brazo apoyado
+        // contra el muslo. En el selector usamos la denominación que espera
+        // el usuario, sin cambiar el código ni la técnica de la variante.
+        if (exercise?.code === 'bicepsCurl' &&
+            (/concentraci[oó]n/i.test(specific) ||
+             /concentration/i.test(String(variant.code ?? '')))) {
+            return variant.bodyPosition === 'SEATED'
+                ? 'Curl de bíceps sentado'
+                : 'Curl de bíceps';
+        }
         const normalizedBase = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
             .toLocaleLowerCase('es');
         // En banco, el material/agarre queda debajo y el título muestra el
