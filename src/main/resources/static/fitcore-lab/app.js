@@ -3198,6 +3198,20 @@ async function loadSessionExercises() {
     } catch (error) { toast(error.message, true); }
 }
 
+function sessionBodyweightLoadCell(variant, set, number) {
+    const mode = ['BODYWEIGHT','WEIGHTED','ASSISTED'].includes(set?.loadMode)
+        ? set.loadMode : 'BODYWEIGHT';
+    const kg = mode==='WEIGHTED' ? set?.addedWeightKg :
+        mode==='ASSISTED' ? set?.assistanceWeightKg : null;
+    return `<div class='set-bodyweight-load'><select data-set-load-mode aria-label='Tipo de carga de la serie ${number}'>
+        <option value='BODYWEIGHT' ${mode==='BODYWEIGHT'?'selected':''}>Peso corporal</option>
+        ${variant.allowsAddedWeight ? `<option value='WEIGHTED' ${mode==='WEIGHTED'?'selected':''}>Lastrada</option>` : ''}
+        ${variant.allowsAssistance ? `<option value='ASSISTED' ${mode==='ASSISTED'?'selected':''}>Asistida</option>` : ''}
+    </select><input data-set-extra-weight type='number' data-numeric-mode='decimal'
+        inputmode='decimal' min='0' step='0.25' placeholder='kg adicionales'
+        value='${kg ?? ''}' aria-label='Kg de lastre o asistencia'
+        ${mode==='BODYWEIGHT'?'hidden':''}></div>`;
+}
 function renderSession() {
     const active =
         state.currentSession?.status === 'IN_PROGRESS';
@@ -3257,6 +3271,7 @@ function renderSession() {
         const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
         const base = state.exercises.find(item => item.code === variant?.exerciseCode);
         const durationBased = base?.defaultUnit === 'SECONDS';
+        const isCarry = base?.code === 'farmerCarry';
         const bodyweight = variant?.resistanceSource === 'BODYWEIGHT';
         const exerciseName = variant ? FitCoreVariantUI.variantTitle(base, variant) : base?.name || variantName(exercise.exerciseVariantCode);
         const completed = sets.length > 0 && sets.every(set => set.completed);
@@ -3273,8 +3288,8 @@ function renderSession() {
             return `<tr data-set-row="${set.id}" class="${set.completed ? 'is-complete':''}">
                 <td><span class="set-number">${set.setNumber}</span><input data-set-number type="hidden" value="${set.setNumber}"></td>
                 <td class="previous-performance">${previousSetLabel(prior)}</td>
-                <td>${bodyweight ? '<span>Peso corporal</span>' : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + (set.weight ?? '') + '" aria-label="Peso externo"></td>'}</td>
-                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (set.durationSeconds ?? '') : (set.reps ?? '')}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'} de la serie ${set.setNumber}"></td>
+                <td>${bodyweight ? sessionBodyweightLoadCell(variant,set,set.setNumber) : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + (set.weight ?? '') + '" aria-label="Peso externo">'}</td>
+                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (set.durationSeconds ?? '') : (set.reps ?? '')}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'} de la serie ${set.setNumber}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='number' inputmode='decimal' min='0' step='0.1' placeholder='Distancia (m)' value='${set.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
                 <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}"></td>
                 <td>${rpeControl(effectiveRpe, `RPE de la serie ${set.setNumber}`, set.rpe == null && effectiveRpe != null)}</td>
                 <td><label class="complete-check"><input data-set-complete type="checkbox" ${set.completed ? 'checked':''}><span>✓</span></label></td>
@@ -3327,8 +3342,8 @@ function renderSession() {
             <th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set">
                 <td><span class="set-number">${next}</span><input data-set-number type="hidden" value="${next}"></td>
                 <td class="previous-performance">${previousSetLabel(previousByNumber.get(next))}</td>
-                <td>${bodyweight ? '<span>Peso corporal</span>' : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo"></td>'}</td>
-                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (lastSet?.durationSeconds ?? firstSuggestion?.durationSeconds ?? '') : suggestedReps}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'}"></td>
+                <td>${bodyweight ? sessionBodyweightLoadCell(variant,lastSet,next) : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo">'}</td>
+                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (lastSet?.durationSeconds ?? firstSuggestion?.durationSeconds ?? '') : suggestedReps}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='number' inputmode='decimal' min='0' step='0.1' placeholder='Distancia (m)' value='${lastSet?.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
                 <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${suggestedRir}" aria-label="RIR de la nueva serie"></td>
                 <td>${rpeControl(null, 'RPE de la nueva serie', false)}</td><td><span class="pending-set" title="La serie se crea sin completar">Pendiente</span></td>
                 <td><button class="button button-primary add-set-button" data-add-set>+ Añadir serie</button></td>
@@ -3338,7 +3353,9 @@ function renderSession() {
 }
 
 function previousSetLabel(set) {
-    if (!set || (set.weight == null && set.reps == null)) return '<span aria-label="Sin registro anterior">—</span>';
+    if (!set || (set.weight == null && set.reps == null && set.durationSeconds == null))
+        return '<span aria-label="Sin registro anterior">—</span>';
+    if(set.durationSeconds != null) return `<strong>${set.durationSeconds} s</strong>`;
     const weight = set.weight == null ? '—' : `${formatNumber(set.weight)} kg`;
     const reps = set.reps == null ? '—' : set.reps;
     return `<strong>${weight} × ${reps}</strong>`;
@@ -3743,7 +3760,15 @@ function setBody(container) {
         weight:container.querySelector('[data-set-weight]') ? validatedNumericValue(container.querySelector('[data-set-weight]'), 'El peso', false, 0) : null,
         reps:container.querySelector('[data-set-reps]') ? validatedNumericValue(container.querySelector('[data-set-reps]'), 'Las repeticiones', true, 0) : null,
         durationSeconds:container.querySelector('[data-set-duration]') ? validatedNumericValue(container.querySelector('[data-set-duration]'), 'El tiempo en segundos', true, 0) : null,
-        loadMode:container.querySelector('[data-set-weight]') ? 'EXTERNAL_LOAD' : 'BODYWEIGHT',
+        distanceMeters:container.querySelector('[data-set-distance]') ? validatedNumericValue(container.querySelector('[data-set-distance]'), 'La distancia en metros',false,0) : null,
+        loadMode:container.querySelector('[data-set-load-mode]')?.value ||
+            (container.querySelector('[data-set-weight]') ? 'EXTERNAL_LOAD' : 'BODYWEIGHT'),
+        addedWeightKg:container.querySelector('[data-set-load-mode]')?.value === 'WEIGHTED'
+            ? validatedNumericValue(container.querySelector('[data-set-extra-weight]'),
+                'El lastre',false,0) : null,
+        assistanceWeightKg:container.querySelector('[data-set-load-mode]')?.value === 'ASSISTED'
+            ? validatedNumericValue(container.querySelector('[data-set-extra-weight]'),
+                'La asistencia',false,0) : null,
         rir:container.querySelector('[data-set-rir]') ? validatedNumericValue(container.querySelector('[data-set-rir]'), 'El RIR', true, 0, 10) : null,
         rpe:optionalNumber(container.querySelector('[data-set-rpe]').value),
         completed:completion ? completion.checked : false,
@@ -4612,6 +4637,14 @@ function bindEvents() {
     $('session-exercises').addEventListener('beforeinput',blockInvalidNumericInsert);
     $('session-exercises').addEventListener('paste',blockInvalidNumericPaste);
     $('session-exercises').addEventListener('input',e=>syncRpeFromRir(e.target));
+    $('session-exercises').addEventListener('change',e=>{
+        const mode=e.target.closest('[data-set-load-mode]');
+        if(!mode)return;
+        const kg=mode.closest('.set-bodyweight-load')?.querySelector('[data-set-extra-weight]');
+        if(!kg)return;
+        kg.hidden=mode.value==='BODYWEIGHT';
+        if(kg.hidden)kg.value='';
+    });
     $('rest-settings-form').addEventListener('submit',saveRestSettings);
     document.querySelectorAll('[data-rest-preset]').forEach(button=>button.addEventListener('click',()=>{const total=Number(button.dataset.restPreset);$('rest-minutes').value=Math.floor(total/60);$('rest-seconds').value=total%60;}));
     $('rpe-value').addEventListener('input',e=>updateRpePreview(e.target.value)); $('rpe-apply').addEventListener('click',applyRpeValue);
