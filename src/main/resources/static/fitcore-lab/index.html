@@ -165,7 +165,17 @@
                 </div>
             </div>
 
-            <div id="plan-day-tabs" class="plan-day-tabs" aria-label="Días del plan"></div>
+            <section class="panel plan-days-panel" aria-labelledby="plan-days-heading">
+                <div class="plan-days-panel-heading">
+                    <h2 id="plan-days-heading">
+                        <span aria-hidden="true">▦</span>
+                        Días del plan
+                        <small id="plan-days-count">0 sesiones</small>
+                    </h2>
+                    <span class="plan-days-drag-hint">⠿ Arrastra para reordenar</span>
+                </div>
+                <div id="plan-day-tabs" class="plan-day-tabs" aria-label="Días del plan"></div>
+            </section>
             <div id="plan-days" class="plan-days"></div>
 
             <dialog id="plan-settings-dialog" class="compact-dialog plan-settings-dialog" aria-labelledby="plan-settings-title">
@@ -1025,6 +1035,7 @@
 <script src="./exercise-variant-ui.js" defer></script>
 <script src="./exercise-picker-search.js" defer></script>
 <script src="./exercise-progress-ui.js" defer></script>
+<script src="./plan-session-summary.js" defer></script>
 <script src="./app.js" defer></script>
 
 

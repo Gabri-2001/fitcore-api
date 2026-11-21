@@ -552,6 +552,9 @@ function renderPlanHeader() {
 function renderPlanDayTabs() {
     const container = $('plan-day-tabs');
 
+    const counter=$('plan-days-count');
+    if(counter)counter.textContent=state.planDays.length+
+        (state.planDays.length===1?' sesión':' sesiones');
     container.innerHTML = state.planDays.map((day, index) => `
         <button
             type="button"
@@ -592,114 +595,117 @@ function renderPlanDayTabs() {
 }
 
 
+
+function refreshPlanSessionSummary() {
+    const day=state.planDays[state.selectedPlanDayIndex];
+    if(!day || !$('plan-session-exercise-count'))return;
+    const result=FitCorePlanSummary.summarize(day.exercises,exerciseDefaultUnit);
+    $('plan-session-exercise-count').textContent=String(result.exerciseCount);
+    $('plan-session-series-count').textContent=String(result.plannedSets);
+    $('plan-session-duration').textContent=result.durationLabel;
+    $('plan-session-duration').title=result.assumptions;
+
+    const notice=$('plan-session-context');
+    if(!notice)return;
+    const message=result.missingTargets
+        ? 'La duración es parcial: faltan objetivos o descansos en algún ejercicio.'
+        : result.hasTimedExercise
+            ? 'Los ejercicios isométricos se planifican por tiempo, no por repeticiones.'
+            : '';
+    notice.hidden=!message;
+    notice.textContent=message;
+}
+
 function renderPlanDays() {
-    const container = $('plan-days');
-    if (!state.planDays.length) {
-        container.innerHTML = '<div class="empty-state large plan-empty"><strong>Tu plan todavía no tiene días</strong><span>Añade el primero para empezar a organizar tu rutina.</span><button class="button button-primary" data-empty-add-day>+ Añadir día</button></div>';
+    const container=$('plan-days');
+    if(!state.planDays.length) {
+        container.innerHTML='<div class="empty-state large plan-empty"><strong>Tu plan todavía no tiene días</strong><span>Añade el primero para empezar a organizar tu rutina.</span><button class="button button-primary" data-empty-add-day>+ Añadir día</button></div>';
         renderPlanDayTabs();
         renderPlanHeader();
         return;
     }
-    state.selectedPlanDayIndex = Math.min(Math.max(0, state.selectedPlanDayIndex), state.planDays.length - 1);
-    const dayIndex = state.selectedPlanDayIndex;
-    const day = state.planDays[dayIndex];
-    const totalSets = day.exercises.reduce((total, exercise) => total + (Number(exercise.sets) || 0), 0);
-    container.innerHTML = `<article class="plan-day-editor" data-day="${dayIndex}">
-        <header class="plan-day-editor-head">
 
-<div class="plan-day-title">
+    state.selectedPlanDayIndex=Math.min(Math.max(0,state.selectedPlanDayIndex),state.planDays.length-1);
+    const dayIndex=state.selectedPlanDayIndex;
+    const day=state.planDays[dayIndex];
 
-    <span>Día ${dayIndex + 1}</span>
+    // Conservar las filas, steppers, identificadores, menús y puntos de
+    // delegación de eventos existentes: solo cambia la composición visual.
+    container.innerHTML=`
+        <div class="plan-editor-layout">
+            <article class="plan-day-editor" data-day="${dayIndex}">
+                <header class="plan-day-editor-head">
+                    <div class="plan-day-title">
+                        <span class="plan-day-eyebrow">SESIÓN SELECCIONADA · DÍA ${dayIndex+1}</span>
+                        <h3>${escapeHtml(day.name || friendly(day.dayType))}</h3>
+                        <span class="plan-day-type-badge">
+                            ${planDayIcon(day.dayType)}
+                            ${escapeHtml(friendly(day.dayType))}
+                        </span>
+                    </div>
+                    <div class="plan-day-controls">
+                        <button type="button" class="button button-secondary" data-configure-plan-day>
+                            ⚙ Configurar día
+                        </button>
+                        <button type="button" class="button button-primary" data-add-plan-exercise>
+                            ＋ Añadir ejercicio
+                        </button>
+                    </div>
+                </header>
+                <div class="plan-exercise-table">
+                    <div class="plan-exercise-columns" aria-hidden="true">
+                        <span>Ejercicio</span><span>Series</span>
+                        <span>Reps / Objetivo</span><span>Descanso</span><span>Acciones</span>
+                    </div>
+                    <div class="day-exercises">${day.exercises.length
+                        ? day.exercises.map((exercise,index)=>exerciseEditor(exercise,index)).join('')
+                        : '<div class="plan-day-no-exercises"><strong>Aún no hay ejercicios en este día</strong><span>Añade un ejercicio y ajusta después su configuración técnica si lo necesitas.</span></div>'}</div>
+                </div>
+            </article>
 
-    <h3>
-        ${escapeHtml(day.name || friendly(day.dayType))}
-    </h3>
+            <aside class="plan-session-summary" aria-labelledby="plan-session-summary-title">
+                <header class="plan-session-summary-heading">
+                    <span aria-hidden="true" class="plan-session-summary-mark">◈</span>
+                    <h3 id="plan-session-summary-title">Resumen de la sesión</h3>
+                </header>
+                <div class="plan-day-muscle-area">
+                    <button type="button" class="plan-day-muscle-button" id="plan-day-muscle-open"
+                            aria-label="Ampliar análisis muscular del día"
+                            aria-haspopup="dialog" aria-controls="plan-muscle-dialog">
+                        <span id="plan-day-muscle-mini" class="plan-day-muscle-mini" aria-hidden="true">◉</span>
+                        <span class="plan-day-muscle-copy">
+                            <strong class="plan-day-muscle-title">Músculos trabajados</strong>
+                            <span id="plan-day-muscle-list" class="plan-day-muscle-list">
+                                <span class="plan-day-muscle-empty">Calculando músculos…</span>
+                            </span>
+                            <small id="plan-day-muscle-caption">Mapa del día seleccionado</small>
+                        </span>
+                    </button>
+                </div>
 
-    <span class="plan-day-type-badge">
-        ${planDayIcon(day.dayType)}
-        ${escapeHtml(friendly(day.dayType))}
-    </span>
+                <div class="plan-session-metrics" aria-label="Estadísticas planificadas" aria-live="polite">
+                    <div class="plan-session-metric">
+                        <strong id="plan-session-exercise-count">0</strong>
+                        <span>Ejercicios</span>
+                    </div>
+                    <div class="plan-session-metric">
+                        <strong id="plan-session-series-count">0</strong>
+                        <span>Series</span>
+                    </div>
+                    <div class="plan-session-metric">
+                        <strong id="plan-session-duration">—</strong>
+                        <span>Duración estimada</span>
+                    </div>
+                </div>
+                <p id="plan-session-context" class="plan-session-context" hidden></p>
+            </aside>
+        </div>`;
 
-</div>
-
-
-<!-- MAPA MUSCULAR HORIZONTAL -->
-<div class="plan-day-muscle-area">
-
-    <button
-        type="button"
-        class="plan-day-muscle-button"
-        id="plan-day-muscle-open"
-        aria-label="Ver análisis muscular del día"
-        aria-haspopup="dialog"
-        aria-controls="plan-muscle-dialog">
-
-        <!-- IZQUIERDA: CUERPOS ANATÓMICOS -->
-        <span
-            id="plan-day-muscle-mini"
-            class="plan-day-muscle-mini"
-            aria-hidden="true">
-            ◉
-        </span>
-
-        <!-- DERECHA: MÚSCULOS TRABAJADOS -->
-        <span class="plan-day-muscle-copy">
-
-            <strong class="plan-day-muscle-title">
-                Músculos trabajados
-            </strong>
-
-            <span
-                id="plan-day-muscle-list"
-                class="plan-day-muscle-list"
-                aria-hidden="true">
-                <span class="plan-day-muscle-empty">
-                    Sin ejercicios
-                </span>
-            </span>
-
-            <small id="plan-day-muscle-caption">
-                0 músculos previstos
-            </small>
-
-        </span>
-
-    </button>
-
-</div>
-
-<!-- BOTONES A LA DERECHA -->
-<div class="plan-day-controls">
-
-    <button
-        type="button"
-        class="button button-secondary"
-        data-configure-plan-day>
-        ⚙ Configurar día
-    </button>
-
-    <button
-        type="button"
-        class="button button-primary"
-        data-add-plan-exercise>
-        ＋ Añadir ejercicio
-    </button>
-
-</div>
-
-
-        </header>
-        <div class="plan-exercise-table">
-            <div class="plan-exercise-columns" aria-hidden="true"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Descanso</span><span>Acciones</span></div>
-            <div class="day-exercises">${day.exercises.length ? day.exercises.map((exercise,index) => exerciseEditor(exercise,index)).join('') : '<div class="plan-day-no-exercises"><strong>Aún no hay ejercicios en este día</strong><span>Añade un ejercicio y ajusta después su configuración técnica si lo necesitas.</span></div>'}</div>
-        </div>
-        <footer class="plan-day-summary"><span>${planDayIcon(day.dayType)}<strong>Resumen del día</strong></span><b>${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'} / ${totalSets} series planificadas</b></footer>
-    </article>`;
     renderPlanDayTabs();
     renderPlanHeader();
+    refreshPlanSessionSummary();
     void renderPlanMusclePreview();
 }
-
 
 /* =============================================
    FITCORE - DRAG AND DROP DE PLANES
@@ -1899,22 +1905,29 @@ async function renderPlanMusclePreview() {
                 // 1. Encuadrar y centrar el cuerpo
                 fitPlanDayMuscleSvg(svg, stage);
 
-                // 2. Redondear el fondo interno
-                roundPlanMuscleBackground(svg);
+                // Vista anatómica original sin añadir marcos ni recortes
+                // internos; la proporción queda controlada por viewBox/meet.
             }
         });
     }
 
 
 
-    // Mostrar los 3 músculos más relevantes
-    const topMuscles = result.data.slice(0, 3);
+    // Mostrar solo los músculos principales cuando existen, o secundarios
+    // como alternativa. Cada punto representa una activación real del día.
+    const topMuscles = (result.data.some(item=>item.primarySets>0)
+        ? result.data.filter(item=>item.primarySets>0)
+        : result.data).slice(0, 6);
+    const maxMuscleSets=Math.max(1,...result.data.map(item=>item.estimatedSets));
 
     list.innerHTML = topMuscles.length
         ? topMuscles.map(muscle => `
             <span class="plan-day-muscle-row">
                 <i
-                    class="plan-day-muscle-dot"
+                    class="plan-day-muscle-dot ${muscle.estimatedSets/maxMuscleSets>=0.67
+                        ? 'is-high'
+                        : muscle.estimatedSets/maxMuscleSets>=0.34
+                            ? 'is-medium' : 'is-low'}"
                     aria-hidden="true">
                 </i>
 
@@ -4556,10 +4569,22 @@ function bindEvents() {
             '[data-exercise-code], ' +
             '[data-exercise-sets], ' +
             '[data-exercise-reps], ' +
+            '[data-exercise-durationSeconds], ' +
             '[data-exercise-rest]'
         )) return;
         syncPlanEditor();
         renderPlanDays();
+    });
+
+    // Actualizar el resumen mientras se escribe sin reconstruir las filas
+    // (así no se pierde el foco ni la posición del cursor).
+    $('plan-days').addEventListener('input', event=>{
+        if(!event.target.matches('[data-exercise-sets], [data-exercise-reps], '+
+                '[data-exercise-durationSeconds], [data-exercise-rest]'))return;
+        syncPlanEditor();
+        refreshPlanSessionSummary();
+        if(event.target.matches('[data-exercise-sets]'))
+            void renderPlanMusclePreview();
     });
 
     document.addEventListener('click', event => {
