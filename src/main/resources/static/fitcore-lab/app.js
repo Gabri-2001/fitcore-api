@@ -1028,6 +1028,16 @@ function planStepper(field, value, min, suffix, label) {
     return `<div class="plan-stepper" data-plan-stepper><button type="button" data-step-field="${field}" data-step="-1" aria-label="Reducir ${label}">−</button><input data-exercise-${field} type="number" min="${min}" value="${Number(value)}" aria-label="${label}"><span>${suffix}</span><button type="button" data-step-field="${field}" data-step="1" aria-label="Aumentar ${label}">＋</button></div>`;
 }
 
+function planRestPicker(seconds) {
+    const duration=Math.max(0,Number(seconds)||0);
+    return '<div class="plan-rest-cell">' +
+        '<input data-exercise-rest type="hidden" value="' + duration + '">' +
+        '<button type="button" class="plan-rest-trigger" data-edit-plan-rest ' +
+        'aria-haspopup="dialog" aria-controls="rest-settings-dialog" ' +
+        'aria-label="Configurar descanso: ' + FitCoreRestWheel.label(duration) + '">' +
+        FitCoreRestWheel.label(duration) + '</button></div>';
+}
+
 function exerciseDefaultUnit(variantCode) {
     const variant=state.variants.find(v=>v.code===variantCode);
     return state.exercises.find(e=>e.code===variant?.exerciseCode)?.defaultUnit || 'REPETITIONS';
@@ -1064,7 +1074,7 @@ function exerciseEditor(exercise, index) {
         ${exerciseDefaultUnit(exercise.exerciseVariantCode)==='SECONDS'
             ? planStepper('durationSeconds',exercise.targetDurationSeconds||45,1,'s','segundos por serie')
             : planStepper('reps',exercise.reps||10,1,'','repeticiones')}
-        ${planStepper('rest', exercise.restSeconds ?? 90, 0, 's', 'segundos de descanso')}
+        ${planRestPicker(exercise.restSeconds ?? 0)}
         <div class="plan-row-menu">
             <button class="plan-row-actions" type="button" data-plan-row-menu-toggle aria-haspopup="menu" aria-expanded="false" aria-controls="${menuId}" aria-label="Acciones para ${escapeHtml(title)}">•••</button>
             <div class="plan-row-action-menu" id="${menuId}" role="menu" hidden>
@@ -2649,7 +2659,8 @@ async function openExercisePicker(mode = 'session', options = {}) {
         $('plan-picker-sets').value = '3';
         $('plan-picker-reps').value = '10';
         $('plan-picker-duration').value = '45';
-        $('plan-picker-rest').value = '90';
+        $('plan-picker-rest').value = '0';
+        $('plan-picker-rest-button').textContent = FitCoreRestWheel.label(0);
 
         renderSessionExerciseResults();
         renderSessionExerciseConfig();
@@ -3590,18 +3601,8 @@ function renderSessionSummary() {
     $('session-duration').textContent=formatDuration(sessionElapsedSeconds());
     $('session-volume').textContent=result.volumeKg.toLocaleString('es-ES',{
         maximumFractionDigits:2
-    })+' kg·reps';
+    })+' kg';
     $('session-series').textContent=result.completedSets;
-    const indicators=[result.totalReps+' reps'];
-    if(result.totalTimedSeconds>0)
-        indicators.push(formatDuration(result.totalTimedSeconds)+' de ejercicio');
-    if(result.totalDistanceMeters>0)
-        indicators.push(formatNumber(result.totalDistanceMeters)+' m');
-    if(result.bodyweightSets>0)
-        indicators.push(result.bodyweightSets+' series de peso corporal');
-    if(result.setsWithoutVolume>0)indicators.push('volumen externo parcial');
-    const repsElement=$('session-volume-reps');
-    if(repsElement)repsElement.textContent=indicators.join(' · ');
     $('session-volume').title=result.setsWithoutVolume>0
         ? 'Volumen externo parcial: '+result.setsWithoutVolume+
             ' serie(s) con repeticiones y sin peso externo registrado.'
