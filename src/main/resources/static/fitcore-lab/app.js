@@ -3298,7 +3298,10 @@ function renderSession() {
                 <td class="previous-performance">${previousSetLabel(prior)}</td>
                 <td>${bodyweight ? sessionBodyweightLoadCell(variant,set,set.setNumber) : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + (set.weight ?? '') + '" aria-label="Peso externo">'}</td>
                 <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (set.durationSeconds ?? '') : (set.reps ?? '')}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'} de la serie ${set.setNumber}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='number' inputmode='decimal' min='0' step='0.1' placeholder='Distancia (m)' value='${set.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
-                <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}"></td>
+                <td>${durationBased ? '<span title="No aplicable a isométricos">—</span>' :
+                    `<input data-set-rir data-numeric-mode="integer" data-numeric-max="10"
+                        type="number" inputmode="numeric" min="0" max="10" step="1"
+                        value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}">`}</td>
                 <td>${rpeControl(effectiveRpe, `RPE de la serie ${set.setNumber}`, set.rpe == null && effectiveRpe != null)}</td>
                 <td><label class="complete-check"><input data-set-complete type="checkbox" ${set.completed ? 'checked':''}><span>✓</span></label></td>
                 <td><button class="text-button" data-save-set="${set.id}">Guardar</button><button class="text-button danger" data-delete-set="${set.id}" aria-label="Eliminar serie ${set.setNumber}">×</button></td>
@@ -3311,7 +3314,7 @@ function renderSession() {
 
 <th>
     <span class="set-help-label">
-        Peso (kg)
+        ${bodyweight ? 'Carga' : 'Peso (kg)'}
         <button type="button"
                 class="set-help-icon"
                 data-training-help="weight"
@@ -3352,7 +3355,10 @@ function renderSession() {
                 <td class="previous-performance">${previousSetLabel(previousByNumber.get(next))}</td>
                 <td>${bodyweight ? sessionBodyweightLoadCell(variant,lastSet,next) : '<input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo">'}</td>
                 <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${durationBased ? (lastSet?.durationSeconds ?? firstSuggestion?.durationSeconds ?? '') : suggestedReps}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='number' inputmode='decimal' min='0' step='0.1' placeholder='Distancia (m)' value='${lastSet?.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
-                <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${suggestedRir}" aria-label="RIR de la nueva serie"></td>
+                <td>${durationBased ? '—' : `<input data-set-rir data-numeric-mode="integer"
+                    data-numeric-max="10" type="number" inputmode="numeric"
+                    min="0" max="10" step="1" value="${suggestedRir}"
+                    aria-label="RIR de la nueva serie">`}</td>
                 <td>${rpeControl(null, 'RPE de la nueva serie', false)}</td><td><span class="pending-set" title="La serie se crea sin completar">Pendiente</span></td>
                 <td><button class="button button-primary add-set-button" data-add-set>+ Añadir serie</button></td>
             </tr></tbody></table></div><div class="session-card-foot"><small>Al marcar una serie como hecha se guardará y comenzará el descanso.</small><strong>${sets.filter(set => set.completed).length}/${sets.length || 0} series completadas</strong></div>
