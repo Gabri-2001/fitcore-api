@@ -640,6 +640,7 @@ function renderPlanDayTabs() {
                 <em>
                     ${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'}
                 </em>
+                <small class="plan-tab-classification">${escapeHtml(planDayLabel(day))}</small>
             </span>
 
             <span
@@ -706,7 +707,7 @@ function renderPlanDays() {
                         <h3>${escapeHtml(day.name || friendly(day.dayType))}</h3>
                         <span class="plan-day-type-badge">
                             ${planDayIcon(day.dayType)}
-                            ${escapeHtml(friendly(day.dayType))}
+                            ${escapeHtml(planDayLabel(day))}
                         </span>
                     </div>
                     <div class="plan-day-controls">
@@ -734,6 +735,7 @@ function renderPlanDays() {
                     <span aria-hidden="true" class="plan-session-summary-mark">◈</span>
                     <h3 id="plan-session-summary-title">Resumen de la sesión</h3>
                 </header>
+                <div id="plan-day-classification" class="plan-day-classification" aria-live="polite"></div>
                 <div class="plan-day-muscle-area">
                     <button type="button" class="plan-day-muscle-button" id="plan-day-muscle-open"
                             aria-label="Ampliar análisis muscular del día"
@@ -770,6 +772,8 @@ function renderPlanDays() {
     renderPlanDayTabs();
     renderPlanHeader();
     refreshPlanSessionSummary();
+    updatePlanClassificationVisuals();
+    void refreshPlanDayClassification(dayIndex);
     void renderPlanMusclePreview();
 }
 
