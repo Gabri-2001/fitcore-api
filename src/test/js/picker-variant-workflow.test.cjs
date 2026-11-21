@@ -64,7 +64,7 @@ test('el selector permite configurar solo cuando hay variantes alternativas', ()
     assert.match(section, /showModal\(\)/);
     assert.match(section, /data-picker-dialog-field/);
     assert.match(section, /renderVariantConfiguratorFields\(controls, candidates, selectedVariant/);
-    assert.match(section, /state\.sessionPicker\.configuration = configurationFromVariant\(selectedVariant\)/);
+    assert.match(section, /state\.sessionPicker\.configuration = \{\.\.\.configurationFromVariant\(selectedVariant\)/);
     assert.match(html, /id="picker-variant-dialog"/);
     assert.match(html, /id="picker-variant-apply"/);
     assert.match(html, /data-close-picker-variant/);
@@ -94,6 +94,8 @@ test('Cancelar deja la selección original y Aplicar confirma el borrador', () =
             selectedVariant:options.find(v=>v.code===config.variantCode)||options[0]
         }),
         renderVariantConfiguratorFields:()=>'<div>Controles</div>',
+        pickerPositionOptions:()=>'',
+        pickerVariantTitle:(exercise,variant)=>variantTitle(exercise,variant),
         variantConfigurationChips:()=>[],
         exerciseThumb:()=>'<span>PR</span>',
         escapeHtml:String,friendly:String,
