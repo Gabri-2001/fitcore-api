@@ -181,8 +181,13 @@ public class WorkoutSessionExercise extends BaseEntity {
         boolean hasReps = completedLogs.stream().anyMatch(log -> log.getReps() != null);
         performedReps = hasReps ? completedLogs.stream().map(ExerciseSetLog::getReps)
                 .filter(java.util.Objects::nonNull).mapToInt(Integer::intValue).sum() : null;
-        performedWeightKg = completedLogs.stream().map(ExerciseSetLog::getWeight)
-                .filter(java.util.Objects::nonNull).max(BigDecimal::compareTo).orElse(null);
+        // Do not show historical bodyweight kg (or lastre) as external load.
+        performedWeightKg = completedLogs.stream()
+                .filter(log -> "EXTERNAL_LOAD".equals(log.getLoadMode())
+                        && (exerciseVariant == null ||
+                            !"BODYWEIGHT".equals(exerciseVariant.getResistanceSource())))
+                .map(ExerciseSetLog::getWeight).filter(java.util.Objects::nonNull)
+                .max(BigDecimal::compareTo).orElse(null);
         completed = !completedLogs.isEmpty() && completedLogs.size() == setLogs.size();
     }
 }

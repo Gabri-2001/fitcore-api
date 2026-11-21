@@ -316,6 +316,7 @@ async function searchCatalog(page = 0) {
                 api('/api/exercises'), api('/api/exercise-variants')
             ]);
             updateVariantDatalist();
+            if ($('exercise-progress-family')) refreshExerciseProgressOptions();
         }
         const result = await api(`/api/exercise-variants/search?${params}`);
         if (requestId !== state.catalogRequestId) return;
