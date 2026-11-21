@@ -260,3 +260,67 @@ test('el diálogo no muestra postura como ajuste principal',()=>{
   assert.doesNotMatch(modal,/pickerPositionOptions\([\s\S]*?\) \+\s*renderVariantConfiguratorFields/);
   assert.match(modal,/hideBodyPosition:optionalPosition/);
 });
+
+test('cambiar repetidamente postura conserva Más ajustes técnicos abierto hasta cerrarlo',()=>{
+    const start = source.indexOf("    $('picker-variant-dialog-body').addEventListener('change', event => {");
+    const end = source.indexOf("    $('picker-variant-reset').addEventListener('click'",start);
+    assert.ok(start>0 && end>start,'No se encontró el listener del configurador');
+    const listener=source.slice(start,end);
+    let change;
+    let renderCount=0;
+    const details={open:true};
+    const draft={
+        moreOpen:false,
+        configuration:{variantCode:'stand',_positionPreference:'UNSPECIFIED'}
+    };
+    const exercise={code:'bicepsCurl',name:'Curl de bíceps'};
+    const state={
+        pickerDraft:draft,
+        sessionPicker:{exercise}
+    };
+    const ctx={
+        state,
+        $:id=>id==='picker-variant-dialog-body'?
+            {addEventListener:(type,callback)=>{if(type==='change')change=callback;}}:
+            {querySelector:()=>details},
+        availablePickerVariants:()=>[
+            {code:'stand',bodyPosition:'STANDING'},
+            {code:'sit',bodyPosition:'SEATED'}
+        ],
+        selectPickerPosition:(_,variants,configuration,value)=>({
+            ...configuration,
+            variantCode:value==='SEATED'?'sit':'stand',
+            _positionPreference:value
+        }),
+        renderPickerVariantDialog:()=>{renderCount++;details.open=draft.moreOpen;},
+        configurationFromVariant:v=>({variantCode:v.code})
+    };
+    vm.createContext(ctx);
+    vm.runInContext(listener,ctx);
+    assert.equal(typeof change,'function');
+
+    // La primera selección ya debe preservar «abierto», no solo los campos
+    // que pasan por data-picker-dialog-field.
+    for(const value of ['STANDING','SEATED','UNSPECIFIED','SEATED']) {
+        details.open=true;
+        change({target:{closest:selector=>
+            selector==='[data-picker-dialog-position]'?{value}:null}});
+        assert.equal(draft.moreOpen,true);
+        assert.equal(details.open,true);
+        assert.equal(draft.configuration._positionPreference,value);
+    }
+    // Cambiar otro ajuste técnico tampoco debe cerrarlo.
+    details.open=true;
+    change({target:{closest:selector=>
+        selector==='[data-picker-dialog-field]'?
+            {dataset:{pickerDialogField:'supportType'},value:'FREE'}:null}});
+    assert.equal(details.open,true);
+    assert.equal(draft.configuration.supportType,'FREE');
+    // Si el usuario lo ha cerrado expresamente, debe permanecer cerrado.
+    details.open=false;
+    change({target:{closest:selector=>
+        selector==='[data-picker-dialog-position]'?{value:'STANDING'}:null}});
+    assert.equal(draft.moreOpen,false);
+    assert.equal(details.open,false);
+    assert.equal(renderCount,6);
+});

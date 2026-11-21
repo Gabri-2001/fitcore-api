@@ -4448,6 +4448,10 @@ function bindEvents() {
     $('picker-variant-dialog-body').addEventListener('change', event => {
         const draft = state.pickerDraft;
         if (!draft) return;
+        // Preservar el estado real del acordeón ANTES de actualizar cualquier
+        // campo (incluida «Posición corporal»). El rerender reemplaza el DOM.
+        draft.moreOpen = !!$('picker-variant-dialog-fields')
+            .querySelector('[data-picker-dialog-more]')?.open;
         const position = event.target.closest('[data-picker-dialog-position]');
         if (position) {
             draft.configuration = selectPickerPosition(state.sessionPicker.exercise,
@@ -4458,8 +4462,6 @@ function bindEvents() {
         const field = event.target.closest('[data-picker-dialog-field]');
         const exact = event.target.closest('[data-picker-dialog-variant-code]');
         if (!field && !exact) return;
-        draft.moreOpen = !!$('picker-variant-dialog-fields')
-            .querySelector('[data-picker-dialog-more]')?.open;
         if (field) {
             draft.configuration[field.dataset.pickerDialogField] = field.value;
             draft.configuration.variantCode = null;
