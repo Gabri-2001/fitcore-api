@@ -33,6 +33,10 @@ public class WorkoutDay extends BaseEntity {
     @Column(name = "day_type", nullable = false, length = 40)
     private WorkoutDayType dayType;
 
+    // Legacy plans default to manual, preserving their explicitly chosen label.
+    @Column(name = "day_type_manual", nullable = false)
+    private boolean dayTypeManual = true;
+
     @OneToMany(mappedBy = "workoutDay", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkoutExercise> workoutExercises = new ArrayList<>();
 
@@ -69,6 +73,9 @@ public class WorkoutDay extends BaseEntity {
     public WorkoutDayType getDayType() {
         return dayType;
     }
+
+    public boolean isDayTypeManual() { return dayTypeManual; }
+    public void setDayTypeManual(boolean manual) { this.dayTypeManual = manual; }
 
     public List<WorkoutExercise> getWorkoutExercises() {
         return workoutExercises;
