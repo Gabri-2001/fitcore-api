@@ -47,17 +47,41 @@ public class ExerciseProgressService {
                 .sorted(Comparator.comparing(value -> value.muscleGroup().name())).toList();
     }
 
-    private ExerciseProgressResponse summarize(String code, List<ExerciseSetLog> all, Predicate<ExerciseSetLog> filter) {
+    private ExerciseProgressResponse summarize(String code, List<ExerciseSetLog> all,
+            Predicate<ExerciseSetLog> filter) {
         List<ExerciseSetLog> values = all.stream().filter(filter).toList();
-        if (values.isEmpty()) throw new ResourceNotFoundException("No exercise progress found for code: " + code);
-        BigDecimal maxWeight = values.stream().map(ExerciseSetLog::getWeight).filter(Objects::nonNull)
-                .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        int maxReps = values.stream().map(ExerciseSetLog::getReps).filter(Objects::nonNull).max(Integer::compareTo).orElse(0);
+        if (values.isEmpty()) throw new ResourceNotFoundException(
+                "No exercise progress found for code: " + code);
+        BigDecimal maxWeight = values.stream().map(ExerciseSetLog::getWeight)
+                .filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        int maxReps = values.stream().map(ExerciseSetLog::getReps)
+                .filter(Objects::nonNull).max(Integer::compareTo).orElse(0);
+        Integer maxDuration = values.stream().map(ExerciseSetLog::getDurationSeconds)
+                .filter(Objects::nonNull).max(Integer::compareTo).orElse(null);
+        BigDecimal maxLastre = values.stream()
+                .filter(log -> "WEIGHTED".equals(log.getLoadMode()))
+                .map(ExerciseSetLog::getAddedWeightKg).filter(Objects::nonNull)
+                .max(BigDecimal::compareTo).orElse(null);
+        BigDecimal minAssistance = values.stream()
+                .filter(log -> "ASSISTED".equals(log.getLoadMode()))
+                .map(ExerciseSetLog::getAssistanceWeightKg).filter(Objects::nonNull)
+                .min(BigDecimal::compareTo).orElse(null);
+        BigDecimal totalDistance = values.stream().map(ExerciseSetLog::getDistanceMeters)
+                .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        long timedSets = values.stream().filter(log -> log.getDurationSeconds() != null).count();
+        long repetitionSets = values.stream().filter(log -> log.getReps() != null).count();
+
         var history = values.stream().map(log -> new ExerciseProgressResponse.ProgressPoint(
-                log.getWorkoutSessionExercise().getWorkoutSession().getSessionDate(), variantCode(log), log.getWeight(),
-                log.getReps(), volume(log), rounded(log.estimatedOneRepMax())))
-                .sorted(Comparator.comparing(ExerciseProgressResponse.ProgressPoint::date)).toList();
-        return new ExerciseProgressResponse(code, maxWeight, maxReps, totalVolume(values), bestOneRepMax(values), values.size(), history);
+                log.getWorkoutSessionExercise().getWorkoutSession().getSessionDate(),
+                variantCode(log), log.getWeight(), log.getReps(), volume(log),
+                rounded(log.estimatedOneRepMax()), log.getDurationSeconds(),
+                log.getDistanceMeters(), log.getAddedWeightKg(), log.getAssistanceWeightKg(),
+                log.getLoadMode()))
+                .sorted(Comparator.comparing(ExerciseProgressResponse.ProgressPoint::date))
+                .toList();
+        return new ExerciseProgressResponse(code, maxWeight, maxReps,
+                totalVolume(values), bestOneRepMax(values), values.size(), history,
+                maxDuration, maxLastre, minAssistance, totalDistance, timedSets, repetitionSets);
     }
 
     private List<ExerciseSetLog> completed(Long userId) { return logs.findCompletedForProgress(userId); }

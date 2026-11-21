@@ -76,8 +76,8 @@ class TrainingStatisticsServiceTest {
     private ExerciseSetLog setLog(String oneRepMax, String weight, int reps, long variantId) {
         ExerciseSetLog log = mock(ExerciseSetLog.class, RETURNS_DEEP_STUBS);
         when(log.estimatedOneRepMax()).thenReturn(new BigDecimal(oneRepMax));
-        when(log.getWeight()).thenReturn(new BigDecimal(weight));
-        when(log.getReps()).thenReturn(reps);
+        lenient().when(log.getWeight()).thenReturn(new BigDecimal(weight));
+        lenient().when(log.getReps()).thenReturn(reps);
         lenient().when(log.getWorkoutSessionExercise().getExerciseVariant().getId()).thenReturn(variantId);
         when(log.getWorkoutSessionExercise().getExerciseVariant().getExercise().getMainMuscleGroup())
                 .thenReturn(MuscleGroup.CHEST);
