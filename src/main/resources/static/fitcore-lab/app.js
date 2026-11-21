@@ -1298,6 +1298,8 @@ function duplicateSelectedPlanDay() {
 
             sets: exercise.sets,
             reps: exercise.reps,
+            targetDurationSeconds: exercise.targetDurationSeconds,
+            targetDistanceMeters: exercise.targetDistanceMeters,
             restSeconds: exercise.restSeconds
         }))
     };
@@ -3214,6 +3216,18 @@ function savePlanAdvancedConfig(event) {
     toast('Configuración actualizada. Se han conservado las series, repeticiones, descanso y orden. Guarda el plan para conservar el cambio.');
 }
 
+async function recoverPlannedSessionExercises() {
+    if(!state.currentSession || state.sessionExercises.length) return;
+    try {
+        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/import-planned-exercises`,
+            {method:'POST'});
+        await loadSessionExercises();
+        toast('Ejercicios del plan cargados en la sesión.');
+    } catch(error) {
+        toast(error.message,true);
+    }
+}
+
 async function loadSessionExercises() {
     if (!state.currentSession) return renderSession();
     try {
@@ -3307,7 +3321,17 @@ function renderSession() {
     // Actualizar métricas y temporizador
     renderSessionSummary();
     manageSessionTimer(active);
-    const container = $('session-exercises'); if (!state.sessionExercises.length) { container.innerHTML = `<div class="empty-state large">${active ? 'Añade el primer ejercicio de la sesión.':'Inicia una sesión para registrar ejercicios y series.'}</div>`; void renderSessionMiniMap(); return; }
+    const container = $('session-exercises');
+    if (!state.sessionExercises.length) {
+        const planned = active && state.currentSession?.workoutDayId != null;
+        container.innerHTML = planned
+            ? '<div class="empty-state large">Este día del plan no tiene ejercicios cargados en la sesión.'+
+              '<button type="button" class="button button-secondary" data-recover-plan-exercises>'+
+              'Cargar ejercicios del plan</button></div>'
+            : `<div class="empty-state large">${active ? 'Añade el primer ejercicio de la sesión.':'Inicia una sesión para registrar ejercicios y series.'}</div>`;
+        void renderSessionMiniMap();
+        return;
+    }
     container.innerHTML = state.sessionExercises.map(exercise => {
         const sets = state.sessionSets.get(exercise.id) || [];
         const previous = state.sessionPrevious.get(exercise.id) || {sessionDate:null, sets:[]};
@@ -4909,7 +4933,12 @@ function bindEvents() {
     });
     document.querySelectorAll('[data-close-picker]').forEach(button=>button.addEventListener('click',()=>{ closePickerVariantDialog(); $('exercise-picker-dialog').close(); })); document.querySelectorAll('[data-close-muscles]').forEach(button=>button.addEventListener('click',()=>$('session-muscle-dialog').close()));
     document.querySelectorAll('[data-close-rest]').forEach(button=>button.addEventListener('click',()=>$('rest-settings-dialog').close())); document.querySelectorAll('[data-close-rpe]').forEach(button=>button.addEventListener('click',()=>$('rpe-dialog').close()));
-    $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-edit-rest]'))openRestEditor(card);else if(e.target.closest('[data-rpe-picker]'))openRpeEditor(e.target.closest('[data-rpe-picker]'));else if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
+    $('session-exercises').addEventListener('click',async e=>{
+        if(e.target.closest('[data-recover-plan-exercises]')){
+            await recoverPlannedSessionExercises();
+            return;
+        }
+        const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-edit-rest]'))openRestEditor(card);else if(e.target.closest('[data-rpe-picker]'))openRpeEditor(e.target.closest('[data-rpe-picker]'));else if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
     $('session-exercises').addEventListener('change',async e=>{const completion=e.target.closest('[data-set-complete]');if(!completion)return;const row=completion.closest('[data-set-row]'),card=completion.closest('.session-card');await updateSet(card,row,row.dataset.setRow,completion.checked);});
     // Teclado nativo del móvil: al tocar un valor se selecciona entero,
     // como una calculadora. Enter avanza al próximo campo de la misma serie.
