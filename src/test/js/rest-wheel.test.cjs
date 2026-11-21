@@ -37,7 +37,7 @@ test('rest UI reuses modal and existing PATCH persistence',()=>{
  assert.ok(html.indexOf('rest-wheel.js')<html.indexOf('src="./app.js"'));
  assert.match(app,/restWheelSelected/);
  assert.match(app,/updateRestWheelFromScroll/);
- assert.match(app,/workout-sessions\/\$\{state.auth.userId\}\/exercises/);
+ assert.match(app,/workout-sessions\/\$\{state.currentSession.id\}\/exercises\/\$\{state.restEditorExerciseId\}\/rest/);
  assert.match(app,/restSeconds:restWheelSelected|const restSeconds=restWheelSelected/);
  assert.doesNotMatch(html,/id="rest-minutes"|id="rest-seconds"/);
  assert.match(styles,/scroll-snap-type:y mandatory/);
@@ -47,6 +47,6 @@ test('mobile numeric entry selects prior value and accepts decimal comma',()=>{
  assert.match(app,/inputmode="numeric"/);
  assert.match(app,/input\.select\(\)/);
  assert.match(app,/replace\(',', '\.'\)/);
- assert.match(app,/event.key==='Enter'/);
+ assert.match(app,/event.key!=='Enter'/);
  assert.match(app,/syncRpeFromRir/);
 });
