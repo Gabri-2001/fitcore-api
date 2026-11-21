@@ -3253,3 +3253,20 @@ body.resting .toast-region { bottom: 190px; }
 .rest-wheel-list {cursor:grab;user-select:none;-webkit-user-select:none;}
 .rest-wheel-list.is-dragging {cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto;}
 .rest-wheel-list.is-dragging .rest-wheel-option {cursor:grabbing;}
+
+/* Plan day classification: informational, never a replacement for the user's name. */
+#view-plans .plan-tab-classification {display:block;margin-top:3px;font-size:10px;font-weight:700;
+    color:var(--green-2);line-height:1.35;white-space:normal;}
+#view-plans .plan-day-classification {display:flex;flex-direction:column;gap:5px;
+    padding:12px 14px;border:1px solid #dae7dd;border-radius:13px;
+    background:#f4f9f1;margin:0 0 14px;overflow-wrap:anywhere;}
+#view-plans .plan-classification-eyebrow {font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--green-2);font-weight:850;}
+#view-plans .plan-day-classification strong {font-size:14px;line-height:1.35;color:var(--green);}
+#view-plans .plan-day-classification small {font-size:11px;line-height:1.5;color:var(--muted);}
+.plan-day-auto-toggle {display:flex;align-items:center;gap:10px;line-height:1.4;
+    color:var(--ink);font-weight:750;letter-spacing:0;}
+.plan-day-auto-toggle input {min-height:18px;width:18px;flex:0 0 18px;accent-color:var(--green-2);}
+.plan-edit-classification-preview {padding:10px 12px;background:#eff5f0;
+    color:var(--green-2);font-size:12px;line-height:1.5;border-radius:10px;}
+.plan-edit-type-card input:disabled + .plan-edit-type-content {opacity:.45;cursor:not-allowed;}
