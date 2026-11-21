@@ -3752,7 +3752,7 @@ function setBody(container) {
     const completion = container.querySelector('[data-set-complete]');
     return {
         setNumber:requiredInteger(container.querySelector('[data-set-number]').value, 'El número de serie', 1),
-        weight:container.querySelector('[data-set-weight]') ? validatedNumericValue(container.querySelector('[data-set-weight]'), 'El peso', false, 0) : null,
+        weight:container.querySelector('[data-set-weight]') && !container.querySelector('[data-set-weight]').hidden ? validatedNumericValue(container.querySelector('[data-set-weight]'), 'El peso', false, 0) : null,
         reps:container.querySelector('[data-set-reps]') ? validatedNumericValue(container.querySelector('[data-set-reps]'), 'Las repeticiones', true, 0) : null,
         durationSeconds:container.querySelector('[data-set-duration]') ? validatedNumericValue(container.querySelector('[data-set-duration]'), 'El tiempo en segundos', true, 0) : null,
         distanceMeters:container.querySelector('[data-set-distance]') ? validatedNumericValue(container.querySelector('[data-set-distance]'), 'La distancia en metros',false,0) : null,
