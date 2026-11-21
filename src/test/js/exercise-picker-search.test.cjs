@@ -404,3 +404,14 @@ test('plan distingue tiempo vs repeticiones según la unidad del catálogo',()=>
  assert.match(app,/targetDurationSeconds=readPositiveInteger/);
  assert.match(app,/targetDurationSeconds:e.targetDurationSeconds/);
 });
+
+test('el módulo de carrera registra distancia y tiempos con unidades coherentes',()=>{
+ const app=fs.readFileSync(path.join(staticDir,'app.js'),'utf8');
+ const html=fs.readFileSync(path.join(staticDir,'index.html'),'utf8');
+ assert.match(html,/id="view-endurance"/);
+ assert.match(html,/id="endurance-form"/);
+ assert.match(html,/id="endurance-km"/);
+ assert.match(app,/distanceMeters:distance/);
+ assert.match(app,/movingSeconds:moving,elapsedSeconds:elapsed/);
+ assert.match(app,/averagePaceSecondsPerKm/);
+});

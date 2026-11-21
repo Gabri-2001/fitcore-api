@@ -230,6 +230,7 @@ function navigate(view) {
         void renderPlanMusclePreview();
     }
     if (view === 'recommendations' && state.auth) loadRecommendations();
+    if (view === 'endurance' && state.auth) void loadEnduranceActivities();
 }
 
 async function healthCheck() {
@@ -4110,6 +4111,51 @@ async function loadOverview() {
     await Promise.allSettled([loadActivePlan(true), loadStats()]);
 }
 
+function formatEndurancePace(secondsPerKm) {
+    if (!Number.isFinite(Number(secondsPerKm)) || secondsPerKm == null) return '—';
+    const n = Math.round(Number(secondsPerKm));
+    return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')} min/km`;
+}
+async function loadEnduranceActivities() {
+    if (!state.auth) return;
+    try {
+        const values=await api(`/api/users/${state.auth.userId}/endurance-activities`);
+        const list=$('endurance-list');
+        if(!values?.length){list.innerHTML='<p>Aún no hay actividades registradas.</p>';return;}
+        list.innerHTML=values.map(a=>`<article class='card' style='padding:14px;margin:10px 0'>
+            <strong>${escapeHtml(friendly(a.activityType))}</strong>
+            <small>${new Date(a.startedAt).toLocaleString('es-ES')}</small>
+            <p>${formatNumber(Number(a.distanceMeters)/1000)} km · ${formatDuration(a.movingSeconds)} ·
+            ${formatEndurancePace(a.averagePaceSecondsPerKm)} · ${formatNumber(a.averageSpeedKmh||0)} km/h</p>
+            <small>${a.averageHeartRate ? a.averageHeartRate+' ppm · ' : ''}
+            ${a.source==='MANUAL'?'Introducción manual':escapeHtml(a.source)}</small>
+        </article>`).join('');
+    } catch(error){$('endurance-list').textContent=error.message;}
+}
+async function saveEnduranceActivity(event) {
+    event.preventDefault();
+    if(!requireAuth())return;
+    const numeric=id=>$(id).value.trim()===''?null:Number($(id).value);
+    const moving=Math.round((numeric('endurance-moving')||0)*60);
+    const elapsed=Math.round((numeric('endurance-elapsed')??(moving/60))*60);
+    const distance=Math.round((numeric('endurance-km')||0)*100000)/100;
+    if(moving<1||elapsed<moving||distance<0)return toast('Revisa distancia y tiempos.',true);
+    const payload={
+        activityType:$('endurance-type').value,
+        startedAt:new Date($('endurance-start').value).toISOString(),
+        movingSeconds:moving,elapsedSeconds:elapsed,distanceMeters:distance,
+        averageHeartRate:numeric('endurance-hr'),
+        elevationGainMeters:numeric('endurance-elevation'),
+        averageCadence:numeric('endurance-cadence'),
+        notes:$('endurance-notes').value.trim()||null,
+        laps:[]
+    };
+    try {
+        await api(`/api/users/${state.auth.userId}/endurance-activities`,{method:'POST',body:JSON.stringify(payload)});
+        toast('Actividad registrada.');
+        await loadEnduranceActivities();
+    }catch(error){toast(error.message,true);}
+}
 async function bootstrapUserData() {
     await Promise.allSettled([searchCatalog(), loadOverview(), restoreSession(), loadRecommendations(), loadProgressHistory()]);
 }
@@ -4650,6 +4696,8 @@ function bindEvents() {
     $('rpe-value').addEventListener('input',e=>updateRpePreview(e.target.value)); $('rpe-apply').addEventListener('click',applyRpeValue);
     $('rest-timer-toggle').addEventListener('click',toggleRestTimer); $('rest-timer-minus').addEventListener('click',()=>adjustRestTimer(-15)); $('rest-timer-plus').addEventListener('click',()=>adjustRestTimer(15)); $('rest-timer-skip').addEventListener('click',completeRestTimer);
     $('rest-finished-close').addEventListener('click',()=>{ $('rest-finished-dialog').close(); stopRestTimer(); });
+    $('endurance-form').addEventListener('submit',saveEnduranceActivity);
+    $('endurance-refresh').addEventListener('click',loadEnduranceActivities);
     $('stats-load').addEventListener('click',loadStats); $('goal-form').addEventListener('submit',saveGoal); $('progress-form').addEventListener('submit',saveProgress);
     $('recommendation-generate').addEventListener('click',generateRecommendation); $('recommendation-filter').addEventListener('change',loadRecommendations); $('recommendation-list').addEventListener('click',e=>{const button=e.target.closest('[data-decision]'),card=e.target.closest('[data-recommendation]');if(button&&card)decideRecommendation(card.dataset.recommendation,button.dataset.decision);});
     $('log-clear').addEventListener('click',()=>{state.logs=[];renderLogs();}); $('log-copy').addEventListener('click',async()=>{await navigator.clipboard.writeText(JSON.stringify(state.logs,null,2));toast('Registro copiado.');});
@@ -4674,6 +4722,7 @@ function bindEvents() {
 }
 
 async function init() {
+    $('endurance-start').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('plan-date').value=today(); $('session-date').value=today(); $('progress-date').value=today(); $('stats-from').value=daysAgo(29); $('stats-to').value=today(); $('goal-target-date').value=daysAgo(-90);
     fillSelect($('catalog-equipment'),enums.equipment,'Todo'); fillSelect($('catalog-muscle'),enums.muscles,'Todos'); fillSelect($('session-exercise-equipment'),enums.equipment,'Todo el equipamiento'); fillSelect($('session-exercise-muscle'),enums.muscles,'Todos los músculos'); fillSelect($('goal-groups'),enums.muscles); bindEvents(); setAuth(state.auth); addPlanDay(); renderSession(); await Promise.all([loadSvg(),healthCheck()]);
     navigate(location.hash.slice(1) && $(`view-${location.hash.slice(1)}`) ? location.hash.slice(1) : 'overview');
