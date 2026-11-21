@@ -50,7 +50,7 @@ class FlywayPostgresIntegrationTest {
                 JOIN exercises e ON e.id = v.exercise_id
                 WHERE e.main_muscle_group = 'CHEST'
                 """, Integer.class);
-        assertEquals(31, chestCount);
+        assertEquals(32, chestCount);
 
         Integer lowInclines = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM exercise_variants
@@ -253,7 +253,7 @@ class FlywayPostgresIntegrationTest {
                 JOIN exercises e ON e.id = v.exercise_id
                 WHERE e.main_muscle_group IN ('CHEST','BACK') AND v.active
                 """, Integer.class);
-        assertEquals(71, existingCounts);
+        assertEquals(72, existingCounts);
 
         Integer shoulderDefaults = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM exercise_variants v
@@ -342,8 +342,8 @@ class FlywayPostgresIntegrationTest {
                 SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
                 WHERE e.main_muscle_group='GLUTES' AND v.active
                 """, Integer.class);
-        assertEquals(25, quadriceps);
-        assertEquals(12, glutes);
+        assertEquals(27, quadriceps);
+        assertEquals(13, glutes);
 
         String adductorsGroup = jdbcTemplate.queryForObject("""
                 SELECT main_muscle_group FROM exercises WHERE code='hipAdduction'
@@ -429,12 +429,12 @@ class FlywayPostgresIntegrationTest {
                 SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
                 WHERE e.main_muscle_group='CORE' AND v.active
                 """, Integer.class);
-        assertEquals(25, variants);
+        assertEquals(27, variants);
 
         Integer families = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM exercises WHERE main_muscle_group='CORE' AND active
                 """, Integer.class);
-        assertEquals(9, families);
+        assertEquals(11, families);
 
         Integer newMappings = jdbcTemplate.queryForObject("""
                 SELECT COUNT(*) FROM exercise_muscle_activations WHERE mapping_version=10
@@ -608,9 +608,9 @@ class FlywayPostgresIntegrationTest {
         Integer wall = jdbcTemplate.queryForObject("""
             SELECT COUNT(*) FROM exercise_variants WHERE equipment='BODYWEIGHT'
             AND required_facility='WALL'""",Integer.class);
-        assertEquals(42,all);
-        assertEquals(20,noEquipment);
-        assertEquals(2,wall);
+        assertEquals(50,all);
+        assertEquals(28,noEquipment);
+        assertEquals(3,wall);
         Integer facilityViolations = jdbcTemplate.queryForObject("""
             SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
             WHERE e.code IN ('pullUp','dip','scapularPullUp','deadHang')
