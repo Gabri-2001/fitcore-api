@@ -74,13 +74,35 @@ test('Cancelar deja la selección original y Aplicar confirma el borrador', () =
     const section = extract('function availablePickerVariants(', 'async function openPlanAdvancedConfigDialog(');
     const nodes = {
         'picker-variant-dialog': {
-            open:false, style:{values:{},setProperty(key,value){this.values[key]=value;}},
+            open:false,
+            style:{values:{},height:'',maxHeight:'',visibility:'',
+                setProperty(key,value){this.values[key]=value;}},
+            querySelector(selector){
+                return {
+                    '.picker-variant-modal-shell': nodes['picker-variant-modal-shell'],
+                    '.picker-variant-heading': nodes['picker-variant-heading'],
+                    '.picker-variant-dialog-actions': nodes['picker-variant-dialog-actions']
+                }[selector] || null;
+            },
             showModal(){this.open=true;},close(){this.open=false;}
         },
-        'picker-variant-dialog-body': {querySelector(){return null;}},
+        'picker-variant-modal-shell':{style:{height:'',maxHeight:''}},
+        'picker-variant-heading':{getBoundingClientRect(){return {height:95};}},
+        'picker-variant-dialog-actions':{getBoundingClientRect(){return {height:70};}},
+        'picker-variant-dialog-body': {
+            style:{overflowY:''},
+            get scrollHeight(){
+                const chosen = context.state.pickerDraft?.configuration.variantCode;
+                return chosen === 'incline' ? 410 : 295;
+            },
+            querySelector(){return null;}
+        },
         'picker-variant-title': {textContent:''},
         'picker-variant-identity': {innerHTML:''},
-        'picker-variant-dialog-fields': {innerHTML:''},
+        'picker-variant-dialog-fields': {
+            innerHTML:'',
+            querySelector(){return {open:false};}
+        },
         'picker-variant-dialog-result': {innerHTML:''},
         'picker-variant-apply': {disabled:false}
     };
@@ -114,9 +136,10 @@ test('Cancelar deja la selección original y Aplicar confirma el borrador', () =
     vm.createContext(context);
     vm.runInContext(section,context);
     context.openPickerVariantDialog();
-    const modalHeight=nodes['picker-variant-dialog'].style.values['--picker-variant-height-desktop'];
-    assert.match(modalHeight,/^\d+px$/);
-    assert.ok(Number.parseInt(modalHeight,10)>=610);
+    const modalHeight=nodes['picker-variant-dialog'].style.values['--picker-variant-height'];
+    assert.equal(modalHeight,'577px'); // 95 cabecera + 410 contenido + 70 pie + 2 borde
+    assert.equal(context.state.pickerDraft.configuration.variantCode,'default');
+    assert.equal(nodes['picker-variant-dialog'].style.visibility,'');
     context.state.pickerDraft.configuration.variantCode='incline';
     context.closePickerVariantDialog();
     assert.equal(context.state.sessionPicker.configuration.variantCode,'default');
@@ -334,4 +357,31 @@ test('cambiar repetidamente postura conserva Más ajustes técnicos abierto hast
     assert.equal(draft.moreOpen,false);
     assert.equal(details.open,false);
     assert.equal(renderCount,6);
+});
+
+test('la ficha vertical conserva el icono encima del texto y el color del selector',()=>{
+    const styles=fs.readFileSync(path.join(staticDir,'styles.css'),'utf8');
+    const identity=styles.match(/\.picker-variant-identity\s*\{([^}]+)\}/);
+    assert.ok(identity);
+    assert.match(identity[1],/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+    assert.match(identity[1],/justify-items:\s*start/);
+    const thumb=styles.match(/\.picker-variant-identity\s*>\s*\.picker-variant-thumb\s*\{([^}]+)\}/);
+    assert.ok(thumb);
+    assert.match(thumb[1],/background:\s*#e7ede8/i);
+    assert.doesNotMatch(identity[1],/80px minmax/);
+});
+test('la altura máxima es la real del ejercicio, no un mínimo genérico',()=>{
+    const section=extract('function measurePickerVariantHeight(', 'function openPickerVariantDialog() {');
+    assert.match(section,/for \(const variant of variants\)/);
+    assert.match(section,/body\.scrollHeight/);
+    assert.match(section,/details\.open = true/);
+    assert.match(section,/draft\.configuration = before\.configuration/);
+    assert.match(section,/--picker-variant-height/);
+    assert.doesNotMatch(section,/Math\.max\(610/);
+    const styles=fs.readFileSync(path.join(staticDir,'styles.css'),'utf8');
+    const root=styles.match(/#picker-variant-dialog\.picker-variant-dialog\s*\{([^}]+)\}/);
+    assert.ok(root);
+    assert.match(root[1],/var\(--picker-variant-height,/);
+    assert.doesNotMatch(root[1],/--picker-variant-height-desktop/);
+    assert.doesNotMatch(root[1],/height:\s*800px/);
 });
