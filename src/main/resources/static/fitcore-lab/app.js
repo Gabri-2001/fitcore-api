@@ -561,6 +561,12 @@ function updatePlanClassificationVisuals(){
 async function refreshPlanDayClassification(dayIndex,updateUI=true){
     const day=state.planDays[dayIndex];
     if(!day)return null;
+    // Catalog and plan data load concurrently. Never cache a result based on
+    // temporarily missing variant metadata during the initial bootstrap.
+    if(day.exercises.length&&(!state.variants.length||!state.exercises.length)){
+        if(updateUI&&dayIndex===state.selectedPlanDayIndex)updatePlanClassificationVisuals();
+        return null;
+    }
     const signature=JSON.stringify((day.exercises||[]).map(e=>[e.exerciseVariantCode,e.sets]));
     if(day._classificationSignature===signature&&day.classification){
         if(updateUI&&dayIndex===state.selectedPlanDayIndex)updatePlanClassificationVisuals();
