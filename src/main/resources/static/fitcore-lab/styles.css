@@ -2937,6 +2937,9 @@ body.resting .toast-region { bottom: 190px; }
 #picker-variant-dialog.picker-variant-dialog {
     position: fixed; inset: 0; margin: auto;
     width: min(780px, calc(100vw - 28px)); max-width: 780px;
+    /* La altura se reserva al abrir según la configuración MÁS compleja
+       del ejercicio. Cambiar variante no encoge ni recentra el diálogo. */
+    height: min(var(--picker-variant-height-desktop, 660px), calc(100dvh - 24px));
     max-height: min(800px, calc(100dvh - 24px));
     padding: 0; overflow: hidden; border: 1px solid #d6e2da;
     border-radius: 20px; background: #fff;
@@ -2944,20 +2947,34 @@ body.resting .toast-region { bottom: 190px; }
 }
 #picker-variant-dialog::backdrop { background: rgba(10, 31, 23, .62); backdrop-filter: blur(3px); }
 .picker-variant-modal-shell { display: grid; grid-template-rows: auto minmax(0,1fr) auto;
-    max-height: min(800px, calc(100dvh - 24px)); }
+    height: 100%; min-height: 0; max-height: 100%; }
 .picker-variant-heading { align-items: flex-start; }
 .picker-variant-heading h2 { font-size: 22px; }
 .picker-variant-dialog-body { display: grid; grid-template-columns: minmax(215px,.7fr) minmax(0,1.3fr);
     align-items: start; gap: 20px; min-height: 0; padding: 22px 26px; overflow-y: auto;
     overscroll-behavior: contain; background: #fbfcfa; }
-.picker-variant-identity { display: grid; align-content: start; gap: 12px; padding: 18px;
+.picker-variant-identity { display: grid; grid-template-columns: 80px minmax(0,1fr);
+    align-content: start; align-items: center; gap: 14px; padding: 18px;
     border: 1px solid var(--line); border-radius: 14px; background: #f2f7f3; }
-.picker-variant-thumb { width: 80px; height: 80px; object-fit: cover; border-radius: 14px; }
+/* Superficie separada para la miniatura; contraste sutil, nítido y coherente
+   con la paleta de FitCore sin tocar las miniaturas del resto de la app. */
+.picker-variant-identity > .picker-variant-thumb {
+    display: grid; place-items: center;
+    width: 80px; height: 80px; max-width: 100%; object-fit: cover;
+    border: 1px solid #c1d6c9; border-radius: 14px;
+    background: #dcebe2; color: #155d46;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
+}
+.picker-variant-identity > div { min-width: 0; overflow-wrap: anywhere; }
 .picker-variant-identity h3 { margin: 5px 0; font-size: 17px; }
 .picker-variant-identity p:not(.eyebrow) { margin: 0; color: var(--muted);
     font-size: 11px; line-height: 1.5; }
 .picker-variant-workspace { min-width: 0; }
-.picker-variant-dialog-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.picker-variant-dialog-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+    align-content: start; gap: 12px;
+    /* Reserva el espacio de los campos más extensos del mismo ejercicio,
+       incluido «Más ajustes técnicos» abierto. */
+    min-height: var(--picker-variant-fields-desktop, 160px); }
 .picker-variant-dialog-fields label { min-width: 0; font-size: 11px; font-weight: 750; }
 .picker-variant-dialog-fields select { display: block; width: 100%; margin-top: 6px; background: white; }
 .picker-variant-dialog-fields .plan-advanced-more,
@@ -2981,10 +2998,14 @@ body.resting .toast-region { bottom: 190px; }
 #picker-variant-dialog select:focus-visible, #picker-variant-dialog button:focus-visible {
     outline: 3px solid #b8ed63; outline-offset: 2px; }
 @media (max-width: 640px) {
+    #picker-variant-dialog.picker-variant-dialog {
+        height: min(var(--picker-variant-height-mobile, 690px), calc(100dvh - 24px));
+    }
     .picker-variant-heading h2 { font-size: 19px; }
     .picker-variant-dialog-body { grid-template-columns: 1fr; padding: 16px; gap: 14px; }
     .picker-variant-identity { grid-template-columns: 60px minmax(0,1fr); align-items: center; }
-    .picker-variant-thumb { width: 60px; height: 60px; }
+    .picker-variant-identity > .picker-variant-thumb { width: 60px; height: 60px; }
+    .picker-variant-dialog-fields { min-height: var(--picker-variant-fields-mobile, 220px); }
     .picker-variant-dialog-fields,
     .picker-variant-dialog-fields .plan-advanced-extra-fields { grid-template-columns: 1fr; }
     .picker-variant-dialog-actions { flex-wrap: wrap; }
