@@ -526,6 +526,69 @@ function submitPlanNewDay(event) {
 }
 
 
+function planDayLabel(day){
+    if(day.dayTypeManual!==false)return FitCoreDayClassifier.STRUCTURE[day.dayType]||friendly(day.dayType);
+    if(!day.classification)return day.exercises.length?'Analizando día…':'Pendiente de ejercicios';
+    return FitCoreDayClassifier.describe(day.classification)+
+        (day.classification.provisional?' · provisional':'');
+}
+
+function updatePlanClassificationVisuals(){
+    const day=state.planDays[state.selectedPlanDayIndex];
+    const el=$('plan-day-classification');
+    if(!day||!el)return;
+    const outcome=day.classification;
+    const manual=day.dayTypeManual!==false;
+    const suggested=outcome?FitCoreDayClassifier.describe(outcome):'Calculando…';
+    const details=outcome?.focus?.map(code=>FitCoreDayClassifier.NAMES[code]||code).join(' y ')||'Por determinar';
+    const label=manual?'Clasificación manual':'Clasificación automática';
+    const summary=manual?(outcome?'Sugerencia: '+suggested:'Modificable desde Configurar día')
+        :outcome?.reasons.length?outcome.reasons.join(' · '):'Calculada según ejercicios y series';
+    el.innerHTML='<span class="plan-classification-eyebrow">'+escapeHtml(label)+'</span>'+
+        '<strong>'+escapeHtml(planDayLabel(day))+'</strong>'+
+        '<small>Enfoque: '+escapeHtml(details)+'</small>'+
+        '<small>'+escapeHtml(summary)+'</small>';
+    const badge=document.querySelector('.plan-day-type-badge');
+    if(badge)badge.innerHTML=planDayIcon(day.dayType)+' '+escapeHtml(planDayLabel(day));
+    const hint=$('plan-edit-classification-preview');
+    if(hint&&$('plan-edit-day-dialog').open){
+        hint.textContent='Sugerencia: '+suggested+
+            (outcome?.provisional?' (provisional)':'')+
+            (outcome?.missingEvidence?' · datos anatómicos parciales':'');
+    }
+}
+
+async function refreshPlanDayClassification(dayIndex,updateUI=true){
+    const day=state.planDays[dayIndex];
+    if(!day)return null;
+    const signature=JSON.stringify((day.exercises||[]).map(e=>[e.exerciseVariantCode,e.sets]));
+    if(day._classificationSignature===signature&&day.classification){
+        if(updateUI&&dayIndex===state.selectedPlanDayIndex)updatePlanClassificationVisuals();
+        return day.classification;
+    }
+    const inputs=await Promise.all((day.exercises||[]).map(async item=>{
+        const variant=state.variants.find(v=>v.code===item.exerciseVariantCode);
+        const exercise=state.exercises.find(e=>e.code===variant?.exerciseCode);
+        if(!variant||!exercise)return {code:item.exerciseVariantCode,sets:item.sets};
+        const response=await getPlanVariantActivations(item.exerciseVariantCode);
+        return {code:item.exerciseVariantCode,sets:item.sets,group:exercise.mainMuscleGroup,
+            pattern:exercise.movementPattern,family:exercise.code,
+            activations:response.failed?null:response.rows};
+    }));
+    if(state.planDays[dayIndex]!==day||
+        JSON.stringify((day.exercises||[]).map(e=>[e.exerciseVariantCode,e.sets]))!==signature)return null;
+    const outcome=FitCoreDayClassifier.classify(inputs);
+    day.classification=outcome;
+    day._classificationSignature=signature;
+    if(day.dayTypeManual===false&&!outcome.provisional&&
+        enums.dayTypes.includes(outcome.structure))day.dayType=outcome.structure;
+    if(updateUI&&dayIndex===state.selectedPlanDayIndex){
+        renderPlanDayTabs();
+        updatePlanClassificationVisuals();
+    }
+    return outcome;
+}
+
 function planDayIcon(dayType) {
     const paths = {
         PUSH:'<path d="M4 9v6m16-6v6M7 7v10m10-10v10M7 12h10"/>',
