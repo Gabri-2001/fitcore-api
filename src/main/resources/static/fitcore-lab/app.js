@@ -464,7 +464,7 @@ function variantName(code) {
 function addPlanDay(source = null) {
     syncPlanEditor();
     state.planDays.push(source ? {
-        id: source.id, name:source.name, dayType:source.dayType, exercises:(source.exercises || []).map(x => ({id:x.id, exerciseVariantCode:x.exerciseVariantCode, sets:x.sets, reps:x.reps, restSeconds:x.restSeconds}))
+        id: source.id, name:source.name, dayType:source.dayType, exercises:(source.exercises || []).map(x => ({id:x.id, exerciseVariantCode:x.exerciseVariantCode, sets:x.sets, reps:x.reps, targetDurationSeconds:x.targetDurationSeconds, targetDistanceMeters:x.targetDistanceMeters, restSeconds:x.restSeconds}))
     } : {name:'Nueva sesión', dayType:'FULL_BODY', exercises:[]});
     state.selectedPlanDayIndex = state.planDays.length - 1;
     renderPlanMode();
@@ -1012,6 +1012,18 @@ function planStepper(field, value, min, suffix, label) {
     return `<div class="plan-stepper" data-plan-stepper><button type="button" data-step-field="${field}" data-step="-1" aria-label="Reducir ${label}">−</button><input data-exercise-${field} type="number" min="${min}" value="${Number(value)}" aria-label="${label}"><span>${suffix}</span><button type="button" data-step-field="${field}" data-step="1" aria-label="Aumentar ${label}">＋</button></div>`;
 }
 
+function exerciseDefaultUnit(variantCode) {
+    const variant=state.variants.find(v=>v.code===variantCode);
+    return state.exercises.find(e=>e.code===variant?.exerciseCode)?.defaultUnit || 'REPETITIONS';
+}
+function syncPickerGoalFields(variant) {
+    const timed=exerciseDefaultUnit(variant?.code)==='SECONDS';
+    const reps=$('plan-picker-reps-label'), seconds=$('plan-picker-duration-label');
+    if(!reps||!seconds)return;
+    reps.hidden=timed;seconds.hidden=!timed;
+    $('plan-picker-reps').required=!timed;
+    $('plan-picker-duration').required=timed;
+}
 function exerciseEditor(exercise, index) {
     const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
     const base = state.exercises.find(item => item.code === variant?.exerciseCode);
@@ -1033,7 +1045,9 @@ function exerciseEditor(exercise, index) {
 <button type="button" data-move="-1" aria-label="Subir ejercicio">↑</button><button type="button" data-move="1" aria-label="Bajar ejercicio">↓</button></div>
         <div class="plan-exercise-identity">${thumb}<div><input data-exercise-code type="hidden" value="${escapeHtml(exercise.exerciseVariantCode || '')}"><strong class="plan-exercise-name">${escapeHtml(title)}</strong><small>${escapeHtml(details)}</small></div></div>
         ${planStepper('sets', exercise.sets || 3, 1, '', 'series')}
-        ${planStepper('reps', exercise.reps || 10, 1, '', 'repeticiones')}
+        ${exerciseDefaultUnit(exercise.exerciseVariantCode)==='SECONDS'
+            ? planStepper('durationSeconds',exercise.targetDurationSeconds||45,1,'s','segundos por serie')
+            : planStepper('reps',exercise.reps||10,1,'','repeticiones')}
         ${planStepper('rest', exercise.restSeconds ?? 90, 0, 's', 'segundos de descanso')}
         <div class="plan-row-menu">
             <button class="plan-row-actions" type="button" data-plan-row-menu-toggle aria-haspopup="menu" aria-expanded="false" aria-controls="${menuId}" aria-label="Acciones para ${escapeHtml(title)}">•••</button>
@@ -1118,7 +1132,9 @@ function syncPlanEditor() {
         if (!exercise) return;
         exercise.exerciseVariantCode = row.querySelector('[data-exercise-code]').value.trim();
         exercise.sets = Number(row.querySelector('[data-exercise-sets]').value);
-        exercise.reps = Number(row.querySelector('[data-exercise-reps]').value);
+        exercise.reps = row.querySelector('[data-exercise-reps]') ? Number(row.querySelector('[data-exercise-reps]').value) : null;
+        exercise.targetDurationSeconds = row.querySelector('[data-exercise-durationSeconds]')
+            ? Number(row.querySelector('[data-exercise-durationSeconds]').value) : null;
         exercise.restSeconds = Number(row.querySelector('[data-exercise-rest]').value);
     });
 }
@@ -1334,12 +1350,14 @@ async function deleteSelectedPlanDay() {
 
 function planPayload() {
     syncPlanEditor();
-    return {name:$('plan-name').value.trim(), description:$('plan-description').value.trim() || null, days:state.planDays.map((day,di) => ({name:day.name, dayOrder:di+1, dayType:day.dayType, exercises:day.exercises.map((e,ei) => ({exerciseVariantCode:e.exerciseVariantCode, sets:e.sets, reps:e.reps, restSeconds:e.restSeconds, exerciseOrder:ei+1}))}))};
+    return {name:$('plan-name').value.trim(), description:$('plan-description').value.trim() || null, days:state.planDays.map((day,di) => ({name:day.name, dayOrder:di+1, dayType:day.dayType, exercises:day.exercises.map((e,ei) => ({exerciseVariantCode:e.exerciseVariantCode, sets:e.sets, reps:e.reps, targetDurationSeconds:e.targetDurationSeconds, targetDistanceMeters:e.targetDistanceMeters, restSeconds:e.restSeconds, exerciseOrder:ei+1}))}))};
 }
 
 async function savePlan() {
     if (!requireAuth()) return; const payload = planPayload();
-    if (!payload.name || !payload.days.length || payload.days.some(d => !d.name || d.exercises.some(e => !e.exerciseVariantCode || e.sets < 1 || e.reps < 1))) return toast('Completa el nombre, los días y todos los ejercicios.', true);
+    if (!payload.name || !payload.days.length || payload.days.some(d => !d.name || d.exercises.some(e => !e.exerciseVariantCode || e.sets < 1 ||
+                (exerciseDefaultUnit(e.exerciseVariantCode)==='SECONDS'
+                    ? !(e.targetDurationSeconds>=1) : !(e.reps>=1))))) return toast('Completa el nombre, los días y todos los ejercicios.', true);
     try {
         const body = state.activePlan ? {...payload, effectiveDate:$('plan-date').value} : {...payload, startDate:$('plan-date').value};
         const path = state.activePlan ? `/api/users/${state.auth.userId}/workout-plans/${state.activePlan.id}` : `/api/users/${state.auth.userId}/workout-plans`;
@@ -1381,6 +1399,8 @@ async function loadActivePlan(silent = false) {
 
                         sets: exercise.sets,
                         reps: exercise.reps,
+                        targetDurationSeconds: exercise.targetDurationSeconds,
+                        targetDistanceMeters: exercise.targetDistanceMeters,
                         restSeconds: exercise.restSeconds
                     }))
             }));
@@ -2208,6 +2228,7 @@ async function addSessionExercise() {
 
         let sets;
         let reps;
+        let targetDurationSeconds;
         let restSeconds;
 
         try {
@@ -2215,9 +2236,13 @@ async function addSessionExercise() {
                 'plan-picker-sets', 1
             );
 
-            reps = readPositiveInteger(
-                'plan-picker-reps', 1
-            );
+            if (exerciseDefaultUnit(selectedVariant.code)==='SECONDS') {
+                reps=null;
+                targetDurationSeconds=readPositiveInteger('plan-picker-duration',1);
+            } else {
+                reps=readPositiveInteger('plan-picker-reps',1);
+                targetDurationSeconds=null;
+            }
 
             restSeconds = readPositiveInteger(
                 'plan-picker-rest', 0
@@ -2232,6 +2257,7 @@ async function addSessionExercise() {
             exerciseVariantCode: selectedVariant.code,
             sets,
             reps,
+            targetDurationSeconds,
             restSeconds
         });
 
@@ -2599,6 +2625,7 @@ async function openExercisePicker(mode = 'session', options = {}) {
         // Valores iniciales de planificación
         $('plan-picker-sets').value = '3';
         $('plan-picker-reps').value = '10';
+        $('plan-picker-duration').value = '45';
         $('plan-picker-rest').value = '90';
 
         renderSessionExerciseResults();
@@ -2856,6 +2883,7 @@ function renderPlanSimpleExerciseConfig(container, exercise) {
         ${canConfigure ? '<p>Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.</p>' : ''}
     </div>`;
     $('session-add-exercise').disabled = false;
+    syncPickerGoalFields(selected);
 }
 
 // Medir la altura REAL de la variante más exigente de ESTE ejercicio, con

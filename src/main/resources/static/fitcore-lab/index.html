@@ -831,7 +831,7 @@
                                required>
                     </label>
 
-                    <label>
+                    <label id="plan-picker-reps-label">
                         Repeticiones
                         <input id="plan-picker-reps"
                                type="number"
@@ -842,6 +842,10 @@
                                required>
                     </label>
 
+                    <label id="plan-picker-duration-label" hidden>
+                        Tiempo por serie (s)
+                        <input id="plan-picker-duration" type="number" min="1" max="86400" step="1" value="45">
+                    </label>
                     <label>
                         Descanso (s)
                         <input id="plan-picker-rest"

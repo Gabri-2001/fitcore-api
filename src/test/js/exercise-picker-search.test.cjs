@@ -397,3 +397,10 @@ test('Sin equipamiento incluye flexiones y variante en pared, excluye barras y p
  assert.equal(find(e,variants,'',{equipment:'BODYWEIGHT'}).length,4);
  assert.equal(find(e,variants,'flexiones escapulares pared',{equipment:'NONE'})[0].variant.code,'wall');
 });
+
+test('plan distingue tiempo vs repeticiones según la unidad del catálogo',()=>{
+ assert.match(app,/function exerciseDefaultUnit\(/);
+ assert.match(app,/plan-picker-duration-label/);
+ assert.match(app,/targetDurationSeconds=readPositiveInteger/);
+ assert.match(app,/targetDurationSeconds:e.targetDurationSeconds/);
+});
