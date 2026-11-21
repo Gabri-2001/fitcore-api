@@ -119,6 +119,18 @@
         return fields.join(' ');
     }
 
+    function matchesEquipment(variant, equipment) {
+        if (!equipment) return true;
+        if (equipment === 'BODYWEIGHT') return variant.equipment === 'BODYWEIGHT';
+        if (equipment === 'NONE') {
+            // Una pared no es material deportivo; una barra sí.
+            return (variant.equipment === 'BODYWEIGHT' ||
+                    variant.equipment === 'NONE') &&
+                   ['NONE','WALL'].includes(variant.requiredFacility || 'NONE');
+        }
+        return variant.equipment === equipment;
+    }
+
     function search({
         exercises = [], variants = [], query = '', equipment = '',
         muscle = '', friendly = value => String(value ?? '')
@@ -137,7 +149,7 @@
         exercises.forEach(exercise => {
             if (muscle && exercise.mainMuscleGroup !== muscle) return;
             const all = byExercise.get(exercise.code) || [];
-            const filtered = all.filter(variant => !equipment || variant.equipment === equipment);
+            const filtered = all.filter(variant => matchesEquipment(variant,equipment));
             if (!filtered.length) return;
 
             // "Press francés" es un alias válido de extensión tumbada.
@@ -183,7 +195,9 @@
         return results;
     }
 
-    const api = Object.freeze({ normalize, matches, search, groupKey, preferred, titleFor });
+    const api = Object.freeze({
+        normalize, matches, matchesEquipment, search, groupKey, preferred, titleFor
+    });
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     root.FitCoreExerciseSearch = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

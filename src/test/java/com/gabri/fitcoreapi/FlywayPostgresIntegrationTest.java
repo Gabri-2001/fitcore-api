@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(28, version);
+        assertEquals(29, version);
     }
 
     @Test
@@ -598,4 +598,27 @@ class FlywayPostgresIntegrationTest {
         assertEquals(3,tricepsFamilies);
     }
 
+    @Test
+    void classifiesBodyweightFacilitiesAndKeepsWallInsideTheSameFamily() {
+        Integer all = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM exercise_variants WHERE equipment='BODYWEIGHT'",Integer.class);
+        Integer noEquipment = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants WHERE equipment='BODYWEIGHT'
+            AND required_facility IN ('NONE','WALL')""",Integer.class);
+        Integer wall = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants WHERE equipment='BODYWEIGHT'
+            AND required_facility='WALL'""",Integer.class);
+        assertEquals(42,all);
+        assertEquals(20,noEquipment);
+        assertEquals(2,wall);
+        Integer facilityViolations = jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
+            WHERE e.code IN ('pullUp','dip','scapularPullUp','deadHang')
+            AND v.required_facility='NONE' AND v.equipment='BODYWEIGHT'""",Integer.class);
+        assertEquals(0,facilityViolations);
+        String selectedWall = jdbcTemplate.queryForObject("""
+            SELECT required_facility FROM exercise_variants WHERE code='scapularPushUpWall'
+            """,String.class);
+        assertEquals("WALL",selectedWall);
+    }
 }

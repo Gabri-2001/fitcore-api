@@ -378,3 +378,22 @@ test('escribir «francés» sin press también localiza la extensión tumbada',(
   assert.deepEqual(find([tr],variants,'frances').map(x=>x.title),
     ['Extensión de tríceps tumbado']);
 });
+
+test('Sin equipamiento incluye flexiones y variante en pared, excluye barras y paralelas',()=>{
+ const e=[{code:'scapularPushUp',name:'Flexiones escapulares',mainMuscleGroup:'SCAPULAR'},
+  {code:'pullUp',name:'Dominadas',mainMuscleGroup:'BACK'},
+  {code:'dip',name:'Fondos en paralelas',mainMuscleGroup:'CHEST'},
+  {code:'pushUp',name:'Flexiones',mainMuscleGroup:'CHEST'}];
+ const variants=[
+  v('floor','scapularPushUp','BODYWEIGHT','Flexiones escapulares en suelo',{requiredFacility:'NONE',isDefault:true}),
+  v('wall','scapularPushUp','BODYWEIGHT','Flexiones escapulares en pared',{requiredFacility:'WALL'}),
+  v('pull','pullUp','BODYWEIGHT','Dominadas pronas',{requiredFacility:'PULL_UP_BAR'}),
+  v('dip','dip','BODYWEIGHT','Fondos',{requiredFacility:'PARALLEL_BARS'}),
+  v('push','pushUp','BODYWEIGHT','Flexiones estándar',{requiredFacility:'NONE'})
+ ];
+ const none=find(e,variants,'',{equipment:'NONE'});
+ assert.deepEqual(none.map(x=>x.title),['Flexiones escapulares','Flexiones']);
+ assert.deepEqual(none[0].variantCodes,['floor','wall']);
+ assert.equal(find(e,variants,'',{equipment:'BODYWEIGHT'}).length,4);
+ assert.equal(find(e,variants,'flexiones escapulares pared',{equipment:'NONE'})[0].variant.code,'wall');
+});

@@ -24,6 +24,19 @@ public class ExerciseVariant extends BaseEntity {
     private Equipment equipment;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "required_facility", nullable = false, length = 40)
+    private RequiredFacility requiredFacility = RequiredFacility.NONE;
+
+    @Column(name = "resistance_source", nullable = false, length = 24)
+    private String resistanceSource = "EXTERNAL_LOAD";
+
+    @Column(name = "allows_added_weight", nullable = false)
+    private boolean allowsAddedWeight;
+
+    @Column(name = "allows_assistance", nullable = false)
+    private boolean allowsAssistance;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "grip_type", length = 50)
     private GripType gripType;
 
@@ -291,6 +304,11 @@ public class ExerciseVariant extends BaseEntity {
     public void setGripType(GripType gripType) {
         this.gripType = gripType;
     }
+
+    public RequiredFacility getRequiredFacility() { return requiredFacility; }
+    public String getResistanceSource() { return resistanceSource; }
+    public boolean isAllowsAddedWeight() { return allowsAddedWeight; }
+    public boolean isAllowsAssistance() { return allowsAssistance; }
 
     public Equipment getEquipment() {
         return equipment;
