@@ -2756,7 +2756,9 @@ function renderSessionExerciseConfig() {
     const optionalPositionField = pickerPositionOptions(exercise,
         availablePickerVariants(exercise), state.sessionPicker.configuration, 'data-session-position');
     const pickerTitle = pickerVariantTitle(exercise, selectedVariant, state.sessionPicker.configuration);
-    const visibleControls = controls.filter(control => control.values.length > 1 || ['equipment','attachmentType'].includes(control.key));
+    const visibleControls = controls.filter(control =>
+        !(optionalPositionField && control.key === 'bodyPosition') &&
+        (control.values.length > 1 || ['equipment','attachmentType'].includes(control.key)));
     const fields = visibleControls.map(control => `<label>${control.label}<select data-session-variant-config="${control.key}" ${control.values.length === 1 ? 'disabled':''}>${control.values.map(value => `<option value="${value}" ${value === control.selected ? 'selected':''}>${variantValue(control.key, value)}</option>`).join('')}</select></label>`).join('');
     container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(pickerTitle)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${optionalPositionField}${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(pickerTitle)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
     $('session-add-exercise').disabled = !selectedVariant;
@@ -2773,6 +2775,7 @@ function renderVariantConfiguratorFields(controls, candidates, selectedVariant, 
         allVariants = null
     } = options;
     const editable = controls.filter(control =>
+        !(options.hideBodyPosition && control.key === 'bodyPosition') &&
         control.values.filter(value => !(control.empty || []).includes(value)).length >= 2
     );
     const primary = editable.filter(control => planPrimaryVariantKeys.has(control.key));
@@ -2886,6 +2889,7 @@ function renderPickerVariantDialog() {
             exactAttribute:'data-picker-dialog-variant-code',
             moreAttribute:'data-picker-dialog-more',
             moreOpen:!!draft.moreOpen,
+            hideBodyPosition:FitCoreVariantUI.hasOptionalPosition(exercise, variants),
             allVariants: variants
         });
     const chips = selectedVariant ? variantConfigurationChips(selectedVariant).slice(0,4) : [];
