@@ -453,7 +453,7 @@ class FlywayPostgresIntegrationTest {
                 SELECT COUNT(*) FROM exercise_variants v JOIN exercises e ON e.id=v.exercise_id
                 WHERE e.main_muscle_group='CORE' AND v.active AND v.is_default
                 """, Integer.class);
-        assertEquals(9, activeDefaults);
+        assertEquals(11, activeDefaults);
 
         String pallofPattern = jdbcTemplate.queryForObject("""
                 SELECT movement_pattern FROM exercises WHERE code='pallofPress'
