@@ -599,7 +599,11 @@ function planDayIcon(dayType) {
         FULL_BODY:'<path d="M12 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm-4 7 4-2 4 2 3 5-2 1-2-3v8h-2v-6h-2v6H9v-8l-2 3-2-1Z"/>',
         CARDIO:'<path d="M3 13h4l2-5 4 10 2-5h6"/>',
         MOBILITY:'<path d="M5 15c3-8 11-8 14 0M8 18h8M12 4v4"/>',
-        REST:'<path d="M6 18h12M8 18V9h8v9M9 6h6"/>'
+        REST:'<path d="M6 18h12M8 18V9h8v9M9 6h6"/>',
+        ARMS:'<path d="M4 20l4-8 4 3 3-7 5 3-4 9Z"/>',
+        CORE:'<path d="M8 3h8l2 7-2 11H8L6 10Z"/>',
+        MIXED:'<path d="M4 5h16M4 12h16M4 19h16"/>',
+        CONDITIONING:'<path d="M3 13h4l2-5 4 10 2-5h6"/>'
     };
     return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[dayType] || paths.FULL_BODY}</svg>`;
 }
@@ -1253,6 +1257,7 @@ function openPlanEditDayDialog() {
         `DÍA ${state.selectedPlanDayIndex + 1}`;
 
     $('plan-edit-day-name').value = day.name || '';
+    $('plan-edit-day-auto').checked=day.dayTypeManual===false;
 
     // Crear las opciones visuales con sus iconos SVG
     $('plan-edit-day-types').innerHTML =
@@ -1278,6 +1283,7 @@ function openPlanEditDayDialog() {
 
         `).join('');
 
+    updatePlanEditTypeMode();
     // Deshabilitar movimientos imposibles
     $('plan-edit-move-up').disabled =
         state.selectedPlanDayIndex === 0;
@@ -1289,6 +1295,18 @@ function openPlanEditDayDialog() {
     $('plan-edit-day-dialog').showModal();
 }
 
+
+function updatePlanEditTypeMode(){
+    const automatic=$('plan-edit-day-auto').checked;
+    $('plan-edit-day-types').querySelectorAll('input[type="radio"]')
+        .forEach(input=>{input.disabled=automatic;});
+    const day=state.planDays[state.selectedPlanDayIndex];
+    const outcome=day?.classification;
+    $('plan-edit-classification-preview').textContent=outcome
+        ? 'Sugerencia: '+FitCoreDayClassifier.describe(outcome)+
+          (outcome.provisional?' (provisional)':'')
+        : 'La sugerencia aparecerá al añadir ejercicios.';
+}
 
 // Aplicar los valores al borrador del plan
 function applyPlanEditDraft() {
@@ -1314,10 +1332,8 @@ function applyPlanEditDraft() {
         return false;
     }
 
-    if (
-        !typeInput ||
-        !enums.dayTypes.includes(typeInput.value)
-    ) {
+    const automatic=$('plan-edit-day-auto').checked;
+    if (!automatic&&(!typeInput||!enums.dayTypes.includes(typeInput.value))) {
         toast(
             'Selecciona el tipo de entrenamiento.',
             true
@@ -1326,7 +1342,10 @@ function applyPlanEditDraft() {
     }
 
     day.name = nameInput.value.trim();
-    day.dayType = typeInput.value;
+    day.dayTypeManual=!automatic;
+    if(!automatic)day.dayType=typeInput.value;
+    else if(day.classification&&!day.classification.provisional&&
+        enums.dayTypes.includes(day.classification.structure))day.dayType=day.classification.structure;
 
     return true;
 }
@@ -4654,6 +4673,10 @@ function bindEvents() {
     );
 
 
+    $('plan-new-day-auto').addEventListener('change',()=>{
+        $('plan-new-day-type').disabled=$('plan-new-day-auto').checked;
+    });
+    $('plan-edit-day-auto').addEventListener('change',updatePlanEditTypeMode);
     $('plan-new-day-form').addEventListener(
         'submit',
         submitPlanNewDay
