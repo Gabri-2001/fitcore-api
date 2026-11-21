@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(29, version);
+        assertEquals(30, version);
     }
 
     @Test
@@ -620,5 +620,15 @@ class FlywayPostgresIntegrationTest {
             SELECT required_facility FROM exercise_variants WHERE code='scapularPushUpWall'
             """,String.class);
         assertEquals("WALL",selectedWall);
+    }
+    @Test
+    void supportsTimedAndAssistedSetsWithoutBreakingHistoricalRows() {
+        Integer metrics=jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM information_schema.columns
+            WHERE table_name='exercise_set_logs'
+              AND column_name IN ('duration_seconds','distance_meters',
+                                  'added_weight_kg','assistance_weight_kg','load_mode')
+            """,Integer.class);
+        assertEquals(5,metrics);
     }
 }
