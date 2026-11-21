@@ -140,6 +140,14 @@
             const filtered = all.filter(variant => !equipment || variant.equipment === equipment);
             if (!filtered.length) return;
 
+            // "press" genérico solo busca ejercicios cuyo nombre público
+            // contiene press. "Press francés" requiere el término "francés".
+            const pressRequested = tokens.includes('press');
+            const namedPress = matches([exercise.name, titleFor(exercise)].join(' '), ['press']);
+            const frenchPress = exercise.code === 'lyingTricepsExtension' &&
+                tokens.some(token => token.startsWith('franc'));
+            if (pressRequested && !namedPress && !frenchPress) return;
+
             const matched = tokens.length
                 ? filtered.filter(variant =>
                     matches(variantSearchText(exercise, variant, friendly), tokens))
