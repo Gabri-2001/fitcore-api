@@ -2858,6 +2858,38 @@ function renderPlanSimpleExerciseConfig(container, exercise) {
     $('session-add-exercise').disabled = false;
 }
 
+// Reservar una geometría fija al abrir cada ejercicio. Se calcula una vez
+// usando TODAS sus variantes; el contenido puede desplazarse internamente
+// sin encoger ni recentrar el modal al cambiar material o técnica.
+function pickerVariantModalLayout(exercise, variants) {
+    const meaningful = field => [...new Set(variants.map(v => v[field.key]).filter(Boolean))]
+        .filter(value => !(field.empty || []).includes(value));
+    const keys = variantConfigFields.filter(field => meaningful(field).length >= 2)
+        .map(field => field.key);
+    const optionalPosition = FitCoreVariantUI.hasOptionalPosition(exercise, variants);
+    const visibleKeys = keys.filter(key => !(optionalPosition && key === 'bodyPosition'));
+    const main = visibleKeys.filter(key => planPrimaryVariantKeys.has(key)).length;
+    const technical = visibleKeys.filter(key => !planPrimaryVariantKeys.has(key)).length +
+        (optionalPosition ? 1 : 0);
+    const mainRows = Math.ceil(main / 2);
+    const technicalRows = Math.ceil(technical / 2);
+    // Incluye espacio para resultado, encabezado y acciones. Los detalles
+    // técnicos pueden abrirse sin que el diálogo cambie de tamaño.
+    const desktopHeight = Math.max(610, Math.min(790,
+        405 + mainRows * 75 + (technical ? 85 + technicalRows * 72 : 0) +
+        (variants.length > 1 ? 58 : 0)));
+    const mobileHeight = Math.max(620, Math.min(790,
+        475 + main * 65 + (technical ? 55 + technical * 61 : 0)));
+    return {
+        desktopHeight,
+        mobileHeight,
+        desktopFields: Math.max(150, Math.min(490,
+            mainRows * 75 + (technical ? 85 + technicalRows * 72 : 0))),
+        mobileFields: Math.max(160, Math.min(570,
+            main * 65 + (technical ? 55 + technical * 61 : 0)))
+    };
+}
+
 function openPickerVariantDialog() {
     if (state.pickerMode !== 'plan') return;
     const exercise = state.sessionPicker.exercise;
@@ -2867,6 +2899,12 @@ function openPickerVariantDialog() {
     const selected = variants.find(v => v.code === state.sessionPicker.configuration?.variantCode)
         || variants.find(v => v.isDefault || v.defaultVariant || v.default)
         || variants[0];
+    const modalLayout = pickerVariantModalLayout(exercise, variants);
+    const modal = $('picker-variant-dialog');
+    modal.style.setProperty('--picker-variant-height-desktop', modalLayout.desktopHeight + 'px');
+    modal.style.setProperty('--picker-variant-height-mobile', modalLayout.mobileHeight + 'px');
+    modal.style.setProperty('--picker-variant-fields-desktop', modalLayout.desktopFields + 'px');
+    modal.style.setProperty('--picker-variant-fields-mobile', modalLayout.mobileFields + 'px');
     state.pickerDraft = {exerciseCode: exercise.code,
         configuration: {...configurationFromVariant(selected),
             _positionPreference:state.sessionPicker.configuration?._positionPreference || 'UNSPECIFIED'},
