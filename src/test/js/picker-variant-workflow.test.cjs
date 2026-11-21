@@ -282,7 +282,7 @@ test('cambiar repetidamente postura conserva Más ajustes técnicos abierto hast
         state,
         $:id=>id==='picker-variant-dialog-body'?
             {addEventListener:(type,callback)=>{if(type==='change')change=callback;}}:
-            {querySelector:()=>details},
+            {querySelector:()=>({...details, focus:()=>{}})},
         availablePickerVariants:()=>[
             {code:'stand',bodyPosition:'STANDING'},
             {code:'sit',bodyPosition:'SEATED'}
