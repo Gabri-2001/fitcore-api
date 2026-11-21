@@ -44,7 +44,7 @@ function classifyDay(items, catalog) {
     data.reasons.push('Hay ejercicios sin metadatos del catálogo');
     data.provisional=true;
   }
-  if(!total){data.reasons.push('No hay ejercicios válidos');return data;}
+  if(!total){data.provisional=true;data.reasons.push('No hay ejercicios válidos');return data;}
   const eligible=upper+lower;
   const entries=Object.entries(groups).filter(([g])=>g!=='CORE'&&g!=='FULL_BODY')
     .sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
