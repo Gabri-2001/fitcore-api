@@ -115,7 +115,7 @@ test('Cancelar deja la selección original y Aplicar confirma el borrador', () =
     vm.runInContext(section,context);
     context.openPickerVariantDialog();
     const modalHeight=nodes['picker-variant-dialog'].style.values['--picker-variant-height-desktop'];
-    assert.match(modalHeight,/^\\d+px$/);
+    assert.match(modalHeight,/^\d+px$/);
     assert.ok(Number.parseInt(modalHeight,10)>=610);
     context.state.pickerDraft.configuration.variantCode='incline';
     context.closePickerVariantDialog();
