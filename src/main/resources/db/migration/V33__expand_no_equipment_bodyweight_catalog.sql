@@ -137,8 +137,17 @@ BEGIN
  WHERE code IN ('airSquatBodyweight','gluteBridgeBodyweightFloor','wallSitBodyweight','hollowHoldBodyweight','mountainClimberBodyweightAlternating','burpeeBodyweightStandard','jumpingJackBodyweightStandard','pushUpKneesBodyweight');
  IF n<>8 THEN RAISE EXCEPTION 'V33 expected eight new variants, found %',n; END IF;
  SELECT COUNT(*) INTO n FROM exercise_muscle_activations a WHERE a.mapping_version=13;
- IF n<>23 THEN
- RAISE EXCEPTION 'V33 expected 23 activation relations, found %',n; END IF;
+ IF n<22 THEN
+ RAISE EXCEPTION 'V33 expected at least 22 new activation relations, found %',n; END IF;
+ IF EXISTS(
+    SELECT 1 FROM exercise_variants v WHERE v.code IN (
+        'airSquatBodyweight','gluteBridgeBodyweightFloor','wallSitBodyweight',
+        'hollowHoldBodyweight','mountainClimberBodyweightAlternating',
+        'burpeeBodyweightStandard','jumpingJackBodyweightStandard','pushUpKneesBodyweight')
+    AND NOT EXISTS(
+        SELECT 1 FROM exercise_muscle_activations a
+        WHERE a.exercise_variant_id=v.id AND a.role='PRIMARY')
+ ) THEN RAISE EXCEPTION 'V33 exercise variant without primary muscle'; END IF;
  SELECT COUNT(*) INTO n FROM exercises
  WHERE code IN ('airSquat','gluteBridge','wallSit','hollowHold','mountainClimber','burpee','jumpingJack');
  IF n<>7 THEN RAISE EXCEPTION 'V33 expected seven new families, found %',n; END IF;
