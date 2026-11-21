@@ -99,7 +99,7 @@ test('Cancelar deja la selección original y Aplicar confirma el borrador', () =
         variantConfigurationChips:()=>[],
         exerciseThumb:()=>'<span>PR</span>',
         escapeHtml:String,friendly:String,
-        FitCoreVariantUI:{variantTitle,hasOptionalPosition:()=>false},
+        FitCoreVariantUI:{variantTitle,hasOptionalPosition:()=>false,optionalPosition:()=>false},
         renderSessionExerciseConfig:()=>{},renderSessionExerciseResults:()=>{},
         $:id=>nodes[id]
     };
