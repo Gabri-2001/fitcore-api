@@ -24,8 +24,12 @@ public class WorkoutExercise extends BaseEntity {
     @Column(nullable = false)
     private Integer sets;
 
-    @Column(nullable = false)
     private Integer reps;
+
+    @Column(name="target_duration_seconds")
+    private Integer targetDurationSeconds;
+    @Column(name="target_distance_meters",precision=12,scale=2)
+    private java.math.BigDecimal targetDistanceMeters;
 
     @Column(name = "rest_seconds")
     private Integer restSeconds;
@@ -43,6 +47,16 @@ public class WorkoutExercise extends BaseEntity {
         this.restSeconds = restSeconds;
         this.exerciseOrder = exerciseOrder;
     }
+
+    public WorkoutExercise(ExerciseVariant variant, Integer sets, Integer reps,
+            Integer restSeconds, Integer order, Integer targetDurationSeconds,
+            java.math.BigDecimal targetDistanceMeters) {
+        this(variant, sets, reps, restSeconds, order);
+        this.targetDurationSeconds = targetDurationSeconds;
+        this.targetDistanceMeters = targetDistanceMeters;
+    }
+    public Integer getTargetDurationSeconds() { return targetDurationSeconds; }
+    public java.math.BigDecimal getTargetDistanceMeters() { return targetDistanceMeters; }
 
     public void setWorkoutDay(WorkoutDay workoutDay) {
         this.workoutDay = workoutDay;

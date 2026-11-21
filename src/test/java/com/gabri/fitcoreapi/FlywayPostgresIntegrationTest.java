@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(30, version);
+        assertEquals(31, version);
     }
 
     @Test
@@ -630,5 +630,19 @@ class FlywayPostgresIntegrationTest {
                                   'added_weight_kg','assistance_weight_kg','load_mode')
             """,Integer.class);
         assertEquals(5,metrics);
+    }
+    @Test
+    void supportsRepetitionAndTimedWorkoutPlanTargets() {
+        Integer nullableReps=jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM information_schema.columns
+            WHERE table_name='workout_exercises' AND column_name='reps' AND is_nullable='YES'
+            """,Integer.class);
+        Integer timed=jdbcTemplate.queryForObject("""
+            SELECT COUNT(*) FROM information_schema.columns
+            WHERE table_name='workout_exercises'
+            AND column_name IN ('target_duration_seconds','target_distance_meters')
+            """,Integer.class);
+        assertEquals(1,nullableReps);
+        assertEquals(2,timed);
     }
 }
