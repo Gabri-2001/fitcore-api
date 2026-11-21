@@ -83,4 +83,30 @@ class TrainingStatisticsServiceTest {
                 .thenReturn(MuscleGroup.CHEST);
         return log;
     }
+    @Test
+    void reportsInsufficientDataWhenBestOneRepMaxComesFromDifferentExercises() {
+        TrainingStatisticsService service = new TrainingStatisticsService(
+                users,sessions,setLogs,activations,goals,plans,progressRecords);
+        User user = new User("Test","test2@test.com",24,null,null);
+        GoalProfile goal = mock(GoalProfile.class);
+        when(goal.getGoalType()).thenReturn(GoalType.PERFORMANCE);
+        when(users.findById(1L)).thenReturn(Optional.of(user));
+        when(goals.findByUserAndActiveTrue(user)).thenReturn(Optional.of(goal));
+        when(plans.findByUserAndActiveTrue(user)).thenReturn(Optional.empty());
+        lenient().when(sessions.findByUserIdAndStatusAndSessionDateBetweenOrderBySessionDateAsc(
+                org.mockito.ArgumentMatchers.eq(1L),org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),org.mockito.ArgumentMatchers.any()))
+                .thenReturn(List.of());
+        ExerciseSetLog current=setLog("150","100",5,20L);
+        ExerciseSetLog previous=setLog("90","70",5,10L);
+        LocalDate from=LocalDate.of(2026,10,1), to=LocalDate.of(2026,10,30);
+        when(setLogs.findCompletedForStatistics(1L,from,to)).thenReturn(List.of(current));
+        when(setLogs.findCompletedForStatistics(1L,from.minusDays(30),from.minusDays(1)))
+                .thenReturn(List.of(previous));
+        when(activations.findByExerciseVariantIdIn(List.of(20L))).thenReturn(List.of());
+        lenient().when(progressRecords.findByUserIdAndRecordDateBetweenOrderByRecordDateAsc(1L,from,to))
+                .thenReturn(List.of());
+        var result=service.getStatistics(1L,from,to);
+        assertEquals(GoalProgressStatus.INSUFFICIENT_DATA,result.goalProgress().status());
+    }
 }
