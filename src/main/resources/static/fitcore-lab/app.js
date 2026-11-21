@@ -3370,9 +3370,17 @@ function renderSession() {
 function previousSetLabel(set) {
     if (!set || (set.weight == null && set.reps == null && set.durationSeconds == null))
         return '<span aria-label="Sin registro anterior">—</span>';
-    if(set.durationSeconds != null) return `<strong>${set.durationSeconds} s</strong>`;
-    const weight = set.weight == null ? '—' : `${formatNumber(set.weight)} kg`;
+    if(set.durationSeconds != null) {
+        const extra=set.addedWeightKg!=null ? ' · +'+formatNumber(set.addedWeightKg)+' kg' :
+            set.assistanceWeightKg!=null ? ' · asistencia '+formatNumber(set.assistanceWeightKg)+' kg' : '';
+        return `<strong>${set.durationSeconds} s${extra}</strong>`;
+    }
     const reps = set.reps == null ? '—' : set.reps;
+    const mode = set.loadMode || 'EXTERNAL_LOAD';
+    if(mode==='WEIGHTED')return `<strong>${reps} reps · +${formatNumber(set.addedWeightKg)} kg</strong>`;
+    if(mode==='ASSISTED')return `<strong>${reps} reps · ayuda ${formatNumber(set.assistanceWeightKg)} kg</strong>`;
+    if(mode==='BODYWEIGHT')return `<strong>${reps} reps · peso corporal</strong>`;
+    const weight = set.weight == null ? '—' : `${formatNumber(set.weight)} kg`;
     return `<strong>${weight} × ${reps}</strong>`;
 }
 
@@ -3515,110 +3523,61 @@ function sessionElapsedSeconds() { return state.sessionStartedAt ? Math.max(0, M
    ======================================== */
 
 function calculateSessionVolume() {
-    let volumeGrams = 0;
-    let totalReps = 0;
-    let completedSets = 0;
-    let setsWithoutVolume = 0;
-
-    // Recorrer TODOS los ejercicios de la sesión
-    for (const sets of state.sessionSets.values()) {
-
-        for (const set of sets || []) {
-
-            // Solo cuentan las series completadas
-            if (set.completed !== true) continue;
-
+    let volumeGrams=0,totalReps=0,totalTimedSeconds=0,totalDistanceMeters=0;
+    let completedSets=0,setsWithoutVolume=0,bodyweightSets=0;
+    for(const sets of state.sessionSets.values()) {
+        for(const set of sets||[]) {
+            if(set.completed!==true)continue;
             completedSets++;
-
-            const reps =
-                set.reps == null || set.reps === ''
-                    ? null
-                    : Number(set.reps);
-
-            const weight =
-                set.weight == null || set.weight === ''
-                    ? null
-                    : Number(set.weight);
-
-            const validReps =
-                reps !== null &&
-                Number.isSafeInteger(reps) &&
-                reps >= 0;
-
-            const validWeight =
-                weight !== null &&
-                Number.isFinite(weight) &&
-                weight >= 0;
-
-            // Contar repeticiones completadas
-            if (validReps) {
-                totalReps += reps;
+            const mode=set.loadMode||'EXTERNAL_LOAD';
+            const reps=set.reps==null?null:Number(set.reps);
+            const weight=set.weight==null?null:Number(set.weight);
+            const seconds=set.durationSeconds==null?null:Number(set.durationSeconds);
+            const distance=set.distanceMeters==null?null:Number(set.distanceMeters);
+            const validReps=Number.isSafeInteger(reps)&&reps>=0;
+            if(validReps)totalReps+=reps;
+            if(Number.isSafeInteger(seconds)&&seconds>0)totalTimedSeconds+=seconds;
+            if(Number.isFinite(distance)&&distance>0)totalDistanceMeters+=distance;
+            if(mode==='BODYWEIGHT'||mode==='WEIGHTED'||mode==='ASSISTED'){
+                bodyweightSets++;
+                continue;
             }
-
-            // Calcular el volumen de la serie
-            if (validReps && validWeight) {
-
-                // Convertir a gramos para evitar
-                // errores de precisión decimal
-                const weightGrams = Math.round(
-                    weight * 1000
-                );
-
-                volumeGrams += weightGrams * reps;
-
-            } else {
-                // Serie completada sin datos
-                // suficientes para calcular volumen
+            // Solo el peso externo real entra en kg × repeticiones.
+            if(validReps && Number.isFinite(weight)&&weight>=0) {
+                volumeGrams+=Math.round(weight*1000)*reps;
+            } else if(validReps && reps>0) {
                 setsWithoutVolume++;
             }
         }
     }
-
     return {
-        volumeKg: volumeGrams / 1000,
-        totalReps,
-        completedSets,
-        setsWithoutVolume
+        volumeKg:volumeGrams/1000,totalReps,totalTimedSeconds,
+        totalDistanceMeters,completedSets,setsWithoutVolume,bodyweightSets
     };
 }
 
-
 /* ACTUALIZAR EL PANEL DE ENTRENAMIENTO */
-
 function renderSessionSummary() {
-
-    const result = calculateSessionVolume();
-
-    // Duración
-    $('session-duration').textContent =
-        formatDuration(sessionElapsedSeconds());
-
-    // Volumen total en kg
-    $('session-volume').textContent =
-        `${result.volumeKg.toLocaleString('es-ES', {
-            maximumFractionDigits: 2
-        })} kg`;
-
-    // Número de series completadas
-    $('session-series').textContent =
-        result.completedSets;
-
-    // Repeticiones totales
-    const repsElement = $('session-volume-reps');
-
-    if (repsElement) {
-        repsElement.textContent =
-            `${result.totalReps} reps` +
-            (result.setsWithoutVolume
-                ? ' · parcial'
-                : '');
-    }
-
-    // Avisar si hay series sin datos de carga
-    $('session-volume').title =
-        result.setsWithoutVolume > 0
-            ? `Volumen parcial: ${result.setsWithoutVolume} serie(s) completada(s) sin peso o repeticiones registrados.`
-            : 'Volumen de carga: suma de peso × repeticiones de todas las series completadas.';
+    const result=calculateSessionVolume();
+    $('session-duration').textContent=formatDuration(sessionElapsedSeconds());
+    $('session-volume').textContent=result.volumeKg.toLocaleString('es-ES',{
+        maximumFractionDigits:2
+    })+' kg·reps';
+    $('session-series').textContent=result.completedSets;
+    const indicators=[result.totalReps+' reps'];
+    if(result.totalTimedSeconds>0)
+        indicators.push(formatDuration(result.totalTimedSeconds)+' de ejercicio');
+    if(result.totalDistanceMeters>0)
+        indicators.push(formatNumber(result.totalDistanceMeters)+' m');
+    if(result.bodyweightSets>0)
+        indicators.push(result.bodyweightSets+' series de peso corporal');
+    if(result.setsWithoutVolume>0)indicators.push('volumen externo parcial');
+    const repsElement=$('session-volume-reps');
+    if(repsElement)repsElement.textContent=indicators.join(' · ');
+    $('session-volume').title=result.setsWithoutVolume>0
+        ? 'Volumen externo parcial: '+result.setsWithoutVolume+
+            ' serie(s) con repeticiones y sin peso externo registrado.'
+        : 'Suma de peso externo registrado × repeticiones. Lastre, asistencia y peso corporal no se mezclan.';
 }
 
 
