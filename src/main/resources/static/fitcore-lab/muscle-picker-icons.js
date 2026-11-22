@@ -50,10 +50,28 @@
             accent:'<path d="M6 17l4 3M54 20l4-3M3 30h5M56 30h5M8 43l4-3M52 40l4 3"/>'},
         ALL:{base:'all',accent:'<path d="M11 31l21 11 21-11"/>'}
     });
+    // High-definition sprite atlas, 192x192 per cell, 4 columns x 2 rows.
+    // Batch 1: seven art-directed anatomical illustrations. The remaining
+    // muscle icons continue to use their existing vector artwork unchanged.
+    const PREMIUM=Object.freeze({
+        CHEST:[0,0],BACK:[1,0],SHOULDERS:[2,0],SCAPULAR:[3,0],
+        ROTATOR_CUFF:[0,1],BICEPS:[1,1],TRICEPS:[2,1]
+    });
+    const PREMIUM_ATLAS='./muscle-icons-premium.webp';
+    function premiumIcon(code,css){
+        const [col,row]=PREMIUM[code];
+        // The SVG viewBox clips a single 64-unit cell from a scaled atlas,
+        // keeping the full muscle portrait in exactly the same icon API.
+        return '<svg class="'+css+' mi-premium" viewBox="0 0 64 64" '+
+            'focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+
+            '<image href="'+PREMIUM_ATLAS+'" x="'+(-64*col)+'" y="'+(-64*row)+
+            '" width="256" height="128" preserveAspectRatio="none"/></svg>';
+    }
     function icon(code,options={}){
         const art=ART[code||'ALL']||ART.ALL;
         const css=options.className||'fitcore-muscle-icon';
         if(!/^[a-zA-Z0-9 _-]+$/.test(css))throw new TypeError('Invalid icon class');
+        if(Object.prototype.hasOwnProperty.call(PREMIUM,code))return premiumIcon(code,css);
         return '<svg class="'+css+'" viewBox="0 0 64 64" focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+
             '<circle class="mi-halo" cx="32" cy="32" r="30"/>'+
             (art.active?'<g class="mi-active">'+art.active+'</g>':'')+
