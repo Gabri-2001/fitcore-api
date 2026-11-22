@@ -626,16 +626,46 @@
 
         <section class="view" id="view-training" data-title="Entrenamiento en curso" data-eyebrow="EJECUCIÓN · SERIES · ESFUERZO">
             <div class="training-layout" id="training-layout">
-                <aside class="panel session-builder">
-                    <div class="section-heading"><div><p class="eyebrow">SESIÓN REAL</p><h2>Configurar</h2></div><span class="status-pill" id="session-status">Sin iniciar</span></div>
-                    <label>Fecha<input id="session-date" type="date"></label>
-                    <div class="field-grid"><label>Categoría<select id="session-category"><option value="HYPERTROPHY">Hipertrofia</option><option value="STRENGTH">Fuerza</option><option value="ENDURANCE">Resistencia</option><option value="CARDIO">Cardio</option><option value="MOBILITY">Movilidad</option><option value="MIXED">Mixto</option></select></label><label>Intensidad<select id="session-intensity"><option value="MODERATE">Moderada</option><option value="LOW">Baja</option><option value="HIGH">Alta</option><option value="VERY_HIGH">Muy alta</option></select></label></div>
-                    <label>Día del plan (opcional)<select id="session-day"><option value="">Sesión libre</option></select></label>
-                    <label>Notas<textarea id="session-notes" rows="3" placeholder="Sensaciones iniciales"></textarea></label>
-                    <button id="session-start" class="button button-primary button-block">Iniciar sesión</button>
-                    <div class="session-actions"><button id="session-cancel" class="button button-secondary" disabled>Cancelar</button><button id="session-delete" class="text-button danger" disabled>Eliminar sesión</button></div>
-                </aside>
-                <div class="session-workspace">
+                <aside class="panel session-builder session-preparation" aria-labelledby="session-prepare-title">
+<div class="session-prepare-heading"><span class="session-prepare-icon" aria-hidden="true">◈</span>
+<div><p class="eyebrow">PREPARAR ENTRENAMIENTO</p><h2 id="session-prepare-title">Elige cómo iniciar tu sesión</h2>
+<p>Crea un entrenamiento libre o carga un día de tu plan.</p></div></div>
+<span class="status-pill" id="session-status">Sin iniciar</span>
+<div class="session-preparation-modes" role="group" aria-label="Origen del entrenamiento">
+<button type="button" class="session-prepare-choice is-selected" data-session-source="free" aria-pressed="true">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+<strong>Nuevo entrenamiento</strong><small>Sesión libre, fuera del plan</small></button>
+<button type="button" class="session-prepare-choice" data-session-source="plan" aria-pressed="false">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg>
+<strong>Desde mi plan</strong><small>Cargar un día del plan</small></button></div>
+<div id="session-source-details" class="session-source-details" hidden>
+<label>Día del plan<select id="session-day"><option value="">Selecciona un día</option></select></label>
+<div id="session-plan-preview" class="session-plan-preview" aria-live="polite">Elige un día para ver sus ejercicios.</div></div>
+<label class="session-prepare-date">Fecha<input id="session-date" type="date" required></label>
+<div class="session-legacy-fields" hidden aria-hidden="true">
+<select id="session-category" tabindex="-1"><option value="MIXED">Mixto</option><option value="CARDIO">Cardio</option><option value="MOBILITY">Movilidad</option><option value="HYPERTROPHY">Hipertrofia</option><option value="STRENGTH">Fuerza</option><option value="ENDURANCE">Resistencia</option></select>
+<select id="session-intensity" tabindex="-1"><option value="MODERATE">Moderada</option></select></div>
+<div class="session-classification-setup">
+<div class="session-classification-header"><strong>Clasificación del entrenamiento</strong>
+<span class="session-classification-info" title="El tipo de sesión se calcula por ejercicios. El esfuerzo se registra como RIR y RPE en cada serie." aria-label="La clasificación no indica intensidad; esa información se registra en cada serie.">i</span></div>
+<div class="session-classification-modes" role="group" aria-label="Modo de clasificación">
+<button type="button" class="session-prepare-choice is-selected" data-session-classification="auto" aria-pressed="true">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2L12 3Z"/></svg>
+<strong>Automática</strong><small>Según ejercicios y series</small></button>
+<button type="button" class="session-prepare-choice" data-session-classification="manual" aria-pressed="false">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="m16 4 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg>
+<strong>Manual</strong><small>Elegir tipo de día</small></button></div>
+<div id="session-auto-classification" class="session-auto-classification" aria-live="polite"><strong>Sin clasificar todavía</strong><small>Se actualizará al añadir ejercicios.</small></div>
+<div id="session-manual-classification" class="session-manual-classification" hidden>
+<span class="session-manual-label">Tipo de entrenamiento</span>
+<div id="session-manual-types" class="session-manual-types" role="radiogroup" aria-label="Tipo de entrenamiento manual"></div></div></div>
+<label class="session-notes-label">Notas <small>(opcional)</small>
+<textarea id="session-notes" rows="2" placeholder="Sensaciones iniciales, objetivos, etc."></textarea></label>
+<button id="session-start" class="button button-primary button-block">Iniciar sesión</button>
+<div class="session-actions"><button id="session-cancel" class="button button-secondary" disabled>Cancelar</button>
+<button id="session-delete" class="text-button danger" disabled>Eliminar sesión</button></div>
+</aside>
+<div class="session-workspace">
                     <div class="session-dashboard" id="session-dashboard">
 
                         <div class="session-dashboard-title">
