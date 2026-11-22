@@ -2308,6 +2308,65 @@ function renderPlanMode() {
 }
 
 
+// Training preparation uses the same muscle-day taxonomy as Plans, except REST.
+let sessionSourceMode='free';
+let sessionClassificationMode='auto';
+let sessionClassificationSyncing=false;
+
+function availableTrainingTypes(){
+    return enums.dayTypes.filter(type=>type!=='REST');
+}
+
+function renderTrainingTypeOptions(target,name,selected='FULL_BODY'){
+    $(target).innerHTML=availableTrainingTypes().map(type=>
+        '<label class="session-manual-type">'+
+        '<input type="radio" name="'+name+'" value="'+type+'" '+(type===selected?'checked':'')+'>'+
+        '<span class="session-manual-type-body">'+planDayIcon(type)+
+        '<small>'+escapeHtml(FitCoreDayClassifier.STRUCTURE[type]||friendly(type))+'</small></span></label>'
+    ).join('');
+}
+
+function chosenSessionType(target){
+    return $(target)?.querySelector('input[type="radio"]:checked')?.value||null;
+}
+
+function updateTrainingPreparation(){
+    const fromPlan=sessionSourceMode==='plan';
+    $('session-source-details').hidden=!fromPlan;
+    document.querySelectorAll('[data-session-source]').forEach(button=>{
+        const selected=button.dataset.sessionSource===sessionSourceMode;
+        button.setAttribute('aria-pressed',String(selected));
+        button.classList.toggle('is-selected',selected);
+    });
+    const manual=sessionClassificationMode==='manual';
+    $('session-manual-classification').hidden=!manual;
+    $('session-auto-classification').hidden=manual;
+    document.querySelectorAll('[data-session-classification]').forEach(button=>{
+        const selected=button.dataset.sessionClassification===sessionClassificationMode;
+        button.setAttribute('aria-pressed',String(selected));
+        button.classList.toggle('is-selected',selected);
+    });
+    $('session-manual-types').querySelectorAll('input[type="radio"]').forEach(input=>{
+        input.disabled=!manual;
+    });
+    const selected=Number($('session-day').value);
+    const day=fromPlan?(state.activePlan?.days||[]).find(d=>d.id===selected):null;
+    if(fromPlan){
+        $('session-plan-preview').textContent=day
+            ? day.name+' · '+(day.exercises||[]).length+' ejercicios · '+
+              (day.exercises||[]).reduce((sum,exercise)=>sum+(Number(exercise.sets)||0),0)+' series'
+            : 'Elige un día para cargar sus ejercicios y series al iniciar.';
+    }
+    const type=day?.dayType&&day.dayType!=='REST'?day.dayType:null;
+    $('session-auto-classification').innerHTML=
+        '<strong>'+escapeHtml(type?FitCoreDayClassifier.STRUCTURE[type]||friendly(type):
+            'Pendiente de ejercicios')+'</strong>'+
+        '<small>'+(type?'Clasificación del día seleccionado. Se ajustará según las series registradas.':
+            'FitCore clasificará la sesión al registrar ejercicios y series.')+'</small>';
+    const valid=!(fromPlan&&!day);
+    $('session-start').disabled=!valid;
+}
+
 function fillSessionDays() {
     const select = $('session-day');
 
@@ -2316,9 +2375,9 @@ function fillSessionDays() {
         ?? select.value;
 
     select.innerHTML =
-        '<option value="">Sesión libre</option>';
+        '<option value="">Selecciona un día</option>';
 
-    (state.activePlan?.days || []).forEach(day => {
+    (state.activePlan?.days || []).filter(day=>day.dayType!=='REST').forEach(day => {
         select.add(
             new Option(
                 `${day.dayOrder}. ${day.name}`,
@@ -2336,11 +2395,8 @@ function fillSessionDays() {
         select.value = String(chosen);
     }
 
-    if (
-        state.currentSession?.status === 'IN_PROGRESS'
-    ) {
-        syncSessionHeader();
-    }
+    updateTrainingPreparation();
+    if(state.currentSession?.status==='IN_PROGRESS')syncSessionHeader();
 }
 
 
@@ -2363,10 +2419,30 @@ function currentSessionDayLabel() {
 
 async function startSession() {
     if (!requireAuth()) return;
-    const body = {workoutDayId:optionalNumber($('session-day').value), sessionDate:$('session-date').value, sessionCategory:$('session-category').value, sessionIntensity:$('session-intensity').value, durationMinutes:null, notes:$('session-notes').value.trim() || null, estimatedTotalCaloriesBurned:null};
+    const fromPlan=sessionSourceMode==='plan';
+    const dayId=fromPlan?optionalNumber($('session-day').value):null;
+    const linkedDay=(state.activePlan?.days||[]).find(day=>day.id===dayId);
+    if(fromPlan&&!linkedDay)return toast('Selecciona un día de tu plan antes de iniciar.',true);
+    if(fromPlan&&linkedDay.dayType==='REST')return toast('Un día de descanso no se puede iniciar como entrenamiento.',true);
+    const manual=sessionClassificationMode==='manual';
+    const type=manual?chosenSessionType('session-manual-types'):
+        (fromPlan&&linkedDay?.dayType!=='REST'?linkedDay?.dayType:null);
+    if(manual&&(!type||type==='REST'))return toast('Elige un tipo de entrenamiento válido.',true);
+    // The legacy API still stores goal/intensity; no unsupported global effort is inferred.
+    // RIR and RPE are recorded independently on each performed set.
+    const legacyCategory=type==='CARDIO'?'CARDIO':type==='MOBILITY'?'MOBILITY':'MIXED';
+    const body={
+        workoutDayId:dayId,sessionDate:$('session-date').value,
+        sessionCategory:legacyCategory,sessionIntensity:'MODERATE',
+        trainingDayType:type||null,trainingDayTypeManual:manual,
+        durationMinutes:null,notes:$('session-notes').value.trim()||null,
+        estimatedTotalCaloriesBurned:null
+    };
     try {
         state.currentSession = await api(`/api/users/${state.auth.userId}/workout-sessions`, {method:'POST', body:JSON.stringify(body)});
         state.currentSession.workoutDayId ??= body.workoutDayId;
+        state.currentSession.trainingDayType ??= body.trainingDayType;
+        state.currentSession.trainingDayTypeManual ??= body.trainingDayTypeManual;
         state.sessionStartedAt = Date.now();
         localStorage.setItem('fitcore.lab.currentSession', state.currentSession.id);
         localStorage.setItem(SESSION_STARTED_KEY, state.sessionStartedAt);
@@ -5065,6 +5141,19 @@ function bindEvents() {
 
     $('catalog-prev').addEventListener('click', () => searchCatalog(state.catalogPage - 1));
     $('catalog-next').addEventListener('click', () => searchCatalog(state.catalogPage + 1));
+    renderTrainingTypeOptions('session-manual-types','session-start-type');
+    document.querySelectorAll('[data-session-source]').forEach(button=>
+        button.addEventListener('click',()=>{
+            sessionSourceMode=button.dataset.sessionSource;
+            updateTrainingPreparation();
+        }));
+    document.querySelectorAll('[data-session-classification]').forEach(button=>
+        button.addEventListener('click',()=>{
+            sessionClassificationMode=button.dataset.sessionClassification;
+            updateTrainingPreparation();
+        }));
+    $('session-day').addEventListener('change',updateTrainingPreparation);
+    updateTrainingPreparation();
     $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener(
         'click',
         () => openExercisePicker('session')
