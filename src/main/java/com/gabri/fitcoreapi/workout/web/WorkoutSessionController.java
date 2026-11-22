@@ -44,7 +44,9 @@ public class WorkoutSessionController {
                 request.getSessionIntensity(),
                 request.getDurationMinutes(),
                 request.getNotes(),
-                request.getEstimatedTotalCaloriesBurned()
+                request.getEstimatedTotalCaloriesBurned(),
+                request.getMuscleSelectionMode(),
+                request.getManualMuscleGroups()
         );
 
         URI location = URI.create("/api/users/" + userId + "/workout-sessions/" + workoutSession.getId());
@@ -92,7 +94,15 @@ public class WorkoutSessionController {
         return WorkoutSessionResponse.from(workoutSessionService.updateWorkoutSession(
                 userId, workoutSessionId, request.sessionDate(), request.sessionCategory(),
                 request.sessionIntensity(), request.durationMinutes(), request.notes(),
-                request.estimatedTotalCaloriesBurned()));
+                request.estimatedTotalCaloriesBurned(), request.muscleSelectionMode(),
+                request.manualMuscleGroups()));
+    }
+
+    @Operation(summary = "Resolve the muscle groups selected manually or inferred from session exercises")
+    @GetMapping("/{workoutSessionId}/muscle-groups")
+    public List<com.gabri.fitcoreapi.muscle.domain.MuscleGroup> getSessionMuscleGroups(
+            @PathVariable Long userId, @PathVariable Long workoutSessionId) {
+        return workoutSessionService.getSessionMuscleGroups(userId, workoutSessionId);
     }
 
     @Operation(summary = "Complete an in-progress workout session")

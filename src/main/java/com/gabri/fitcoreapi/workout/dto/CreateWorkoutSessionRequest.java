@@ -2,11 +2,14 @@ package com.gabri.fitcoreapi.workout.dto;
 
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionCategory;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionIntensity;
+import com.gabri.fitcoreapi.workout.domain.WorkoutMuscleSelectionMode;
+import com.gabri.fitcoreapi.muscle.domain.MuscleGroup;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public class CreateWorkoutSessionRequest {
 
@@ -15,11 +18,14 @@ public class CreateWorkoutSessionRequest {
     @NotNull(message = "{validation.workoutSession.sessionDate.required}")
     private LocalDate sessionDate;
 
-    @NotNull(message = "{validation.workoutSession.sessionCategory.required}")
+    // Legacy metadata; newer clients classify muscle groups instead.
     private WorkoutSessionCategory sessionCategory;
 
-    @NotNull(message = "{validation.workoutSession.sessionIntensity.required}")
+    // RPE and RIR belong to individual sets, not the whole session.
     private WorkoutSessionIntensity sessionIntensity;
+
+    private WorkoutMuscleSelectionMode muscleSelectionMode = WorkoutMuscleSelectionMode.AUTO;
+    private List<MuscleGroup> manualMuscleGroups = List.of();
 
     @Min(value = 1, message = "{validation.workoutSession.durationMinutes.min}")
     private Integer durationMinutes;
@@ -45,6 +51,10 @@ public class CreateWorkoutSessionRequest {
     public WorkoutSessionIntensity getSessionIntensity() {
         return sessionIntensity;
     }
+
+    public WorkoutMuscleSelectionMode getMuscleSelectionMode() { return muscleSelectionMode; }
+
+    public List<MuscleGroup> getManualMuscleGroups() { return manualMuscleGroups; }
 
     public Integer getDurationMinutes() {
         return durationMinutes;

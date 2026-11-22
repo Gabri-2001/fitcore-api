@@ -2,6 +2,10 @@ package com.gabri.fitcoreapi.workout.domain;
 
 import com.gabri.fitcoreapi.common.model.BaseEntity;
 import com.gabri.fitcoreapi.user.domain.User;
+import com.gabri.fitcoreapi.muscle.domain.MuscleGroup;
+import com.gabri.fitcoreapi.common.exception.BusinessRuleException;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,7 +21,10 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "workout_sessions")
@@ -35,12 +42,22 @@ public class WorkoutSession extends BaseEntity {
     private LocalDate sessionDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "session_category", nullable = false, length = 40)
+    @Column(name = "session_category", length = 40)
     private WorkoutSessionCategory sessionCategory;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "session_intensity", nullable = false, length = 40)
+    @Column(name = "session_intensity", length = 40)
     private WorkoutSessionIntensity sessionIntensity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "muscle_selection_mode", nullable = false, length = 12)
+    private WorkoutMuscleSelectionMode muscleSelectionMode = WorkoutMuscleSelectionMode.AUTO;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "workout_session_manual_muscle_groups", joinColumns = @JoinColumn(name = "workout_session_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "muscle_group", nullable = false, length = 40)
+    private Set<MuscleGroup> manualMuscleGroups = new LinkedHashSet<>();
 
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
@@ -112,6 +129,33 @@ public class WorkoutSession extends BaseEntity {
 
     public WorkoutSessionIntensity getSessionIntensity() {
         return sessionIntensity;
+    }
+
+    public WorkoutMuscleSelectionMode getMuscleSelectionMode() {
+        return muscleSelectionMode;
+    }
+
+    public Set<MuscleGroup> getManualMuscleGroups() {
+        return java.util.Collections.unmodifiableSet(manualMuscleGroups);
+    }
+
+    public void configureMuscleSelection(WorkoutMuscleSelectionMode mode, Collection<MuscleGroup> muscleGroups) {
+        WorkoutMuscleSelectionMode resolvedMode = mode == null ? WorkoutMuscleSelectionMode.AUTO : mode;
+        Collection<MuscleGroup> requested = muscleGroups == null ? List.of() : muscleGroups;
+        if (requested.stream().anyMatch(java.util.Objects::isNull)) {
+            throw new BusinessRuleException("Muscle groups cannot contain null values");
+        }
+        if (resolvedMode == WorkoutMuscleSelectionMode.MANUAL && requested.isEmpty()) {
+            throw new BusinessRuleException("Manual muscle selection requires at least one muscle group");
+        }
+        if (resolvedMode == WorkoutMuscleSelectionMode.AUTO && !requested.isEmpty()) {
+            throw new BusinessRuleException("Automatic muscle selection cannot include manual muscle groups");
+        }
+        this.muscleSelectionMode = resolvedMode;
+        this.manualMuscleGroups.clear();
+        if (resolvedMode == WorkoutMuscleSelectionMode.MANUAL) {
+            this.manualMuscleGroups.addAll(requested);
+        }
     }
 
     public Integer getDurationMinutes() {

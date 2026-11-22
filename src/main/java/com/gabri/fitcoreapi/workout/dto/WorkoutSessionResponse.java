@@ -4,10 +4,13 @@ import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionCategory;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionIntensity;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionStatus;
+import com.gabri.fitcoreapi.workout.domain.WorkoutMuscleSelectionMode;
+import com.gabri.fitcoreapi.muscle.domain.MuscleGroup;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Instant;
+import java.util.List;
 
 public class WorkoutSessionResponse {
 
@@ -16,6 +19,8 @@ public class WorkoutSessionResponse {
     private LocalDate sessionDate;
     private WorkoutSessionCategory sessionCategory;
     private WorkoutSessionIntensity sessionIntensity;
+    private WorkoutMuscleSelectionMode muscleSelectionMode;
+    private List<MuscleGroup> manualMuscleGroups;
     private Integer durationMinutes;
     private String notes;
     private BigDecimal estimatedTotalCaloriesBurned;
@@ -28,6 +33,8 @@ public class WorkoutSessionResponse {
             LocalDate sessionDate,
             WorkoutSessionCategory sessionCategory,
             WorkoutSessionIntensity sessionIntensity,
+            WorkoutMuscleSelectionMode muscleSelectionMode,
+            List<MuscleGroup> manualMuscleGroups,
             Integer durationMinutes,
             String notes,
             BigDecimal estimatedTotalCaloriesBurned,
@@ -39,6 +46,8 @@ public class WorkoutSessionResponse {
         this.sessionDate = sessionDate;
         this.sessionCategory = sessionCategory;
         this.sessionIntensity = sessionIntensity;
+        this.muscleSelectionMode = muscleSelectionMode;
+        this.manualMuscleGroups = manualMuscleGroups;
         this.durationMinutes = durationMinutes;
         this.notes = notes;
         this.estimatedTotalCaloriesBurned = estimatedTotalCaloriesBurned;
@@ -53,6 +62,8 @@ public class WorkoutSessionResponse {
                 workoutSession.getSessionDate(),
                 workoutSession.getSessionCategory(),
                 workoutSession.getSessionIntensity(),
+                workoutSession.getMuscleSelectionMode(),
+                workoutSession.getManualMuscleGroups().stream().sorted().toList(),
                 workoutSession.getDurationMinutes(),
                 workoutSession.getNotes(),
                 workoutSession.getEstimatedTotalCaloriesBurned(),
@@ -80,6 +91,10 @@ public class WorkoutSessionResponse {
     public WorkoutSessionIntensity getSessionIntensity() {
         return sessionIntensity;
     }
+
+    public WorkoutMuscleSelectionMode getMuscleSelectionMode() { return muscleSelectionMode; }
+
+    public List<MuscleGroup> getManualMuscleGroups() { return manualMuscleGroups; }
 
     public Integer getDurationMinutes() {
         return durationMinutes;

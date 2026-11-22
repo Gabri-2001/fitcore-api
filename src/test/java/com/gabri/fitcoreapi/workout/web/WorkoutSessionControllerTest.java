@@ -60,7 +60,7 @@ class WorkoutSessionControllerTest {
 
         ReflectionTestUtils.setField(workoutSession, "id", 40L);
 
-        when(workoutSessionService.createWorkoutSession(any(), any(), any(), any(), any(), any(), any(), any()))
+        when(workoutSessionService.createWorkoutSession(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(workoutSession);
 
         String requestBody = """
@@ -84,7 +84,29 @@ class WorkoutSessionControllerTest {
                 .andExpect(jsonPath("$.sessionDate").value("2026-04-25"))
                 .andExpect(jsonPath("$.sessionCategory").value("STRENGTH"))
                 .andExpect(jsonPath("$.sessionIntensity").value("MODERATE"))
-                .andExpect(jsonPath("$.durationMinutes").value(75));
+                .andExpect(jsonPath("$.durationMinutes").value(75))
+                .andExpect(jsonPath("$.muscleSelectionMode").value("AUTO"));
+    }
+
+    @Test
+    @DisplayName("Should accept a session without legacy category or intensity")
+    void shouldCreateModernFreeSession() throws Exception {
+        WorkoutSession workoutSession = new WorkoutSession(
+                LocalDate.of(2026, 11, 22), null, null, null, null, null);
+        ReflectionTestUtils.setField(workoutSession, "id", 41L);
+        when(workoutSessionService.createWorkoutSession(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(workoutSession);
+
+        mockMvc.perform(post("/api/users/1/workout-sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"sessionDate":"2026-11-22","muscleSelectionMode":"AUTO"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(41))
+                .andExpect(jsonPath("$.muscleSelectionMode").value("AUTO"))
+                .andExpect(jsonPath("$.sessionCategory").doesNotExist())
+                .andExpect(jsonPath("$.sessionIntensity").doesNotExist());
     }
 
     @Test
