@@ -1163,6 +1163,61 @@ function suppressClickAfterPlanDrag(event) {
 }
 
 
+// Delegate to the same mask in the plan editor and the add-exercise dialog.
+function bindPlanDurationMask() {
+    const selector='[data-exercise-durationSeconds], #plan-picker-duration';
+    const matches=event=>event.target?.matches?.(selector);
+    function notify(input) {
+        const valid=FitCoreDurationInput.isValidGoal(FitCoreDurationInput.parse(input.value));
+        input.setCustomValidity(valid ? '' :
+            'Introduce un tiempo válido entre 00:00:01 y 99:59:59.');
+        if(input.matches('[data-exercise-durationSeconds]')){
+            syncPlanEditor();
+            if(valid)refreshPlanSessionSummary();
+        }
+    }
+    document.addEventListener('focusin',event=>{
+        if(matches(event))FitCoreDurationInput.beginEdit(event.target);
+    });
+    document.addEventListener('focusout',event=>{
+        if(matches(event))FitCoreDurationInput.endEdit(event.target);
+    });
+    document.addEventListener('beforeinput',event=>{
+        if(!matches(event))return;
+        const input=event.target;
+        if(event.inputType==='insertFromPaste')return; // handled by paste
+        if(event.inputType==='insertText' && event.data){
+            event.preventDefault();
+            if(input.selectionStart===0&&input.selectionEnd===input.value.length)
+                FitCoreDurationInput.edit(input,'clear');
+            FitCoreDurationInput.edit(input,'insert',event.data);
+            notify(input);
+        }else if(event.inputType?.startsWith('deleteContent')){
+            event.preventDefault();
+            FitCoreDurationInput.edit(input,'delete');
+            notify(input);
+        }
+    });
+    document.addEventListener('paste',event=>{
+        if(!matches(event))return;
+        event.preventDefault();
+        const input=event.target;
+        const raw=event.clipboardData?.getData('text')??'';
+        if(input.selectionStart===0&&input.selectionEnd===input.value.length)
+            FitCoreDurationInput.edit(input,'clear');
+        FitCoreDurationInput.edit(input,'insert',raw);
+        notify(input);
+    });
+    // Fallback for input methods without a cancellable beforeinput event.
+    document.addEventListener('input',event=>{
+        if(!matches(event))return;
+        const input=event.target;
+        const raw=input.value;
+        FitCoreDurationInput.edit(input,'clear');
+        FitCoreDurationInput.edit(input,'insert',raw);
+        notify(input);
+    });
+}
 function planTimedStepper(seconds) {
     const formatted=FitCoreDurationInput.format(Number(seconds)||45)||'00:00:45';
     return '<div class="plan-stepper plan-time-stepper" data-plan-stepper>'+
@@ -1316,7 +1371,7 @@ function syncPlanEditor() {
         if(durationField){
             const seconds=FitCoreDurationInput.parse(durationField.value);
             durationField.setCustomValidity(FitCoreDurationInput.isValidGoal(seconds)
-                ? '' : 'Introduce un tiempo válido en formato HH:MM:SS (mínimo 00:00:01).');
+                ? '' : 'Introduce un tiempo válido entre 00:00:01 y 99:59:59.');
             if(FitCoreDurationInput.isValidGoal(seconds))exercise.targetDurationSeconds=seconds;
         }else exercise.targetDurationSeconds=null;
         exercise.restSeconds = Number(row.querySelector('[data-exercise-rest]').value);
@@ -2540,7 +2595,7 @@ async function addSessionExercise() {
                 reps=null;
                 const seconds=FitCoreDurationInput.parse($('plan-picker-duration').value);
                 if(!FitCoreDurationInput.isValidGoal(seconds)){
-                    throw new Error('Introduce un tiempo válido en formato HH:MM:SS (mínimo 00:00:01).');
+                    throw new Error('Introduce un tiempo válido entre 00:00:01 y 99:59:59.');
                 }
                 targetDurationSeconds=seconds;
             } else {
@@ -5025,6 +5080,7 @@ function bindEvents() {
         menu.hidden=true;
         document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
     });
+    bindPlanDurationMask();
     $('plan-days').addEventListener('click', event => {
 
 
@@ -5096,6 +5152,7 @@ function bindEvents() {
                     return;
                 }
                 input.value=next;
+                FitCoreDurationInput.endEdit(input);
                 input.setCustomValidity('');
             }else{
                 const minimum=Number(input.min||0);
