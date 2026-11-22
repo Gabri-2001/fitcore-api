@@ -366,108 +366,136 @@
 
 
             <!-- ANÁLISIS MUSCULAR DEL PLAN -->
-            <dialog
-                    id="plan-muscle-dialog"
+            <dialog id="plan-muscle-dialog"
                     class="plan-muscle-dialog"
                     aria-labelledby="plan-muscle-dialog-title">
-
-                <div class="dialog-heading compact">
-                    <div>
-                        <p class="eyebrow">
-                            PLANIFICACIÓN MUSCULAR
-                        </p>
-
-                        <h2 id="plan-muscle-dialog-title">
-                            Análisis muscular
-                        </h2>
-
-                        <p>
-                            Estimación según ejercicios y
-                            series programados, no esfuerzo real.
-                        </p>
+                <div class="dialog-heading compact plan-muscle-heading">
+                    <span class="plan-muscle-heading-symbol" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="14" width="4" height="7" rx="1"/>
+                            <rect x="10" y="9" width="4" height="12" rx="1"/>
+                            <rect x="17" y="3" width="4" height="18" rx="1"/>
+                        </svg>
+                    </span>
+                    <div class="plan-muscle-heading-copy">
+                        <p class="eyebrow">PLANIFICACIÓN MUSCULAR</p>
+                        <h2 id="plan-muscle-dialog-title">Análisis muscular</h2>
+                        <p>Estimación según ejercicios y series programados, no esfuerzo real.</p>
                     </div>
-
-                    <button
-                            type="button"
-                            class="icon-button"
-                            data-close-plan-muscles
-                            aria-label="Cerrar análisis">
-                        ×
-                    </button>
+                    <button type="button" class="icon-button"
+                            data-close-plan-muscles aria-label="Cerrar análisis">×</button>
                 </div>
 
                 <div class="plan-muscle-toolbar">
-
-                    <div class="plan-muscle-switch"
-                         role="group"
-                         aria-label="Ámbito del análisis">
-
-                        <button type="button"
-                                data-plan-muscle-scope="day"
-                                aria-pressed="true">
+                    <div class="plan-muscle-switch" role="group" aria-label="Ámbito del análisis">
+                        <button type="button" data-plan-muscle-scope="day" aria-pressed="true">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"
+                                 stroke="currentColor" stroke-width="1.9"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <path d="M7 3v4M17 3v4M3 10h18M8 14h3v3H8z"/>
+                            </svg>
                             Día
                         </button>
-
-                        <button type="button"
-                                data-plan-muscle-scope="week"
-                                aria-pressed="false">
+                        <button type="button" data-plan-muscle-scope="week" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"
+                                 stroke="currentColor" stroke-width="1.9"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="5" width="18" height="16" rx="2"/>
+                                <path d="M7 3v4M17 3v4M3 10h18M7 14h2M12 14h2M17 14h1M7 18h2M12 18h2"/>
+                            </svg>
                             Semana del plan
                         </button>
                     </div>
-
                     <label id="plan-muscle-day-picker">
                         Día
-                        <select id="plan-muscle-day-select"
-                                aria-label="Día que se analiza">
-                        </select>
+                        <select id="plan-muscle-day-select" aria-label="Día que se analiza"></select>
                     </label>
                 </div>
 
                 <div class="plan-muscle-layout">
-
-                    <div class="plan-muscle-figure">
-
-                        <div id="plan-muscle-map"
-                             class="plan-muscle-map"
-                             aria-label="Mapa muscular frontal y posterior">
-                            Preparando anatomía…
+                    <section class="plan-muscle-figure" aria-label="Mapa y resumen muscular">
+                        <div class="plan-muscle-figure-main">
+                            <div id="plan-muscle-map" class="plan-muscle-map"
+                                 aria-label="Mapa muscular frontal y posterior">
+                                Preparando anatomía…
+                            </div>
+                            <aside class="plan-muscle-figure-sidebar" aria-label="Cifras del entrenamiento">
+                                <div class="plan-muscle-stat">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"
+                                         stroke="currentColor" stroke-width="1.9"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M6 4v16M18 4v16M3 8v8M21 8v8M3 12h18"/>
+                                    </svg>
+                                    <span><strong id="plan-muscle-stat-exercises">—</strong><small>Ejercicios</small></span>
+                                </div>
+                                <div class="plan-muscle-stat">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"
+                                         stroke="currentColor" stroke-width="1.9"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5"/>
+                                    </svg>
+                                    <span><strong id="plan-muscle-stat-sets">—</strong><small>Series programadas</small></span>
+                                </div>
+                                <div class="plan-muscle-stat">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"
+                                         stroke="currentColor" stroke-width="1.9"
+                                         stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9Z"/>
+                                        <path d="M12 7v5l3 2M8 4l-2 2"/>
+                                    </svg>
+                                    <span><strong id="plan-muscle-stat-muscles">—</strong><small>Músculos identificados</small></span>
+                                </div>
+                                <div class="plan-muscle-legend-wrap">
+                                    <strong>Leyenda</strong>
+                                    <div id="plan-muscle-legend" class="plan-muscle-legend"></div>
+                                </div>
+                            </aside>
                         </div>
+                    </section>
 
-                        <div id="plan-muscle-legend"
-                             class="plan-muscle-legend">
+                    <section class="plan-muscle-details" aria-label="Distribución muscular">
+                        <div class="plan-muscle-details-heading">
+                            <span aria-hidden="true" class="plan-muscle-target-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                     stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <circle cx="12" cy="12" r="5"/>
+                                    <circle cx="12" cy="12" r="1"/>
+                                </svg>
+                            </span>
+                            <div>
+                                <h3 id="plan-muscle-analysis-title">Distribución muscular</h3>
+                                <p id="plan-muscle-analysis-summary" aria-live="polite">
+                                    Músculos trabajados y series equivalentes programadas.
+                                </p>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="plan-muscle-details">
-
-                        <h3 id="plan-muscle-analysis-title">
-                            Músculos previstos
-                        </h3>
-
-                        <p id="plan-muscle-analysis-summary"></p>
-
-                        <div id="plan-muscle-analysis-list"
-                             aria-live="polite">
+                        <div id="plan-muscle-analysis-list" aria-live="polite"></div>
+                        <div class="plan-muscle-disclaimer">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"
+                                 stroke="currentColor" stroke-width="1.9"
+                                 stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9"/>
+                                <path d="M12 11v6M12 7h.01"/>
+                            </svg>
+                            <div>
+                                <strong>Sobre la estimación</strong>
+                                <p>Series principales al 100 % y secundarias al 50 %.
+                                   Las barras comparan cada músculo con el de mayor valor:
+                                   no son porcentajes del entrenamiento. No representan
+                                   activación EMG, hipertrofia ni fatiga reales.</p>
+                            </div>
                         </div>
-
-                        <p class="plan-muscle-disclaimer">
-                            La estimación utiliza series primarias
-                            al 100 % y secundarias al 50 %.
-                            No representa activación EMG,
-                            hipertrofia ni fatiga reales.
-                        </p>
-                    </div>
+                    </section>
                 </div>
 
-                <div class="dialog-actions">
-                    <button type="button"
-                            class="button button-primary"
-                            data-close-plan-muscles>
-                        Cerrar
-                    </button>
+                <div class="dialog-actions plan-muscle-footer">
+                    <button type="button" class="button button-primary"
+                            data-close-plan-muscles>Cerrar</button>
                 </div>
             </dialog>
-
 
         </section>
 
