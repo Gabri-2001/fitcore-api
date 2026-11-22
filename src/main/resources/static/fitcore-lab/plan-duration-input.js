@@ -13,10 +13,13 @@
     const MAX_DIGITS=6;
     const editStates=new WeakMap();
     // Numeric mask: 1 -> 00:00:01; 123456 -> 12:34:56.
-    // Up to six digits are displayed; minutes/seconds are checked on save.
+    // The UI never renders minutes or seconds above 59: 999999 -> 99:59:59.
+    // Preserve the user's raw digits separately while editing, so continuing
+    // to type or backspacing is intuitive even when a segment is clamped.
     function mask(value){
         const digits=String(value??'').replace(/\D/g,'').slice(0,MAX_DIGITS).padStart(MAX_DIGITS,'0');
-        return digits.slice(0,2)+':'+digits.slice(2,4)+':'+digits.slice(4,6);
+        const cap=part=>String(Math.min(59,Number(part))).padStart(2,'0');
+        return digits.slice(0,2)+':'+cap(digits.slice(2,4))+':'+cap(digits.slice(4,6));
     }
     function beginEdit(input){
         const digits=String(input.value??'').replace(/\D/g,'').slice(0,MAX_DIGITS);
