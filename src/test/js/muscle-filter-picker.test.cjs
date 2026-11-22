@@ -15,17 +15,29 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
   'TRICEPS','FOREARMS','QUADRICEPS','HAMSTRINGS','GLUTES','ADDUCTORS',
   'CALVES','CORE','NECK','FULL_BODY'];
  assert.deepEqual([...icons.CODES],expected);
- const highlights=[];
+ const premium=['CHEST','BACK','SHOULDERS','SCAPULAR','ROTATOR_CUFF','BICEPS','TRICEPS'];
+ const vectorHighlights=[],positions=[];
+ const atlasPath=path.join(dir,'muscle-icons-premium.webp');
+ assert.ok(fs.existsSync(atlasPath),'premium atlas must be committed to the repository');
+ assert.ok(fs.statSync(atlasPath).size>10000,'premium atlas must contain actual artwork');
  for(const code of expected){
   const svg=icons.icon(code);
   assert.match(svg,/^<svg /);
   assert.match(svg,/viewBox="0 0 64 64"/);
   assert.match(svg,/aria-hidden="true"/);
-  assert.match(svg,/<g class="mi-active">/);
-  assert.match(svg,/<g class="mi-outline">/);
-  highlights.push(svg.match(/<g class="mi-active">([\s\S]*?)<\/g>/)[1]);
+  if(premium.includes(code)){
+   assert.match(svg,/mi-premium/);
+   assert.match(svg,/<image href="\.\/muscle-icons-premium\.webp"/);
+   assert.match(svg,/width="256" height="128"/);
+   positions.push(svg.match(/x="(-?\d+)" y="(-?\d+)"/)[0]);
+  }else{
+   assert.match(svg,/<g class="mi-active">/);
+   assert.match(svg,/<g class="mi-outline">/);
+   vectorHighlights.push(svg.match(/<g class="mi-active">([\s\S]*?)<\/g>/)[1]);
+  }
  }
- assert.equal(new Set(highlights).size,16);
+ assert.equal(new Set(positions).size,7,'each premium group needs its own portrait');
+ assert.equal(new Set(vectorHighlights).size,9);
  assert.match(icons.icon(''),/mi-accent/);
 });
 test('muscle filter uses custom listbox yet keeps native select as source of truth',()=>{
@@ -53,4 +65,11 @@ test('keyboard and dismiss patterns are preserved in the filter',()=>{
 });
 test('svg helper never interpolates an unsafe CSS class',()=>{
  assert.throws(()=>icons.icon('CHEST',{className:'x" onload="alert(1)'}),TypeError);
+});
+
+test('premium artwork remains exclusive to the first seven muscles',()=>{
+ const first=['CHEST','BACK','SHOULDERS','SCAPULAR','ROTATOR_CUFF','BICEPS','TRICEPS'];
+ assert.ok(first.every(code=>icons.icon(code).includes('mi-premium')));
+ assert.ok(icons.CODES.filter(code=>!first.includes(code)).every(code=>!icons.icon(code).includes('mi-premium')));
+ assert.match(css,/\.muscle-filter-option-icon:has\(\.mi-premium\)/);
 });
