@@ -51,3 +51,25 @@ test('primary secondary anatomical semantics and weekly relative intensity remai
  assert.match(modal,/Músculos identificados/);
  assert.match(modal,/activación EMG, hipertrofia ni fatiga reales/);
 });
+
+test('metric icons describe exercises, planned sets and muscles distinctly',()=>{
+ for(const type of ['exercises','sets','muscles']){
+   const opening='<div class="plan-muscle-stat" data-stat="'+type+'">';
+   const start=modal.indexOf(opening);
+   assert.ok(start>0,opening);
+   const end=modal.indexOf('</div>',start);
+   const block=modal.slice(start,end);
+   assert.match(block,/class="plan-muscle-stat-icon"/);
+   assert.match(block,/viewBox="0 0 24 24"/);
+   assert.match(block,/stroke-width="1\.9"/);
+ }
+ const beginStats=modal.indexOf('class="plan-muscle-figure-sidebar"');
+ const endStats=modal.indexOf('class="plan-muscle-legend-wrap"',beginStats);
+ const stats=modal.slice(beginStats,endStats);
+ assert.doesNotMatch(stats,/M12 7v5l3 2/); // old clock was not a muscle icon
+ assert.match(stats,/M12\.409 13\.017/); // anatomical biceps glyph
+ assert.match(stats,/M13 5h8M13 12h8/); // series checklist
+ assert.match(stats,/M17\.596 12\.768/); // dumbbell
+ assert.match(css,/#plan-muscle-dialog \.plan-muscle-stat-icon/);
+ assert.match(css,/#plan-muscle-dialog \.plan-muscle-stat-copy/);
+});
