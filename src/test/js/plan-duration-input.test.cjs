@@ -74,10 +74,10 @@ test('both plan editor and exercise picker use HH:MM:SS without changing API sec
  assert.match(app,/targetDurationSeconds=seconds/);
  assert.match(app,/targetDurationSeconds:e\.targetDurationSeconds/);
  assert.match(app,/FitCoreDurationInput\.step\(input\.value/);
- assert.match(app,/function bindPlanDurationMask\\(\\)/);
- assert.match(app,/FitCoreDurationInput\\.beginEdit\\(event\\.target\\)/);
- assert.match(app,/FitCoreDurationInput\\.edit\\(input,'insert'/);
- assert.match(app,/bindPlanDurationMask\\(\\);/);
+ assert.ok(app.includes('function bindPlanDurationMask()'));
+ assert.ok(app.includes('FitCoreDurationInput.beginEdit(event.target)'));
+ assert.ok(app.includes("FitCoreDurationInput.edit(input,'insert'"));
+ assert.ok(app.includes('bindPlanDurationMask();'));
  assert.match(css,/plan-time-stepper/);
 });
 test('consolidated classification badge does not appear for manual or provisional days',()=>{
