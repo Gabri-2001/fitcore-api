@@ -3331,3 +3331,40 @@ body.resting .toast-region { bottom: 190px; }
         flex:1 1 135px;
     }
 }
+
+/* A small consolidated-only badge shares the title line, never the action column. */
+#view-plans .plan-day-heading-line {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:7px 10px;
+    min-width:0;
+    max-width:100%;
+}
+#view-plans .plan-day-heading-line h3 {min-width:0;overflow-wrap:anywhere;}
+#view-plans .plan-day-type-slot:empty {display:none;}
+#view-plans .plan-day-type-slot {display:inline-flex;align-items:center;min-width:0;}
+#view-plans .plan-day-type-slot .plan-day-type-badge {
+    display:inline-flex;align-items:center;gap:5px;
+    max-width:100%;white-space:nowrap;padding:6px 10px;
+    border-radius:999px;background:#edf5ef;color:#245745;
+    font-size:11px;font-weight:800;letter-spacing:0;
+}
+/* HH:MM:SS targets take exactly the allotted goal column without pushing other controls. */
+#view-plans .plan-time-stepper {
+    width:calc(100% - 5px);
+    min-width:0;
+    grid-template-columns:20px minmax(0,1fr) 20px;
+}
+#view-plans .plan-time-stepper input {
+    min-width:0;width:100%;font-size:11px;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:-.03em;
+}
+#view-plans .plan-time-stepper input:invalid {
+    background:#fff1f1;color:#a52626;
+}
+#plan-picker-duration {
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.04em;
+}
