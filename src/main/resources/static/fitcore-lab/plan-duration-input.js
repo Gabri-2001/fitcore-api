@@ -9,7 +9,43 @@
     else root.FitCoreDurationInput=api;
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
     'use strict';
-    const MAX_SECONDS=86400;
+    const MAX_SECONDS=99*3600+59*60+59;
+    const MAX_DIGITS=6;
+    const editStates=new WeakMap();
+    // Numeric mask: 1 -> 00:00:01; 123456 -> 12:34:56.
+    // Up to six digits are displayed; minutes/seconds are checked on save.
+    function mask(value){
+        const digits=String(value??'').replace(/\D/g,'').slice(0,MAX_DIGITS).padStart(MAX_DIGITS,'0');
+        return digits.slice(0,2)+':'+digits.slice(2,4)+':'+digits.slice(4,6);
+    }
+    function beginEdit(input){
+        const digits=String(input.value??'').replace(/\D/g,'').slice(0,MAX_DIGITS);
+        editStates.set(input,{digits,replace:true});
+        if(typeof input.select==='function')input.select();
+    }
+    function edit(input,action,text=''){
+        const state=editStates.get(input)||{
+            digits:String(input.value??'').replace(/\D/g,'').slice(0,MAX_DIGITS),
+            replace:true
+        };
+        if(action==='insert'){
+            const next=String(text??'').replace(/\D/g,'');
+            if(!next)return input.value;
+            state.digits=(state.replace?'':state.digits).concat(next).slice(0,MAX_DIGITS);
+        }else if(action==='delete'){
+            state.digits=state.replace?'':state.digits.slice(0,-1);
+        }else if(action==='clear'){
+            state.digits='';
+        }
+        state.replace=false;
+        editStates.set(input,state);
+        input.value=mask(state.digits);
+        input.setCustomValidity?.(isValidGoal(parse(input.value)) ? '' :
+            'Introduce un tiempo real entre 00:00:01 y 99:59:59 (minutos y segundos hasta 59).');
+        input.setSelectionRange?.(input.value.length,input.value.length);
+        return input.value;
+    }
+    function endEdit(input){editStates.delete(input);}
     function format(seconds){
         if(!Number.isSafeInteger(Number(seconds))||Number(seconds)<0||Number(seconds)>MAX_SECONDS)
             return null;
@@ -34,5 +70,5 @@
         if(seconds===null||!Number.isSafeInteger(delta))return null;
         return format(Math.max(1,Math.min(MAX_SECONDS,seconds+delta)));
     }
-    return Object.freeze({MAX_SECONDS,format,parse,isValidGoal,step});
+    return Object.freeze({MAX_SECONDS,MAX_DIGITS,mask,beginEdit,edit,endEdit,format,parse,isValidGoal,step});
 });
