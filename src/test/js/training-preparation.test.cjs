@@ -48,7 +48,7 @@ test('editing an active session changes muscle classification, not an effort lab
  assert.match(app,/function toggleSessionEditManualTypes\(\)/);
  assert.match(app,/trainingDayTypeManual:manual/);
  assert.match(app,/const selectedType=manual\?chosenSessionType/);
- assert.match(app,/return `$\{dateLabel\} · $\{typeLabel\}`/);
+ assert.match(app,/const typeLabel=type/);
 });
 test('automatic type is inferred only from valid completed classification data',()=>{
  assert.match(app,/async function refreshAutomaticSessionClassification\(\)/);
