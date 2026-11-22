@@ -107,6 +107,50 @@
         }
         return Object.freeze({start,stop,isActive:target=>current===target});
     }
+    // One delegated binding survives plan-row re-renders. Pointer capture
+    // retains the gesture until release, even when the pointer leaves the button.
+    // This is deliberately separate from click: mouse/touch steps on pointerdown,
+    // while keyboard-generated clicks are handled in the existing editor handler.
+    function bindHoldButtons(root, onStep, options={}){
+        if(!root || typeof root.addEventListener!=='function')
+            throw new TypeError('A root element is required');
+        const hold=createHoldController(onStep,options);
+        const selector='button[data-step-field="durationSeconds"]';
+        const doc=root.ownerDocument;
+        const win=doc.defaultView;
+        let activeButton=null,activePointer=null;
+        const isTarget=target=>{
+            const button=target?.closest?.(selector);
+            return button && root.contains(button) ? button : null;
+        };
+        function stop(){
+            const button=activeButton,id=activePointer;
+            activeButton=null;activePointer=null;
+            hold.stop();
+            if(button && id!==null && button.hasPointerCapture?.(id)){
+                try{button.releasePointerCapture(id);}catch(_error){/* already released */}
+            }
+        }
+        root.addEventListener('pointerdown',event=>{
+            const button=isTarget(event.target);
+            if(!button || event.button!==0 || event.isPrimary===false)return;
+            stop();
+            activeButton=button;activePointer=event.pointerId;
+            try{button.setPointerCapture?.(event.pointerId);}catch(_error){/* fallback to document */}
+            hold.start(button);
+            event.preventDefault();
+        },true);
+        const stopPointer=event=>{
+            if(activePointer===event.pointerId)stop();
+        };
+        doc.addEventListener('pointerup',stopPointer,true);
+        doc.addEventListener('pointercancel',stopPointer,true);
+        win.addEventListener('blur',stop);
+        doc.addEventListener('visibilitychange',()=>{
+            if(doc.hidden)stop();
+        });
+        return Object.freeze({stop,isActive:()=>activeButton!==null&&hold.isActive(activeButton)});
+    }
     return Object.freeze({MAX_SECONDS,MAX_DIGITS,mask,beginEdit,edit,endEdit,
-        format,parse,isValidGoal,step,createHoldController});
+        format,parse,isValidGoal,step,createHoldController,bindHoldButtons});
 });
