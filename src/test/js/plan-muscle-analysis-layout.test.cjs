@@ -87,6 +87,13 @@ test('day/week switching preserves the toolbar and SVG footprint',()=>{
 });
 
 test('day and week metrics preserve fixed dimensions at desktop and mobile widths',()=>{
- assert.match(css,/#plan-muscle-dialog \.plan-muscle-stat\s*\{[^}]*flex:0 0 96px;[^}]*height:96px;min-height:96px;max-height:96px/s);
- assert.match(css,/@media \(max-width:560px\)\s*\{\s*#plan-muscle-dialog \.plan-muscle-stat\s*\{[^}]*height:104px;min-height:104px;max-height:104px/s);
+ assert.match(css,/#plan-muscle-dialog \.plan-muscle-stat\s*\{[^}]*flex:0 0 78px;[^}]*height:78px;min-height:78px;max-height:78px/s);
+ assert.match(css,/@media \(max-width:560px\)\s*\{\s*#plan-muscle-dialog \.plan-muscle-stat\s*\{[^}]*height:88px;min-height:88px;max-height:88px/s);
+});
+
+test('metric panel preserves room for visible muscle legend in both analysis scopes',()=>{
+ assert.match(css,/#plan-muscle-dialog \.plan-muscle-figure-sidebar\s*\{[^}]*overflow-y:auto/s);
+ assert.match(css,/#plan-muscle-dialog \.plan-muscle-legend-wrap\s*\{[^}]*flex:0 0 auto/s);
+ assert.match(css,/#plan-muscle-dialog \.plan-muscle-legend\s*\{[^}]*gap:6px/s);
+ assert.match(modal,/class="plan-muscle-legend-wrap"/);
 });
