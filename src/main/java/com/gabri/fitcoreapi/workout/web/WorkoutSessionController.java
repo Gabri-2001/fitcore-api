@@ -44,7 +44,9 @@ public class WorkoutSessionController {
                 request.getSessionIntensity(),
                 request.getDurationMinutes(),
                 request.getNotes(),
-                request.getEstimatedTotalCaloriesBurned()
+                request.getEstimatedTotalCaloriesBurned(),
+                request.getTrainingDayType(),
+                request.isTrainingDayTypeManual()
         );
 
         URI location = URI.create("/api/users/" + userId + "/workout-sessions/" + workoutSession.getId());
@@ -101,7 +103,8 @@ public class WorkoutSessionController {
         return WorkoutSessionResponse.from(workoutSessionService.updateWorkoutSession(
                 userId, workoutSessionId, request.sessionDate(), request.sessionCategory(),
                 request.sessionIntensity(), request.durationMinutes(), request.notes(),
-                request.estimatedTotalCaloriesBurned()));
+                request.estimatedTotalCaloriesBurned(), request.trainingDayType(),
+                request.trainingDayTypeManual()));
     }
 
     @Operation(summary = "Complete an in-progress workout session")
