@@ -658,3 +658,18 @@ test('classification appears in summary and as a consolidated-only badge beside 
  assert.match(css,/#view-plans \.plan-day-controls \{\s*grid-column:2;/);
  assert.match(css,/@media \(max-width:760px\)/);
 });
+
+test('the 13 training types use a coherent icon family across selector, tabs and badge',()=>{
+ const fs=require('node:fs');
+ const app=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/fitcore-lab/app.js'),'utf8');
+ const css=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/fitcore-lab/styles.css'),'utf8');
+ const iconFn=app.slice(app.indexOf('function planDayIcon(dayType) {'),app.indexOf('function renderPlanHeader()',app.indexOf('function planDayIcon(dayType) {')));
+ const types=['PUSH','PULL','LEGS','UPPER','LOWER','FULL_BODY','CARDIO','MOBILITY','REST','ARMS','CORE','MIXED','CONDITIONING'];
+ for(const type of types)assert.match(iconFn,new RegExp('\\\\b'+type+':'));
+ assert.match(iconFn,/stroke-width="1\.85"/);
+ assert.match(iconFn,/class="plan-training-type-icon"/);
+ assert.match(app,/plan-edit-type-symbol/);
+ assert.match(app,/planDayIcon\(day\.dayType\)/);
+ assert.match(app,/planDayIcon\(type\)/);
+ assert.match(css,/plan-edit-type-card input:checked \+ \.plan-edit-type-content \.plan-edit-type-symbol/);
+});
