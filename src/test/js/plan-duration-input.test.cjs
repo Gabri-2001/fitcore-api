@@ -41,22 +41,24 @@ test('input mask accepts only six digits and inserts separators without typing t
   ['','00:00:00'],['1','00:00:01'],['12','00:00:12'],
   ['123','00:01:23'],['1234','00:12:34'],
   ['12345','01:23:45'],['123456','12:34:56'],
-  ['999999','99:99:99'],['9999999','99:99:99'],
+  ['999999','99:59:59'],['9999999','99:59:59'],
   ['12:34:56','12:34:56'],['abc12x34x56x7','12:34:56']
  ];
  for(const [raw,expected] of examples)assert.equal(time.mask(raw),expected);
- assert.equal(time.parse(time.mask('999999')),null,
-  '99:99:99 can be entered, but cannot be saved as a real duration');
+ assert.equal(time.parse(time.mask('999999')),time.MAX_SECONDS,
+  'Typed values must never exceed the maximum valid duration');
+ assert.equal(time.mask('606060'),'60:59:59');
+ assert.equal(time.mask('005960'),'00:59:59');
 });
 test('mask editing handles typing, pasting, deletion and numeric maximum',()=>{
  const input={value:'00:00:45',setCustomValidity(message){this.error=message;},
   select(){this.selected=true;},setSelectionRange(){}};
  time.beginEdit(input);
  for(const digit of '99999999')time.edit(input,'insert',digit);
- assert.equal(input.value,'99:99:99');
- assert.match(input.error,/99:59:59/);
+ assert.equal(input.value,'99:59:59');
+ assert.equal(input.error,'');
  time.edit(input,'delete');
- assert.equal(input.value,'09:99:99');
+ assert.equal(input.value,'09:59:59');
  time.edit(input,'clear');
  time.edit(input,'insert','12:34:56');
  assert.equal(input.value,'12:34:56');
