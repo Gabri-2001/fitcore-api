@@ -60,3 +60,78 @@ test('no static anatomy or invented values appear in plan summary markup',()=>{
  assert.match(block,/renderPlanMusclePreview\(\)/);
  assert.doesNotMatch(block,/placeholder.*svg.*image/i);
 });
+
+test('timer off is not interpreted as zero recovery time',()=>{
+ const rows=Array.from({length:5},(_,index)=>({
+   exerciseVariantCode:'compound'+index,sets:3,reps:10,restSeconds:0
+ }));
+ const result=summary.summarize(rows,()=> 'REPETITIONS',
+   {restCategoryFor:()=> 'COMPOUND'});
+ assert.equal(result.lowerSeconds,1770);
+ assert.equal(result.upperSeconds,2880);
+ assert.equal(result.durationLabel,'≈ 29–48 min');
+ assert.equal(result.hasAssumedRest,true);
+ assert.equal(result.assumedRestPeriods,10);
+ assert.equal(result.configuredRestPeriods,0);
+ assert.match(result.assumptions,/temporizador apagado/i);
+});
+test('explicit positive rests are never replaced by inferred rests',()=>{
+ const result=summary.summarize([
+  {exerciseVariantCode:'squat',sets:3,reps:10,restSeconds:90}
+ ],()=> 'REPETITIONS',{restCategoryFor:()=> 'COMPOUND'});
+ assert.equal(result.lowerSeconds,240);
+ assert.equal(result.upperSeconds,300);
+ assert.equal(result.durationLabel,'≈ 4–5 min');
+ assert.equal(result.hasAssumedRest,false);
+ assert.equal(result.configuredRestPeriods,2);
+});
+test('off or missing rest uses an isolation-specific estimate without changing original exercises',()=>{
+ const rows=[{exerciseVariantCode:'curl',sets:3,reps:10,restSeconds:0},
+             {exerciseVariantCode:'extension',sets:3,reps:10,restSeconds:null}];
+ const original=JSON.stringify(rows);
+ const result=summary.summarize(rows,()=> 'REPETITIONS',
+   {restCategoryFor:()=> 'ISOLATION'});
+ assert.equal(result.lowerSeconds,420);
+ assert.equal(result.upperSeconds,780);
+ assert.equal(result.durationLabel,'≈ 7–13 min');
+ assert.equal(result.assumedRestPeriods,4);
+ assert.equal(result.missingTargets,false);
+ assert.equal(JSON.stringify(rows),original);
+});
+test('one set has no between-set rest, even when timer is off',()=>{
+ const result=summary.summarize([{sets:1,reps:10,restSeconds:0}],
+   ()=> 'REPETITIONS');
+ assert.equal(result.lowerSeconds,20);
+ assert.equal(result.upperSeconds,40);
+ assert.equal(result.hasAssumedRest,false);
+});
+test('mixed configured and inferred rests are accounted for independently',()=>{
+ const rows=[{sets:3,reps:10,restSeconds:120},
+             {sets:3,reps:10,restSeconds:0}];
+ const result=summary.summarize(rows,()=> 'REPETITIONS',
+   {restCategoryFor:()=> 'COMPOUND'});
+ assert.equal(result.lowerSeconds,660);
+ assert.equal(result.upperSeconds,990);
+ assert.equal(result.configuredRestPeriods,2);
+ assert.equal(result.assumedRestPeriods,2);
+});
+test('time-based exercise without a timer still receives assumed recovery between sets',()=>{
+ const result=summary.summarize([{
+   exerciseVariantCode:'plank',sets:3,targetDurationSeconds:40,restSeconds:0
+ }],()=> 'SECONDS',{restCategoryFor:()=> 'ISOLATION'});
+ assert.equal(result.lowerSeconds,240);
+ assert.equal(result.upperSeconds,360);
+ assert.equal(result.hasTimedExercise,true);
+});
+test('unknown movement pattern uses a conservative generic fallback',()=>{
+ const result=summary.summarize([{sets:3,reps:10,restSeconds:0}],
+   ()=> 'REPETITIONS',{restCategoryFor:()=> 'UNRECOGNIZED'});
+ assert.equal(result.lowerSeconds,180);
+ assert.equal(result.upperSeconds,480);
+});
+test('plan editor supplies movement patterns and transparently labels assumptions',()=>{
+ assert.match(app,/restCategoryFor:variantCode=>/);
+ assert.match(app,/movementPattern/);
+ assert.match(app,/result\.hasAssumedRest/);
+ assert.match(app,/No incluye calentamiento/);
+});
