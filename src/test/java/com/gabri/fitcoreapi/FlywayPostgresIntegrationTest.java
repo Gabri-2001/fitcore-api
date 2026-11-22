@@ -39,7 +39,7 @@ class FlywayPostgresIntegrationTest {
         Integer version = jdbcTemplate.queryForObject(
                 "select max(cast(version as integer)) from flyway_schema_history where success = true",
                 Integer.class);
-        assertEquals(35, version);
+        assertEquals(36, version);
     }
 
     @Test
