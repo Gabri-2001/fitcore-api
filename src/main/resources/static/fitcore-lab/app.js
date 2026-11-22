@@ -3095,6 +3095,96 @@ function matchesExerciseSearch(text, tokens) {
     return tokens.every(token => normalized.includes(token));
 }
 
+// Illustrated muscle filter, with the original select kept as the source of truth.
+// Options use the exact muscle codes already accepted by the exercise search.
+function initializeMuscleFilter() {
+    const native=$('session-exercise-muscle');
+    const trigger=$('session-muscle-filter-button');
+    const menu=$('session-muscle-filter-menu');
+    const list=$('session-muscle-filter-list');
+    if(!native||!trigger||!menu||!list||!window.FitCoreMuscleIcons)return;
+    const choices=[{code:'',label:'Todos los músculos'},...enums.muscles.map(code=>({code,label:friendly(code)}))];
+    const display=()=>{
+        const code=native.value;
+        const choice=choices.find(item=>item.code===code)||choices[0];
+        $('session-muscle-filter-current').textContent=choice.label;
+        $('session-muscle-filter-icon').innerHTML=FitCoreMuscleIcons.icon(code);
+        list.querySelectorAll('[role="option"]').forEach(option=>{
+            const selected=option.dataset.muscleCode===code;
+            option.setAttribute('aria-selected',String(selected));
+            option.classList.toggle('is-selected',selected);
+        });
+    };
+    const close=(restoreFocus=false)=>{
+        if(menu.hidden)return;
+        menu.hidden=true;
+        trigger.setAttribute('aria-expanded','false');
+        if(restoreFocus)trigger.focus();
+    };
+    const open=()=>{
+        menu.hidden=false;
+        trigger.setAttribute('aria-expanded','true');
+        const current=list.querySelector('[aria-selected="true"]')||list.querySelector('[role="option"]');
+        current?.focus({preventScroll:true});
+        current?.scrollIntoView({block:'nearest'});
+    };
+    const choose=code=>{
+        if(!choices.some(item=>item.code===code))return;
+        const changed=native.value!==code;
+        native.value=code;
+        display();
+        close(true);
+        if(changed)native.dispatchEvent(new Event('change',{bubbles:true}));
+    };
+    list.innerHTML=choices.map(({code,label})=>
+        '<button type="button" role="option" tabindex="-1" class="muscle-filter-option" '+
+        'data-muscle-code="'+escapeHtml(code)+'" aria-selected="false">'+
+        '<span class="muscle-filter-option-icon" aria-hidden="true">'+FitCoreMuscleIcons.icon(code)+'</span>'+
+        '<span class="muscle-filter-option-label">'+escapeHtml(label)+'</span>'+
+        '<svg class="muscle-filter-option-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L19 7"/></svg>'+
+        '</button>').join('');
+    display();
+    trigger.addEventListener('click',()=>menu.hidden?open():close());
+    list.addEventListener('click',event=>{
+        const option=event.target.closest('[data-muscle-code]');
+        if(option)choose(option.dataset.muscleCode);
+    });
+    list.addEventListener('keydown',event=>{
+        const options=[...list.querySelectorAll('[role="option"]')];
+        const active=options.indexOf(document.activeElement);
+        let next=active;
+        if(event.key==='ArrowDown')next=(active+1)%options.length;
+        else if(event.key==='ArrowUp')next=(active+options.length-1)%options.length;
+        else if(event.key==='Home')next=0;
+        else if(event.key==='End')next=options.length-1;
+        else if(event.key==='Enter'||event.key===' '){
+            event.preventDefault();
+            const option=options[active];
+            if(option)choose(option.dataset.muscleCode);
+            return;
+        }else if(event.key==='Escape'){event.preventDefault();close(true);return;}
+        else if(event.key==='Tab'){close();return;}
+        else return;
+        event.preventDefault();
+        options[next]?.focus();
+        options[next]?.scrollIntoView({block:'nearest'});
+    });
+    trigger.addEventListener('keydown',event=>{
+        if(['ArrowDown','ArrowUp','Enter',' '].includes(event.key) && menu.hidden){
+            event.preventDefault();
+            open();
+        }else if(event.key==='Escape'){close(true);}
+    });
+    document.addEventListener('pointerdown',event=>{
+        if(!menu.hidden && !event.target.closest('#session-muscle-filter-anchor'))close();
+    });
+    document.addEventListener('keydown',event=>{
+        if(event.key==='Escape'&&!menu.hidden)close(true);
+    });
+    native.addEventListener('change',display);
+    $('exercise-picker-dialog').addEventListener('close',()=>close());
+}
+
 function filteredSessionExercises() {
     return FitCoreExerciseSearch.search({
         exercises: state.exercises,
@@ -5549,7 +5639,7 @@ function bindEvents() {
 async function init() {
     $('endurance-start').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('plan-date').value=today(); $('session-date').value=today(); $('progress-date').value=today(); $('stats-from').value=daysAgo(29); $('stats-to').value=today(); $('goal-target-date').value=daysAgo(-90);
-    fillSelect($('catalog-equipment'),enums.equipment,'Todo'); fillSelect($('catalog-muscle'),enums.muscles,'Todos'); fillSelect($('session-exercise-equipment'),enums.equipment,'Todo el equipamiento'); fillSelect($('session-exercise-muscle'),enums.muscles,'Todos los músculos'); fillSelect($('goal-groups'),enums.muscles); bindEvents(); setAuth(state.auth); addPlanDay(); renderSession(); await Promise.all([loadSvg(),healthCheck()]);
+    fillSelect($('catalog-equipment'),enums.equipment,'Todo'); fillSelect($('catalog-muscle'),enums.muscles,'Todos'); fillSelect($('session-exercise-equipment'),enums.equipment,'Todo el equipamiento'); fillSelect($('session-exercise-muscle'),enums.muscles,'Todos los músculos'); fillSelect($('goal-groups'),enums.muscles); bindEvents(); initializeMuscleFilter(); setAuth(state.auth); addPlanDay(); renderSession(); await Promise.all([loadSvg(),healthCheck()]);
     navigate(location.hash.slice(1) && $(`view-${location.hash.slice(1)}`) ? location.hash.slice(1) : 'overview');
     if (state.auth) await bootstrapUserData();
 }
