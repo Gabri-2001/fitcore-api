@@ -73,5 +73,40 @@
         if(seconds===null||!Number.isSafeInteger(delta))return null;
         return format(Math.max(1,Math.min(MAX_SECONDS,seconds+delta)));
     }
-    return Object.freeze({MAX_SECONDS,MAX_DIGITS,mask,beginEdit,edit,endEdit,format,parse,isValidGoal,step});
+    // One press changes one second immediately. Holding repeats after a
+    // deliberate pause; callers stop on pointer release, cancellation or blur.
+    // Clock injection keeps timing deterministic in unit tests.
+    function createHoldController(onStep, options={}){
+        if(typeof onStep!=='function')throw new TypeError('onStep must be a function');
+        const clock=options.clock||{
+            setTimeout,clearTimeout,setInterval,clearInterval
+        };
+        const delayMs=options.delayMs??350;
+        const intervalMs=options.intervalMs??90;
+        let current=null,delayId=null,intervalId=null;
+        function stop(target){
+            if(target && target!==current)return;
+            if(delayId!==null)clock.clearTimeout(delayId);
+            if(intervalId!==null)clock.clearInterval(intervalId);
+            current=null;delayId=null;intervalId=null;
+        }
+        function start(target){
+            stop();
+            if(!target)return;
+            current=target;
+            if(onStep(target)===false){stop();return;}
+            delayId=clock.setTimeout(()=>{
+                delayId=null;
+                if(current!==target)return;
+                if(onStep(target)===false){stop();return;}
+                intervalId=clock.setInterval(()=>{
+                    if(current!==target)return;
+                    if(onStep(target)===false)stop();
+                },intervalMs);
+            },delayMs);
+        }
+        return Object.freeze({start,stop,isActive:target=>current===target});
+    }
+    return Object.freeze({MAX_SECONDS,MAX_DIGITS,mask,beginEdit,edit,endEdit,
+        format,parse,isValidGoal,step,createHoldController});
 });
