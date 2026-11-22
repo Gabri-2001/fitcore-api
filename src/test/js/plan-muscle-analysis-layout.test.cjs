@@ -85,3 +85,8 @@ test('day/week switching preserves the toolbar and SVG footprint',()=>{
  assert.match(css,/#plan-muscle-dialog \.plan-muscle-toolbar\s*\{\s*min-height:94px/);
  assert.match(css, /@media \(max-width:560px\)\s*\{\s*#plan-muscle-dialog \.plan-muscle-toolbar\s*\{\s*min-height:143px/);
 });
+
+test('day and week metrics preserve fixed dimensions at desktop and mobile widths',()=>{
+ assert.match(css,/#plan-muscle-dialog \.plan-muscle-stat\s*\{[^}]*flex:0 0 96px;[^}]*height:96px;min-height:96px;max-height:96px/s);
+ assert.match(css,/@media \(max-width:560px\)\s*\{\s*#plan-muscle-dialog \.plan-muscle-stat\s*\{[^}]*height:104px;min-height:104px;max-height:104px/s);
+});
