@@ -526,6 +526,15 @@ function submitPlanNewDay(event) {
 }
 
 
+function consolidatedDayBadge(day){
+    if(day.dayTypeManual!==false||!day.classification||
+       day.classification.provisional||!day.classification.structure)return '';
+    const label=FitCoreDayClassifier.STRUCTURE[day.classification.structure]
+        ||friendly(day.classification.structure);
+    return '<span class="plan-day-type-badge" title="Clasificación automática consolidada">'+
+        planDayIcon(day.classification.structure)+' '+escapeHtml(label)+'</span>';
+}
+
 function planDayLabel(day){
     if(day.dayTypeManual!==false)return FitCoreDayClassifier.STRUCTURE[day.dayType]||friendly(day.dayType);
     if(!day.classification)return day.exercises.length?'Analizando día…':'Pendiente de ejercicios';
@@ -557,6 +566,8 @@ function updatePlanClassificationVisuals(){
         '<strong>'+escapeHtml(title)+'</strong>'+
         '<small>'+escapeHtml(status)+'</small>'+
         (reason?'<small class="plan-classification-reason">'+escapeHtml(reason)+'</small>':'');
+    const badgeHost=document.querySelector('.plan-day-type-slot');
+    if(badgeHost)badgeHost.innerHTML=consolidatedDayBadge(day);
     const hint=$('plan-edit-classification-preview');
     if(hint&&$('plan-edit-day-dialog').open){
         hint.textContent='Sugerencia: '+suggested+
@@ -739,7 +750,10 @@ function renderPlanDays() {
                 <header class="plan-day-editor-head">
                     <div class="plan-day-title">
                         <span class="plan-day-eyebrow">SESIÓN SELECCIONADA · DÍA ${dayIndex+1}</span>
-                        <h3>${escapeHtml(day.name || friendly(day.dayType))}</h3>
+                        <div class="plan-day-heading-line">
+                            <h3>${escapeHtml(day.name || friendly(day.dayType))}</h3>
+                            <span class="plan-day-type-slot">${consolidatedDayBadge(day)}</span>
+                        </div>
                     </div>
                     <div class="plan-day-controls">
                         <button type="button" class="button button-secondary" data-configure-plan-day>
@@ -1125,6 +1139,20 @@ function suppressClickAfterPlanDrag(event) {
 }
 
 
+function planTimedStepper(seconds) {
+    const formatted=FitCoreDurationInput.format(Number(seconds)||45)||'00:00:45';
+    return '<div class="plan-stepper plan-time-stepper" data-plan-stepper>'+
+        '<button type="button" data-step-field="durationSeconds" data-step="-1" '+
+        'aria-label="Restar un segundo a la duración">−</button>'+
+        '<input data-exercise-durationSeconds type="text" inputmode="numeric" '+
+        'autocomplete="off" maxlength="8" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}" '+
+        'placeholder="00:00:00" value="'+formatted+'" '+
+        'aria-label="Duración por serie en horas, minutos y segundos" '+
+        'title="Formato HH:MM:SS" required>'+
+        '<button type="button" data-step-field="durationSeconds" data-step="1" '+
+        'aria-label="Añadir un segundo a la duración">＋</button></div>';
+}
+
 function planStepper(field, value, min, suffix, label) {
     return `<div class="plan-stepper" data-plan-stepper><button type="button" data-step-field="${field}" data-step="-1" aria-label="Reducir ${label}">−</button><input data-exercise-${field} type="number" min="${min}" value="${Number(value)}" aria-label="${label}"><span>${suffix}</span><button type="button" data-step-field="${field}" data-step="1" aria-label="Aumentar ${label}">＋</button></div>`;
 }
@@ -1173,7 +1201,7 @@ function exerciseEditor(exercise, index) {
         <div class="plan-exercise-identity">${thumb}<div><input data-exercise-code type="hidden" value="${escapeHtml(exercise.exerciseVariantCode || '')}"><strong class="plan-exercise-name">${escapeHtml(title)}</strong><small>${escapeHtml(details)}</small></div></div>
         ${planStepper('sets', exercise.sets || 3, 1, '', 'series')}
         ${exerciseDefaultUnit(exercise.exerciseVariantCode)==='SECONDS'
-            ? planStepper('durationSeconds',exercise.targetDurationSeconds||45,1,'s','segundos por serie')
+            ? planTimedStepper(exercise.targetDurationSeconds??45)
             : planStepper('reps',exercise.reps||10,1,'','repeticiones')}
         ${planRestPicker(exercise.restSeconds ?? 0)}
         <div class="plan-row-menu">
@@ -1260,8 +1288,13 @@ function syncPlanEditor() {
         exercise.exerciseVariantCode = row.querySelector('[data-exercise-code]').value.trim();
         exercise.sets = Number(row.querySelector('[data-exercise-sets]').value);
         exercise.reps = row.querySelector('[data-exercise-reps]') ? Number(row.querySelector('[data-exercise-reps]').value) : null;
-        exercise.targetDurationSeconds = row.querySelector('[data-exercise-durationSeconds]')
-            ? Number(row.querySelector('[data-exercise-durationSeconds]').value) : null;
+        const durationField=row.querySelector('[data-exercise-durationSeconds]');
+        if(durationField){
+            const seconds=FitCoreDurationInput.parse(durationField.value);
+            durationField.setCustomValidity(FitCoreDurationInput.isValidGoal(seconds)
+                ? '' : 'Introduce un tiempo válido en formato HH:MM:SS (mínimo 00:00:01).');
+            if(FitCoreDurationInput.isValidGoal(seconds))exercise.targetDurationSeconds=seconds;
+        }else exercise.targetDurationSeconds=null;
         exercise.restSeconds = Number(row.querySelector('[data-exercise-rest]').value);
     });
 }
@@ -1501,6 +1534,11 @@ function planPayload() {
 async function savePlan() {
     if (!requireAuth()) return;
     syncPlanEditor();
+    const invalidDuration=document.querySelector('.plan-day-editor [data-exercise-durationSeconds]:invalid');
+    if(invalidDuration){
+        invalidDuration.focus();
+        return toast('Introduce una duración válida (HH:MM:SS) antes de guardar.',true);
+    }
     await Promise.all(state.planDays.map((day,index)=>refreshPlanDayClassification(index,false)));
     const payload = planPayload();
     if (!payload.name || !payload.days.length || payload.days.some(d => !d.name || d.exercises.some(e => !e.exerciseVariantCode || e.sets < 1 ||
@@ -2394,7 +2432,11 @@ async function addSessionExercise() {
 
             if (exerciseDefaultUnit(selectedVariant.code)==='SECONDS') {
                 reps=null;
-                targetDurationSeconds=readPositiveInteger('plan-picker-duration',1);
+                const seconds=FitCoreDurationInput.parse($('plan-picker-duration').value);
+                if(!FitCoreDurationInput.isValidGoal(seconds)){
+                    throw new Error('Introduce un tiempo válido en formato HH:MM:SS (mínimo 00:00:01).');
+                }
+                targetDurationSeconds=seconds;
             } else {
                 reps=readPositiveInteger('plan-picker-reps',1);
                 targetDurationSeconds=null;
@@ -2781,7 +2823,7 @@ async function openExercisePicker(mode = 'session', options = {}) {
         // Valores iniciales de planificación
         $('plan-picker-sets').value = '3';
         $('plan-picker-reps').value = '10';
-        $('plan-picker-duration').value = '45';
+        $('plan-picker-duration').value = '00:00:45';
         $('plan-picker-rest').value = '0';
         $('plan-picker-rest-button').textContent = FitCoreRestWheel.label(0);
 
@@ -4846,8 +4888,19 @@ function bindEvents() {
             const row = button.closest('.exercise-editor');
             const field = button.dataset.stepField;
             const input = row.querySelector(`[data-exercise-${field}]`);
-            const minimum = Number(input.min || 0);
-            input.value = Math.max(minimum, Number(input.value || 0) + Number(button.dataset.step));
+            if(field==='durationSeconds'){
+                const next=FitCoreDurationInput.step(input.value,Number(button.dataset.step));
+                if(next===null){
+                    input.setCustomValidity('Introduce un tiempo válido en formato HH:MM:SS.');
+                    input.reportValidity();
+                    return;
+                }
+                input.value=next;
+                input.setCustomValidity('');
+            }else{
+                const minimum=Number(input.min||0);
+                input.value=Math.max(minimum,Number(input.value||0)+Number(button.dataset.step));
+            }
             syncPlanEditor();
             renderPlanDays();
         }
