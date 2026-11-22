@@ -4550,3 +4550,27 @@ body.resting .toast-region { bottom: 190px; }
 @media(max-width:390px) {
     .muscle-filter-list { grid-template-columns:1fr; }
 }
+
+/* Premium muscle atlas — high-fidelity, art-directed illustrations (batch 1/3).
+   SVG sprites clip the shared atlas into one square portrait per muscle. */
+.muscle-filter-trigger-icon .fitcore-muscle-icon.mi-premium,
+.muscle-filter-option-icon .fitcore-muscle-icon.mi-premium {
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    border-radius:inherit;
+}
+.muscle-filter-option-icon:has(.mi-premium) {
+    width:51px;
+    height:51px;
+    border:1px solid #dfebdb;
+    background:#f4f9ed;
+    overflow:hidden;
+}
+.muscle-filter-trigger-icon:has(.mi-premium) {
+    border:1px solid #dfebdb;
+    overflow:hidden;
+}
+.muscle-filter-option:has(.mi-premium) {
+    min-height:67px;
+}
