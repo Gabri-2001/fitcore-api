@@ -3821,14 +3821,15 @@ body.resting .toast-region { bottom: 190px; }
     display:flex;flex-direction:column;gap:10px;
     min-width:0;min-height:0;
     padding:6px 0 6px 13px;
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
 }
 /* Identical metric-card footprint for both day and week analysis.
    Never let flex-grow redistribute unused space and change the card heights. */
 #plan-muscle-dialog .plan-muscle-stat{
     display:flex;align-items:center;gap:11px;
-    min-width:0;flex:0 0 96px;
+    min-width:0;flex:0 0 78px;
     box-sizing:border-box;
-    height:96px;min-height:96px;max-height:96px;
+    height:78px;min-height:78px;max-height:78px;
     padding:10px;border-radius:13px;background:#f5f8f6;
 }
 #plan-muscle-dialog .plan-muscle-stat > svg{
@@ -3845,15 +3846,15 @@ body.resting .toast-region { bottom: 190px; }
     color:#536e64;font-size:11px;line-height:1.35;
 }
 #plan-muscle-dialog .plan-muscle-legend-wrap{
-    display:grid;gap:11px;
-    padding:13px 4px 3px;
+    display:grid;gap:7px;flex:0 0 auto;
+    padding:10px 4px 3px;
     border-top:1px solid #dce5e0;
 }
 #plan-muscle-dialog .plan-muscle-legend-wrap > strong{
     color:#153c30;font-size:12px;
 }
 #plan-muscle-dialog .plan-muscle-legend{
-    display:flex;flex-direction:column;gap:9px;
+    display:flex;flex-direction:column;gap:6px;
     padding:0;
 }
 #plan-muscle-dialog .plan-muscle-legend span{
@@ -3966,7 +3967,9 @@ body.resting .toast-region { bottom: 190px; }
     #plan-muscle-dialog .plan-muscle-map{height:300px;}
     #plan-muscle-dialog .plan-muscle-figure-sidebar{
         display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+        grid-template-rows:88px auto;
         padding:0;gap:7px;
+        overflow:visible;
     }
     #plan-muscle-dialog .plan-muscle-stat{
         flex-direction:column;align-items:center;text-align:center;
@@ -4196,8 +4199,9 @@ body.resting .toast-region { bottom: 190px; }
 }
 @media (max-width:560px) {
     #plan-muscle-dialog .plan-muscle-stat {
-        /* A slightly taller, but still fixed size for vertically stacked mobile labels. */
-        height:104px;min-height:104px;max-height:104px;
+        /* Mobile cards remain uniform without shrinking their labels. */
+        flex:0 0 88px;
+        height:88px;min-height:88px;max-height:88px;
         padding:9px 4px;
         gap:5px;
     }
