@@ -613,23 +613,29 @@ async function refreshPlanDayClassification(dayIndex,updateUI=true){
     return outcome;
 }
 
+// Matching 24×24 stroke icons across the manual selector, day tabs and badge.
+// Path geometry from Lucide (ISC); LOWER is an original anatomical pictogram.
 function planDayIcon(dayType) {
     const paths = {
-        PUSH:'<path d="M4 9v6m16-6v6M7 7v10m10-10v10M7 12h10"/>',
-        PULL:'<path d="M5 8h11m0 0-3-3m3 3-3 3M19 16H8m0 0 3-3m-3 3 3 3"/>',
-        LEGS:'<path d="M8 3h5l-1 7 4 8-3 3-5-8-2 6H3l2-9Z"/>',
-        LOWER:'<path d="M8 3h5l-1 7 4 8-3 3-5-8-2 6H3l2-9Z"/>',
-        UPPER:'<path d="M5 7 9 4h6l4 3 2 6-3 1-2-4v10H8V10l-2 4-3-1Z"/>',
-        FULL_BODY:'<path d="M12 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm-4 7 4-2 4 2 3 5-2 1-2-3v8h-2v-6h-2v6H9v-8l-2 3-2-1Z"/>',
-        CARDIO:'<path d="M3 13h4l2-5 4 10 2-5h6"/>',
-        MOBILITY:'<path d="M5 15c3-8 11-8 14 0M8 18h8M12 4v4"/>',
-        REST:'<path d="M6 18h12M8 18V9h8v9M9 6h6"/>',
-        ARMS:'<path d="M4 20l4-8 4 3 3-7 5 3-4 9Z"/>',
-        CORE:'<path d="M8 3h8l2 7-2 11H8L6 10Z"/>',
-        MIXED:'<path d="M4 5h16M4 12h16M4 19h16"/>',
-        CONDITIONING:'<path d="M3 13h4l2-5 4 10 2-5h6"/>'
+        PUSH:'<path d="M3 5v14"/><path d="M21 12H7"/><path d="m15 18 6-6-6-6"/>',
+        PULL:'<path d="M3 19V5"/><path d="m13 6-6 6 6 6"/><path d="M7 12h14"/>',
+        LEGS:'<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/>',
+        UPPER:'<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>',
+        LOWER:'<path d="M8 3h8l2 7-3 11h-3l-1-9-1 9H7L6 10Z"/><path d="M8 8h8"/>',
+        FULL_BODY:'<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>',
+        CARDIO:'<path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/><path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+        MOBILITY:'<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',
+        REST:'<path d="M18 5h4"/><path d="M20 3v4"/><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>',
+        ARMS:'<path d="M12.409 13.017A5 5 0 0 1 22 15c0 3.866-4 7-9 7-4.077 0-8.153-.82-10.371-2.462-.426-.316-.631-.832-.62-1.362C2.118 12.723 2.627 2 10 2a3 3 0 0 1 3 3 2 2 0 0 1-2 2c-1.105 0-1.64-.444-2-1"/><path d="M15 14a5 5 0 0 0-7.584 2"/><path d="M9.964 6.825C8.019 7.977 9.5 13 8 15"/>',
+        CORE:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+        MIXED:'<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>',
+        CONDITIONING:'<path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>'
     };
-    return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[dayType] || paths.FULL_BODY}</svg>`;
+    return '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" '+
+        'fill="none" stroke="currentColor" stroke-width="1.85" '+
+        'stroke-linecap="round" stroke-linejoin="round" '+
+        'aria-hidden="true" focusable="false" class="plan-training-type-icon">'+
+        (paths[dayType] || paths.FULL_BODY)+'</svg>';
 }
 
 function renderPlanHeader() {
@@ -1332,7 +1338,7 @@ function openPlanEditDayDialog() {
                     ${day.dayType === type ? 'checked' : ''}>
 
                 <span class="plan-edit-type-content">
-                    ${planDayIcon(type)}
+                    <span class="plan-edit-type-symbol">${planDayIcon(type)}</span>
 
                     <span>
                         ${escapeHtml(friendly(type))}
