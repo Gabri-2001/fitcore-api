@@ -3721,3 +3721,255 @@ body.resting .toast-region { bottom: 190px; }
         width:100%;justify-content:flex-end;
     }
 }
+
+/* Muscle analysis redesign: two balanced cards, reusable anatomical SVG. */
+#plan-muscle-dialog[open] {
+    display:grid;
+    grid-template-rows:auto auto minmax(0,1fr) auto;
+    width:min(1370px,calc(100vw - 40px));
+    max-width:calc(100vw - 40px);
+    height:min(860px,calc(100dvh - 34px));
+    max-height:calc(100dvh - 34px);
+    overflow:hidden;
+    border:1px solid #dfe8e2;
+    border-radius:24px;
+    background:#fff;
+}
+#plan-muscle-dialog .plan-muscle-heading {
+    display:flex;align-items:center;gap:18px;
+    padding:23px 30px 22px;
+    border-bottom:1px solid #e2e9e4;
+    background:#fff;
+}
+#plan-muscle-dialog .plan-muscle-heading-symbol {
+    flex:0 0 62px;width:62px;height:62px;
+    display:grid;place-items:center;
+    border-radius:18px;background:#e1f5d1;color:#286b36;
+}
+#plan-muscle-dialog .plan-muscle-heading-symbol svg {width:30px;height:30px;}
+#plan-muscle-dialog .plan-muscle-heading-copy {flex:1;min-width:0;}
+#plan-muscle-dialog .plan-muscle-heading-copy h2 {
+    font-size:clamp(22px,2vw,29px);letter-spacing:-.035em;
+    margin:2px 0 4px;
+}
+#plan-muscle-dialog .plan-muscle-heading-copy > p:last-child{
+    margin:0;color:var(--muted);font-size:12px;line-height:1.5;
+}
+#plan-muscle-dialog .plan-muscle-heading > .icon-button{flex:0 0 auto;align-self:flex-start;}
+#plan-muscle-dialog .plan-muscle-toolbar {
+    display:flex;justify-content:space-between;align-items:center;
+    gap:14px;padding:15px 25px;border-bottom:1px solid #e1e9e3;
+}
+#plan-muscle-dialog .plan-muscle-switch{
+    gap:3px;border-radius:13px;border:1px solid #dce6e0;
+    background:#f4f8f5;padding:4px;
+}
+#plan-muscle-dialog .plan-muscle-switch button{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:9px 15px;min-height:42px;border-radius:10px;
+    font-size:12px;color:#244e43;white-space:nowrap;
+}
+#plan-muscle-dialog .plan-muscle-switch button svg {width:17px;height:17px;}
+#plan-muscle-dialog .plan-muscle-switch button[aria-pressed="true"] {
+    background:var(--lime);color:#153f30;
+}
+#plan-muscle-dialog #plan-muscle-day-picker{
+    display:grid;gap:4px;min-width:min(290px,45%);
+    color:#365c50;font-size:11px;font-weight:750;
+}
+#plan-muscle-dialog #plan-muscle-day-picker[hidden]{display:none!important;}
+#plan-muscle-dialog #plan-muscle-day-select{
+    border-radius:11px;background:#fff;border:1px solid #acd96d;
+    min-height:42px;font-size:12px;font-weight:750;color:#133c30;
+}
+#plan-muscle-dialog .plan-muscle-layout {
+    display:grid;
+    grid-template-columns:minmax(0,1.16fr) minmax(0,1fr);
+    gap:18px;padding:17px 23px 18px;min-height:0;overflow:hidden;
+    background:#fbfcfb;
+}
+#plan-muscle-dialog .plan-muscle-figure,
+#plan-muscle-dialog .plan-muscle-details {
+    min-height:0;min-width:0;
+    border:1px solid #dce6e1;border-radius:19px;
+    background:white;
+    box-shadow:0 6px 20px rgba(19,57,40,.035);
+}
+#plan-muscle-dialog .plan-muscle-figure {
+    display:block;overflow:hidden;
+}
+#plan-muscle-dialog .plan-muscle-figure-main {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(130px,34%);
+    align-items:stretch;height:100%;gap:0;padding:13px;
+}
+#plan-muscle-dialog .plan-muscle-map{
+    min-height:0;height:100%;min-width:0;
+    border-radius:14px;background:#f2f6f4;
+    display:grid;place-items:center;overflow:hidden;
+}
+#plan-muscle-dialog .plan-muscle-map svg{
+    width:100%!important;
+    height:100%!important;
+    max-width:100%;max-height:100%;
+    transform:none!important;
+    filter:none!important;
+}
+#plan-muscle-dialog .plan-muscle-figure-sidebar {
+    display:flex;flex-direction:column;gap:10px;
+    min-width:0;min-height:0;
+    padding:6px 0 6px 13px;
+}
+#plan-muscle-dialog .plan-muscle-stat{
+    display:flex;align-items:center;gap:11px;
+    min-width:0;flex:1 1 75px;
+    padding:10px;border-radius:13px;background:#f5f8f6;
+}
+#plan-muscle-dialog .plan-muscle-stat > svg{
+    width:24px;height:24px;flex:none;color:#216b48;
+}
+#plan-muscle-dialog .plan-muscle-stat > span{
+    min-width:0;display:grid;gap:3px;
+}
+#plan-muscle-dialog .plan-muscle-stat strong{
+    font-size:23px;color:#122f29;line-height:1.1;font-weight:850;
+    font-variant-numeric:tabular-nums;
+}
+#plan-muscle-dialog .plan-muscle-stat small{
+    color:#536e64;font-size:11px;line-height:1.35;
+}
+#plan-muscle-dialog .plan-muscle-legend-wrap{
+    display:grid;gap:11px;
+    padding:13px 4px 3px;
+    border-top:1px solid #dce5e0;
+}
+#plan-muscle-dialog .plan-muscle-legend-wrap > strong{
+    color:#153c30;font-size:12px;
+}
+#plan-muscle-dialog .plan-muscle-legend{
+    display:flex;flex-direction:column;gap:9px;
+    padding:0;
+}
+#plan-muscle-dialog .plan-muscle-legend span{
+    font-size:11px;color:#345649;align-items:center;
+}
+#plan-muscle-dialog .plan-muscle-legend small{
+    font-size:10px;color:var(--muted);line-height:1.3;
+}
+#plan-muscle-dialog .plan-muscle-details{
+    padding:20px;display:flex;flex-direction:column;overflow:hidden;
+}
+#plan-muscle-dialog .plan-muscle-details-heading{
+    display:flex;gap:12px;align-items:flex-start;
+    flex:0 0 auto;margin-bottom:13px;
+}
+#plan-muscle-dialog .plan-muscle-target-icon{
+    display:grid;place-items:center;
+    color:#1f7046;flex:0 0 30px;
+}
+#plan-muscle-dialog .plan-muscle-target-icon svg{width:29px;height:29px;}
+#plan-muscle-dialog .plan-muscle-details-heading h3{
+    color:#122f29;font-size:19px;margin:0 0 5px;line-height:1.22;
+}
+#plan-muscle-dialog .plan-muscle-details-heading p{
+    margin:0;color:#60776d;font-size:11px;line-height:1.45;
+}
+#plan-muscle-dialog #plan-muscle-analysis-list{
+    flex:1;min-height:0;max-height:none;
+    overflow:auto;overscroll-behavior:contain;
+    scrollbar-width:thin;padding:0 4px 4px 0;
+}
+#plan-muscle-dialog .plan-muscle-item{
+    padding:12px 0 14px;border-bottom:1px solid #e4ebe5;
+}
+#plan-muscle-dialog .plan-muscle-item-top{
+    display:flex;gap:10px;justify-content:space-between;
+    align-items:baseline;font-size:12px;line-height:1.4;
+}
+#plan-muscle-dialog .plan-muscle-item-top strong{color:#1b3730;min-width:0;}
+#plan-muscle-dialog .plan-muscle-item-top span{
+    flex:0 0 auto;font-size:11px;font-weight:800;color:#226d45;
+    font-variant-numeric:tabular-nums;
+}
+#plan-muscle-dialog .plan-muscle-track{
+    margin:9px 0 7px;height:9px;border-radius:9px;background:#e5f3df;
+}
+#plan-muscle-dialog .plan-muscle-track i{
+    background:linear-gradient(90deg,#55ad40,#87ca58);
+}
+#plan-muscle-dialog .plan-muscle-item small{
+    color:#6b8076;font-size:10px;line-height:1.4;
+}
+#plan-muscle-dialog .plan-muscle-disclaimer{
+    display:flex;align-items:flex-start;gap:11px;
+    flex:0 0 auto;margin:13px 0 0;
+    padding:13px 14px;background:#ecf5eb;border-radius:13px;
+    color:#2a5943;
+}
+#plan-muscle-dialog .plan-muscle-disclaimer svg{
+    width:21px;height:21px;flex:none;margin-top:1px;color:#276d45;
+}
+#plan-muscle-dialog .plan-muscle-disclaimer strong{
+    display:block;font-size:11px;margin-bottom:4px;
+}
+#plan-muscle-dialog .plan-muscle-disclaimer p{
+    font-size:10px;line-height:1.55;margin:0;color:#365f4e;
+}
+#plan-muscle-dialog .plan-muscle-footer{
+    border-top:1px solid #e1e9e4;background:white;
+    padding:12px 24px;flex:0 0 auto;justify-content:flex-end;
+}
+#plan-muscle-dialog .plan-muscle-footer .button{min-width:105px;}
+@media (max-width:950px){
+    #plan-muscle-dialog[open] {
+        width:min(780px,calc(100vw - 18px));
+        max-width:calc(100vw - 18px);
+        height:calc(100dvh - 20px);
+        max-height:calc(100dvh - 20px);
+    }
+    #plan-muscle-dialog .plan-muscle-layout{
+        grid-template-columns:minmax(0,1fr);overflow:auto;gap:13px;
+    }
+    #plan-muscle-dialog .plan-muscle-figure-main{
+        min-height:350px;max-height:460px;
+    }
+    #plan-muscle-dialog .plan-muscle-details{
+        min-height:280px;overflow:visible;
+    }
+    #plan-muscle-dialog #plan-muscle-analysis-list{max-height:300px;}
+}
+@media (max-width:560px){
+    #plan-muscle-dialog .plan-muscle-heading{padding:15px;gap:9px;}
+    #plan-muscle-dialog .plan-muscle-heading-symbol{
+        width:42px;height:42px;flex-basis:42px;border-radius:12px;
+    }
+    #plan-muscle-dialog .plan-muscle-heading-symbol svg{width:23px;height:23px;}
+    #plan-muscle-dialog .plan-muscle-heading-copy h2{font-size:19px;}
+    #plan-muscle-dialog .plan-muscle-heading-copy > p:last-child{font-size:10px;}
+    #plan-muscle-dialog .plan-muscle-toolbar{
+        padding:10px 13px;align-items:stretch;flex-wrap:wrap;
+    }
+    #plan-muscle-dialog .plan-muscle-switch{width:100%;justify-content:stretch;}
+    #plan-muscle-dialog .plan-muscle-switch button{flex:1;padding:8px;min-height:40px;}
+    #plan-muscle-dialog #plan-muscle-day-picker{min-width:0;width:100%;}
+    #plan-muscle-dialog .plan-muscle-layout{padding:10px;}
+    #plan-muscle-dialog .plan-muscle-figure-main{
+        grid-template-columns:minmax(0,1fr);gap:10px;
+        max-height:none;padding:9px;
+    }
+    #plan-muscle-dialog .plan-muscle-map{height:300px;}
+    #plan-muscle-dialog .plan-muscle-figure-sidebar{
+        display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+        padding:0;gap:7px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat{
+        flex-direction:column;align-items:center;text-align:center;
+        padding:9px 5px;gap:4px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat > svg{height:19px;width:19px;}
+    #plan-muscle-dialog .plan-muscle-stat strong{font-size:19px;}
+    #plan-muscle-dialog .plan-muscle-stat small{font-size:9px;}
+    #plan-muscle-dialog .plan-muscle-legend-wrap{grid-column:1/-1;padding:8px 4px;}
+    #plan-muscle-dialog .plan-muscle-legend{flex-direction:row;flex-wrap:wrap;gap:10px;}
+    #plan-muscle-dialog .plan-muscle-details{padding:14px;}
+}
