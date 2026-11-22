@@ -4477,3 +4477,76 @@ body.resting .toast-region { bottom: 190px; }
 #view-plans .plan-time-stepper [data-step-field="durationSeconds"]:active {
     background:var(--lime-soft);
 }
+
+/* Anatomical muscle picker: FitCore dark green + lime icon language. */
+#exercise-picker-dialog .picker-filters { position:relative; z-index:3; }
+#exercise-picker-dialog .muscle-filter-field { display:grid; align-content:start; gap:5px; min-width:0; }
+#exercise-picker-dialog .muscle-filter-field > label { margin:0; color:var(--muted); font-weight:800; font-size:11px; }
+.muscle-filter-anchor { position:relative; min-width:0; }
+.muscle-filter-native {
+    position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;
+    clip-path:inset(50%); overflow:hidden;
+}
+.muscle-filter-trigger {
+    display:flex; align-items:center; gap:8px;
+    width:100%; min-width:0; height:44px; padding:4px 10px 4px 5px;
+    border:1px solid #cddbd1; border-radius:11px;
+    background:#fff; color:#102f26; font-size:12px; font-weight:800;
+    text-align:left; cursor:pointer;
+}
+.muscle-filter-trigger:hover { border-color:#90bfa2; background:#fafdf9; }
+.muscle-filter-trigger:focus-visible,
+.muscle-filter-trigger[aria-expanded="true"] {
+    outline:2px solid #b9ee68; outline-offset:2px; border-color:#7cb94c;
+}
+.muscle-filter-trigger-icon,
+.muscle-filter-option-icon {
+    display:grid; place-items:center; flex:none;
+    width:34px; height:34px; border-radius:10px;
+    background:#eaf5ea; color:#143f31;
+}
+.muscle-filter-current { min-width:0; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.muscle-filter-chevron { flex:none; width:16px; height:16px; fill:none; stroke:#365e4b; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.muscle-filter-menu {
+    position:absolute; top:calc(100% + 8px); right:0; z-index:120;
+    width:min(365px,calc(100vw - 38px));
+    max-height:min(490px,calc(100dvh - 240px));
+    min-height:130px; padding:11px; overflow-y:auto; overscroll-behavior:contain;
+    border:1px solid #d5e1d9; border-radius:17px; background:#fff;
+    box-shadow:0 20px 54px rgba(8,49,36,.18);
+    scrollbar-width:thin;
+}
+.muscle-filter-menu[hidden] { display:none !important; }
+.muscle-filter-menu-heading {
+    padding:6px 7px 11px; color:#627d6e; font-size:10px; font-weight:850;
+    letter-spacing:.07em; text-transform:uppercase;
+}
+.muscle-filter-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.muscle-filter-option {
+    display:flex; align-items:center; gap:8px; position:relative;
+    min-width:0; min-height:57px; padding:6px;
+    border:1px solid #e0e8e1; border-radius:12px;
+    background:#fbfdfb; color:#143f31; cursor:pointer; text-align:left;
+}
+.muscle-filter-option-icon { width:43px; height:43px; border-radius:11px; background:#ecf5ec; }
+.muscle-filter-option-label { min-width:0; flex:1; font-size:11px; font-weight:800; line-height:1.2; overflow-wrap:anywhere; }
+.muscle-filter-option-check { display:none; position:absolute; top:3px; right:4px; width:13px; height:13px; fill:none; stroke:#164b31; stroke-width:3; }
+.muscle-filter-option:hover { border-color:#a5cd9e; background:#f0f8ef; }
+.muscle-filter-option[aria-selected="true"] { border-color:#91d746; background:#effcda; box-shadow:inset 0 0 0 1px #91d746; }
+.muscle-filter-option[aria-selected="true"] .muscle-filter-option-check { display:block; }
+.muscle-filter-option:focus-visible { outline:3px solid #b0e65c; outline-offset:1px; }
+.fitcore-muscle-icon { display:block; width:87%; height:87%; overflow:visible; }
+.fitcore-muscle-icon .mi-halo { fill:#f4f8ef; }
+.fitcore-muscle-icon .mi-active { fill:#a9ef4c; stroke:#508e3f; stroke-width:.7; stroke-linejoin:round; }
+.fitcore-muscle-icon .mi-outline { fill:none; stroke:#103f32; stroke-width:2.25; stroke-linecap:round; stroke-linejoin:round; }
+.fitcore-muscle-icon .mi-outline .mi-detail { stroke:#adc5af; stroke-width:1.4; }
+.fitcore-muscle-icon .mi-accent { fill:none; stroke:#a9ef4c; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+@media(max-width:640px) {
+    #exercise-picker-dialog .muscle-filter-menu {
+        width:min(365px,calc(100vw - 48px));
+        max-height:min(430px,calc(100dvh - 180px));
+    }
+}
+@media(max-width:390px) {
+    .muscle-filter-list { grid-template-columns:1fr; }
+}
