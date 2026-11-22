@@ -96,6 +96,40 @@ test('press-and-hold steps immediately, repeats, and stops cleanly',()=>{
  assert.equal(tasks.size,0);
  assert.ok(!hold.isActive(button));
 });
+test('browser-style timers do not throw illegal invocation when held',()=>{
+ const vm=require('node:vm');
+ const tasks=new Map();
+ let nextId=0;
+ const schedule=(fn,type)=>{
+  const id=++nextId;
+  tasks.set(id,{fn,type});
+  return id;
+ };
+ const clock={
+  setTimeout:function(fn){'use strict';assert.equal(this,undefined);return schedule(fn,'timeout');},
+  clearTimeout:function(id){'use strict';assert.equal(this,undefined);tasks.delete(id);},
+  setInterval:function(fn){'use strict';assert.equal(this,undefined);return schedule(fn,'interval');},
+  clearInterval:function(id){'use strict';assert.equal(this,undefined);tasks.delete(id);}
+ };
+ const context={...clock};
+ vm.runInNewContext(fs.readFileSync(path.join(base,'plan-duration-input.js'),'utf8'),context);
+ let count=0;
+ const target={};
+ const controller=context.FitCoreDurationInput.createHoldController(()=>{count++;return true;});
+ controller.start(target);
+ assert.equal(count,1);
+ const timeout=[...tasks].find(([,value])=>value.type==='timeout');
+ assert.ok(timeout,'the browser delay must be scheduled');
+ tasks.delete(timeout[0]);
+ timeout[1].fn();
+ assert.equal(count,2);
+ const interval=[...tasks].find(([,value])=>value.type==='interval');
+ assert.ok(interval,'continuous repetition must start');
+ interval[1].fn();
+ assert.equal(count,3);
+ controller.stop();
+ assert.equal(tasks.size,0);
+});
 test('delegated pointer controls continue stepping while held and stop on release',()=>{
  let nextId=0;
  const timers=new Map();
