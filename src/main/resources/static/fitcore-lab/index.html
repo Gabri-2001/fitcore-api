@@ -810,68 +810,32 @@
                         required>
             </label>
 
-            <div class="field-grid">
-
-                <label>
-                    Categoría
-                    <select
-                            id="session-edit-category"
-                            required>
-
-                        <option value="HYPERTROPHY">
-                            Hipertrofia
-                        </option>
-
-                        <option value="STRENGTH">
-                            Fuerza
-                        </option>
-
-                        <option value="ENDURANCE">
-                            Resistencia
-                        </option>
-
-                        <option value="CARDIO">
-                            Cardio
-                        </option>
-
-                        <option value="MOBILITY">
-                            Movilidad
-                        </option>
-
-                        <option value="MIXED">
-                            Mixto
-                        </option>
-
-                    </select>
-                </label>
-
-                <label>
-                    Intensidad
-                    <select
-                            id="session-edit-intensity"
-                            required>
-
-                        <option value="MODERATE">
-                            Moderada
-                        </option>
-
-                        <option value="LOW">
-                            Baja
-                        </option>
-
-                        <option value="HIGH">
-                            Alta
-                        </option>
-
-                        <option value="VERY_HIGH">
-                            Muy alta
-                        </option>
-
-                    </select>
-                </label>
-
+            <div class="session-legacy-fields" hidden aria-hidden="true">
+                <select id="session-edit-category" tabindex="-1">
+                    <option value="MIXED">Mixto</option>
+                    <option value="CARDIO">Cardio</option>
+                    <option value="MOBILITY">Movilidad</option>
+                    <option value="HYPERTROPHY">Hipertrofia</option>
+                    <option value="STRENGTH">Fuerza</option>
+                    <option value="ENDURANCE">Resistencia</option>
+                </select>
+                <select id="session-edit-intensity" tabindex="-1">
+                    <option value="MODERATE">Moderada</option>
+                    <option value="LOW">Baja</option>
+                    <option value="HIGH">Alta</option>
+                    <option value="VERY_HIGH">Muy alta</option>
+                </select>
             </div>
-
+            <fieldset class="session-settings-classification">
+                <legend>Clasificación del entrenamiento</legend>
+                <label class="session-settings-mode-label">
+                    <input type="checkbox" id="session-edit-auto" checked>
+                    Clasificar automáticamente según ejercicios y series
+                </label>
+                <div id="session-edit-manual-types" class="session-manual-types" hidden
+                     role="radiogroup" aria-label="Tipo manual del entrenamiento"></div>
+                <p class="session-settings-hint">La intensidad se registra mediante RPE y RIR en cada serie.</p>
+            </fieldset>
             <label>
                 Día del plan
                 <input
