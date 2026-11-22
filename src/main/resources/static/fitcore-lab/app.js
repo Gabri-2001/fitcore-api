@@ -656,6 +656,7 @@ function renderPlanDayTabs() {
     if(counter)counter.textContent=state.planDays.length+
         (state.planDays.length===1?' sesión':' sesiones');
     container.innerHTML = state.planDays.map((day, index) => `
+        <div class="plan-day-tab-shell" data-plan-day-index="${index}">
         <button
             type="button"
             class="plan-day-tab ${index === state.selectedPlanDayIndex ? 'is-selected' : ''}"
@@ -683,6 +684,10 @@ function renderPlanDayTabs() {
                 ⠿
             </span>
         </button>
+        <button type="button" class="plan-day-actions-trigger"
+                data-plan-day-actions="${index}" aria-label="Opciones del día"
+                aria-haspopup="menu" aria-expanded="false" title="Opciones del día">⋯</button>
+        </div>
     `).join('') + `
         <button
             class="plan-day-add"
@@ -691,6 +696,10 @@ function renderPlanDayTabs() {
             <span>＋</span>
             <strong>Añadir día</strong>
         </button>
+        <div id="plan-day-actions-menu" class="plan-day-actions-menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-day-menu-action="duplicate">Duplicar día</button>
+            <button type="button" role="menuitem" class="danger" data-day-menu-action="delete">Eliminar día</button>
+        </div>
     `;
 }
 
@@ -855,7 +864,7 @@ function startPlanDrag(event) {
     );
 
     const item = grip.closest(
-        isDay ? '.plan-day-tab' : '.exercise-editor'
+        isDay ? '.plan-day-tab-shell' : '.exercise-editor'
     );
 
     const list = item?.parentElement;
@@ -976,7 +985,7 @@ function movePlanDrag(event) {
 
     // Localizar el elemento sobre el que soltaremos
     const selector = drag.isDay
-        ? '.plan-day-tab'
+        ? '.plan-day-tab-shell'
         : '.exercise-editor';
 
     const over = document.elementFromPoint(
@@ -1055,11 +1064,11 @@ function finishPlanDrag(event) {
 
     // Obtener el orden nuevo desde el DOM
     const selector = drag.isDay
-        ? '.plan-day-tab'
+        ? '.plan-day-tab-shell'
         : '.exercise-editor';
 
     const attribute = drag.isDay
-        ? 'selectPlanDay'
+        ? 'planDayIndex'
         : 'exercise';
 
     const order = [
@@ -1135,7 +1144,7 @@ function suppressClickAfterPlanDrag(event) {
     ) return;
 
     if (!event.target.closest(
-        '.plan-day-tab, .exercise-editor'
+        '.plan-day-tab-shell, .exercise-editor'
     )) return;
 
     event.preventDefault();
@@ -4797,6 +4806,34 @@ function bindEvents() {
 
     $('plan-save').addEventListener('click', savePlan);
     $('plan-day-tabs').addEventListener('click', event => {
+        const action=event.target.closest('[data-day-menu-action]');
+        if(action){
+            const menu=$('plan-day-actions-menu');
+            const index=Number(menu.dataset.dayIndex);
+            menu.hidden=true;
+            document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
+            if(Number.isInteger(index)&&index>=0&&index<state.planDays.length){
+                if(action.dataset.dayMenuAction==='duplicate')duplicateSelectedPlanDay(index);
+                if(action.dataset.dayMenuAction==='delete')void deleteSelectedPlanDay(index);
+            }
+            return;
+        }
+        const trigger=event.target.closest('[data-plan-day-actions]');
+        if(trigger){
+            const menu=$('plan-day-actions-menu');
+            const index=Number(trigger.dataset.planDayActions);
+            const wasOpen=!menu.hidden&&menu.dataset.dayIndex===String(index);
+            document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
+            menu.hidden=wasOpen;
+            if(!wasOpen){
+                menu.dataset.dayIndex=String(index);
+                trigger.setAttribute('aria-expanded','true');
+                const rect=trigger.getBoundingClientRect();
+                menu.style.left=Math.max(12,Math.min(window.innerWidth-190,rect.right-180))+'px';
+                menu.style.top=Math.max(12,Math.min(window.innerHeight-100,rect.bottom+6))+'px';
+            }
+            return;
+        }
         const selected = event.target.closest('[data-select-plan-day]');
         if (selected) {
             syncPlanEditor();
@@ -4807,6 +4844,19 @@ function bindEvents() {
         if (event.target.closest('#add-day')) {
             openPlanNewDayDialog();
         }
+    });
+    document.addEventListener('pointerdown',event=>{
+        const menu=$('plan-day-actions-menu');
+        if(!menu||menu.hidden||event.target.closest('#plan-day-actions-menu,[data-plan-day-actions]'))return;
+        menu.hidden=true;
+        document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
+    });
+    document.addEventListener('keydown',event=>{
+        if(event.key!=='Escape')return;
+        const menu=$('plan-day-actions-menu');
+        if(!menu||menu.hidden)return;
+        menu.hidden=true;
+        document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
     });
     $('plan-days').addEventListener('click', event => {
 
