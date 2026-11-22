@@ -544,9 +544,12 @@ function updatePlanClassificationVisuals(){
     const label=manual?'Clasificación manual':'Clasificación automática';
     const summary=manual?(outcome?'Sugerencia: '+suggested:'Modificable desde Configurar día')
         :outcome?.reasons.length?outcome.reasons.join(' · '):'Calculada según ejercicios y series';
+    const confidence={high:'alta',medium:'media',low:'baja'};
+    const status=outcome?(outcome.provisional?'Provisional':'Consolidada'):'Sin datos';
     el.innerHTML='<span class="plan-classification-eyebrow">'+escapeHtml(label)+'</span>'+
         '<strong>'+escapeHtml(planDayLabel(day))+'</strong>'+
         '<small>Enfoque: '+escapeHtml(details)+'</small>'+
+        '<small>Estado: '+escapeHtml(status)+(outcome?' · Confianza '+confidence[outcome.confidence]:'')+'</small>'+
         '<small>'+escapeHtml(summary)+'</small>';
     const badge=document.querySelector('.plan-day-type-badge');
     if(badge)badge.innerHTML=planDayIcon(day.dayType)+' '+escapeHtml(planDayLabel(day));
