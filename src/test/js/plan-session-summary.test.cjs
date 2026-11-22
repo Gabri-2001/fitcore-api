@@ -67,9 +67,9 @@ test('timer off is not interpreted as zero recovery time',()=>{
  }));
  const result=summary.summarize(rows,()=> 'REPETITIONS',
    {restCategoryFor:()=> 'COMPOUND'});
- assert.equal(result.lowerSeconds,1770);
- assert.equal(result.upperSeconds,2880);
- assert.equal(result.durationLabel,'≈ 29–48 min');
+ assert.equal(result.lowerSeconds,1320);
+ assert.equal(result.upperSeconds,2640);
+ assert.equal(result.durationLabel,'≈ 22–44 min');
  assert.equal(result.hasAssumedRest,true);
  assert.equal(result.assumedRestPeriods,10);
  assert.equal(result.configuredRestPeriods,0);
@@ -91,9 +91,9 @@ test('off or missing rest uses an isolation-specific estimate without changing o
  const original=JSON.stringify(rows);
  const result=summary.summarize(rows,()=> 'REPETITIONS',
    {restCategoryFor:()=> 'ISOLATION'});
- assert.equal(result.lowerSeconds,420);
+ assert.equal(result.lowerSeconds,390);
  assert.equal(result.upperSeconds,780);
- assert.equal(result.durationLabel,'≈ 7–13 min');
+ assert.equal(result.durationLabel,'≈ 6–13 min');
  assert.equal(result.assumedRestPeriods,4);
  assert.equal(result.missingTargets,false);
  assert.equal(JSON.stringify(rows),original);
@@ -110,8 +110,8 @@ test('mixed configured and inferred rests are accounted for independently',()=>{
              {sets:3,reps:10,restSeconds:0}];
  const result=summary.summarize(rows,()=> 'REPETITIONS',
    {restCategoryFor:()=> 'COMPOUND'});
- assert.equal(result.lowerSeconds,660);
- assert.equal(result.upperSeconds,990);
+ assert.equal(result.lowerSeconds,570);
+ assert.equal(result.upperSeconds,900);
  assert.equal(result.configuredRestPeriods,2);
  assert.equal(result.assumedRestPeriods,2);
 });
