@@ -539,20 +539,24 @@ function updatePlanClassificationVisuals(){
     if(!day||!el)return;
     const outcome=day.classification;
     const manual=day.dayTypeManual!==false;
-    const suggested=outcome?FitCoreDayClassifier.describe(outcome):'Calculando…';
-    const details=outcome?.focus?.map(code=>FitCoreDayClassifier.NAMES[code]||code).join(' y ')||'Por determinar';
-    const label=manual?'Clasificación manual':'Clasificación automática';
-    const summary=manual?(outcome?'Sugerencia: '+suggested:'Modificable desde Configurar día')
-        :outcome?.reasons.length?outcome.reasons.join(' · '):'Calculada según ejercicios y series';
+    const suggested=outcome?FitCoreDayClassifier.describe(outcome):'Sin datos suficientes';
+    const title=manual
+        ? (FitCoreDayClassifier.STRUCTURE[day.dayType]||friendly(day.dayType))
+        : (outcome?FitCoreDayClassifier.describe(outcome):'Pendiente de ejercicios');
     const confidence={high:'alta',medium:'media',low:'baja'};
-    const status=outcome?(outcome.provisional?'Provisional':'Consolidada'):'Sin datos';
-    el.innerHTML='<span class="plan-classification-eyebrow">'+escapeHtml(label)+'</span>'+
-        '<strong>'+escapeHtml(planDayLabel(day))+'</strong>'+
-        '<small>Enfoque: '+escapeHtml(details)+'</small>'+
-        '<small>Estado: '+escapeHtml(status)+(outcome?' · Confianza '+confidence[outcome.confidence]:'')+'</small>'+
-        '<small>'+escapeHtml(summary)+'</small>';
-    const badge=document.querySelector('.plan-day-type-badge');
-    if(badge)badge.innerHTML=planDayIcon(day.dayType)+' '+escapeHtml(planDayLabel(day));
+    const status=manual?'Elegida manualmente'
+        :outcome?(outcome.provisional?'Provisional':'Consolidada')+
+            ' · Confianza '+(confidence[outcome.confidence]||'baja')
+        :'Añade ejercicios para obtener una sugerencia';
+    // The summary is the only visible location for the day classification.
+    // Avoid repeating focus, status or the full type in the tabs and title.
+    const reason=!manual&&outcome?.provisional&&outcome.reasons.length
+        ? outcome.reasons[0] : '';
+    el.innerHTML='<span class="plan-classification-eyebrow">'+
+        (manual?'CLASIFICACIÓN MANUAL':'CLASIFICACIÓN AUTOMÁTICA')+'</span>'+
+        '<strong>'+escapeHtml(title)+'</strong>'+
+        '<small>'+escapeHtml(status)+'</small>'+
+        (reason?'<small class="plan-classification-reason">'+escapeHtml(reason)+'</small>':'');
     const hint=$('plan-edit-classification-preview');
     if(hint&&$('plan-edit-day-dialog').open){
         hint.textContent='Sugerencia: '+suggested+
@@ -653,7 +657,6 @@ function renderPlanDayTabs() {
                 <em>
                     ${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'}
                 </em>
-                <small class="plan-tab-classification">${escapeHtml(planDayLabel(day))}</small>
             </span>
 
             <span
@@ -718,10 +721,6 @@ function renderPlanDays() {
                     <div class="plan-day-title">
                         <span class="plan-day-eyebrow">SESIÓN SELECCIONADA · DÍA ${dayIndex+1}</span>
                         <h3>${escapeHtml(day.name || friendly(day.dayType))}</h3>
-                        <span class="plan-day-type-badge">
-                            ${planDayIcon(day.dayType)}
-                            ${escapeHtml(planDayLabel(day))}
-                        </span>
                     </div>
                     <div class="plan-day-controls">
                         <button type="button" class="button button-secondary" data-configure-plan-day>
