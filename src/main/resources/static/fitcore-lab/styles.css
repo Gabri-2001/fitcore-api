@@ -1780,6 +1780,64 @@ body.resting .toast-region { bottom: 190px; }
     text-align: center;
 }
 
+/* Use the same compact +/- input pattern as the plan-day rows. */
+.plan-picker-numbers .plan-picker-stepper {
+    display:grid;
+    grid-template-columns:30px minmax(0,1fr) 30px;
+    width:100%;
+    min-width:0;
+    min-height:42px;
+    margin:0;
+    overflow:hidden;
+    border:1px solid #cdd8d2;
+    border-radius:11px;
+    background:#fff;
+}
+.plan-picker-numbers .plan-picker-stepper button {
+    min-width:0;
+    min-height:40px;
+    padding:0;
+    border:0;
+    color:var(--green);
+    background:transparent;
+    font-size:18px;
+    font-weight:850;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+}
+.plan-picker-numbers .plan-picker-stepper button:hover,
+.plan-picker-numbers .plan-picker-stepper button:active {
+    background:var(--lime-soft);
+}
+.plan-picker-numbers .plan-picker-stepper input {
+    min-width:0;
+    width:100%;
+    min-height:40px;
+    margin:0;
+    padding:4px 0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    text-align:center;
+    font-size:13px;
+    font-weight:850;
+    appearance:textfield;
+}
+.plan-picker-numbers .plan-picker-time-stepper input {
+    font-size:12px;
+    letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;
+}
+.plan-picker-numbers .plan-picker-stepper input::-webkit-inner-spin-button,
+.plan-picker-numbers .plan-picker-stepper input::-webkit-outer-spin-button {
+    appearance:none;
+}
+.plan-picker-numbers .plan-picker-stepper:focus-within {
+    border-color:#a0d94c;
+    box-shadow:0 0 0 3px rgba(189,241,90,.3);
+}
+
 .plan-picker-fields p {
     margin: 0;
 
