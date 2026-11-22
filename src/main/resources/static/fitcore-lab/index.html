@@ -455,11 +455,23 @@
             <div class="training-layout" id="training-layout">
                 <aside class="panel session-builder">
                     <div class="section-heading"><div><p class="eyebrow">SESIÓN REAL</p><h2>Configurar</h2></div><span class="status-pill" id="session-status">Sin iniciar</span></div>
+                    <div class="training-source-picker" role="radiogroup" aria-label="Origen del entrenamiento">
+                        <label class="training-source-card"><input type="radio" name="session-source" value="free" checked><span class="training-source-icon" aria-hidden="true">＋</span><span><strong>Entrenamiento libre</strong><small>Crea una sesión desde cero</small></span></label>
+                        <label class="training-source-card"><input type="radio" name="session-source" value="plan"><span class="training-source-icon" aria-hidden="true">▦</span><span><strong>Desde mi plan</strong><small>Carga ejercicios y series programadas</small></span></label>
+                    </div>
+                    <label id="session-plan-field" hidden>Día del plan<select id="session-day"><option value="">Selecciona un día</option></select></label>
                     <label>Fecha<input id="session-date" type="date"></label>
-                    <div class="field-grid"><label>Categoría<select id="session-category"><option value="HYPERTROPHY">Hipertrofia</option><option value="STRENGTH">Fuerza</option><option value="ENDURANCE">Resistencia</option><option value="CARDIO">Cardio</option><option value="MOBILITY">Movilidad</option><option value="MIXED">Mixto</option></select></label><label>Intensidad<select id="session-intensity"><option value="MODERATE">Moderada</option><option value="LOW">Baja</option><option value="HIGH">Alta</option><option value="VERY_HIGH">Muy alta</option></select></label></div>
-                    <label>Día del plan (opcional)<select id="session-day"><option value="">Sesión libre</option></select></label>
-                    <label>Notas<textarea id="session-notes" rows="3" placeholder="Sensaciones iniciales"></textarea></label>
-                    <button id="session-start" class="button button-primary button-block">Iniciar sesión</button>
+                    <fieldset class="session-muscle-chooser">
+                        <legend>Grupos musculares</legend>
+                        <div class="training-mode-picker" role="radiogroup" aria-label="Selección muscular">
+                            <label><input type="radio" name="session-muscle-mode" value="AUTO" checked> Automático</label>
+                            <label><input type="radio" name="session-muscle-mode" value="MANUAL"> Manual</label>
+                        </div>
+                        <p class="session-field-hint" id="session-muscle-hint">Se identificarán según los ejercicios añadidos.</p>
+                        <div id="session-manual-muscles" class="session-muscle-chip-grid" hidden></div>
+                    </fieldset>
+                    <label>Notas<textarea id="session-notes" rows="3" placeholder="Sensaciones iniciales (opcional)"></textarea></label>
+                    <button id="session-start" class="button button-primary button-block">Empezar entrenamiento</button>
                     <div class="session-actions"><button id="session-cancel" class="button button-secondary" disabled>Cancelar</button><button id="session-delete" class="text-button danger" disabled>Eliminar sesión</button></div>
                 </aside>
                 <div class="session-workspace">
@@ -590,67 +602,15 @@
                         required>
             </label>
 
-            <div class="field-grid">
-
-                <label>
-                    Categoría
-                    <select
-                            id="session-edit-category"
-                            required>
-
-                        <option value="HYPERTROPHY">
-                            Hipertrofia
-                        </option>
-
-                        <option value="STRENGTH">
-                            Fuerza
-                        </option>
-
-                        <option value="ENDURANCE">
-                            Resistencia
-                        </option>
-
-                        <option value="CARDIO">
-                            Cardio
-                        </option>
-
-                        <option value="MOBILITY">
-                            Movilidad
-                        </option>
-
-                        <option value="MIXED">
-                            Mixto
-                        </option>
-
-                    </select>
-                </label>
-
-                <label>
-                    Intensidad
-                    <select
-                            id="session-edit-intensity"
-                            required>
-
-                        <option value="MODERATE">
-                            Moderada
-                        </option>
-
-                        <option value="LOW">
-                            Baja
-                        </option>
-
-                        <option value="HIGH">
-                            Alta
-                        </option>
-
-                        <option value="VERY_HIGH">
-                            Muy alta
-                        </option>
-
-                    </select>
-                </label>
-
-            </div>
+            <fieldset class="session-muscle-chooser">
+                <legend>Grupos musculares</legend>
+                <div class="training-mode-picker" role="radiogroup" aria-label="Selección muscular de la sesión">
+                    <label><input type="radio" name="session-edit-muscle-mode" value="AUTO" checked> Automático</label>
+                    <label><input type="radio" name="session-edit-muscle-mode" value="MANUAL"> Manual</label>
+                </div>
+                <p class="session-field-hint" id="session-edit-muscle-hint">Según los ejercicios de la sesión.</p>
+                <div id="session-edit-manual-muscles" class="session-muscle-chip-grid" hidden></div>
+            </fieldset>
 
             <label>
                 Día del plan

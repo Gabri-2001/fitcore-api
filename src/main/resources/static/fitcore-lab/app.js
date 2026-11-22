@@ -12,6 +12,7 @@ const state = {
     planPickerExerciseIndex: null, planPickerExerciseCode: null,
     planAdvancedConfig: null,
     sessionPrevious: new Map(), restEditorExerciseId: null, rpeTarget: null,
+    resolvedSessionMuscleGroups: [],
     restTimer: {exerciseId:null, exerciseName:'', remaining:0, total:0, running:false, interval:null}
 };
 
@@ -194,7 +195,7 @@ function setAuth(auth) {
 }
 
 function resetUserData() {
-    state.activePlan = null; state.planDays = []; state.selectedPlanDayIndex = 0; state.currentSession = null; state.sessionExercises = []; state.sessionSets.clear();
+    state.activePlan = null; state.planDays = []; state.selectedPlanDayIndex = 0; state.currentSession = null; state.sessionExercises = []; state.sessionSets.clear(); state.resolvedSessionMuscleGroups = [];
     renderPlanMode(); renderSession();
 }
 
@@ -2024,6 +2025,40 @@ function renderPlanMode() {
 }
 
 
+function selectedSessionRadio(name, fallback) {
+    return document.querySelector(`input[name="${name}"]:checked`)?.value || fallback;
+}
+
+function sessionManualMuscles(containerId) {
+    return [...document.querySelectorAll(`#${containerId} input[type=checkbox]:checked`)].map(input => input.value);
+}
+
+function renderSessionMuscleChoices() {
+    for (const id of ['session-manual-muscles', 'session-edit-manual-muscles']) {
+        const container = $(id);
+        if (!container || container.childElementCount) continue;
+        container.innerHTML = enums.muscles.filter(code => code !== 'FULL_BODY').map(code =>
+            `<label class="muscle-choice-chip"><input type="checkbox" value="${code}"><span>${friendly(code)}</span></label>`
+        ).join('');
+    }
+}
+
+function toggleSessionSource() {
+    const fromPlan = selectedSessionRadio('session-source', 'free') === 'plan';
+    $('session-plan-field').hidden = !fromPlan;
+    $('session-day').required = fromPlan;
+}
+
+function toggleSessionMuscleMode(edit = false) {
+    const prefix = edit ? 'session-edit-' : 'session-';
+    const name = edit ? 'session-edit-muscle-mode' : 'session-muscle-mode';
+    const manual = selectedSessionRadio(name, 'AUTO') === 'MANUAL';
+    $(prefix + 'manual-muscles').hidden = !manual;
+    $(prefix + 'muscle-hint').textContent = manual
+        ? 'Selecciona al menos un grupo. Esta etiqueta no altera el cálculo real de activación muscular.'
+        : 'Se identificarán según los ejercicios añadidos.';
+}
+
 function fillSessionDays() {
     const select = $('session-day');
 
@@ -2032,7 +2067,7 @@ function fillSessionDays() {
         ?? select.value;
 
     select.innerHTML =
-        '<option value="">Sesión libre</option>';
+        '<option value="">Selecciona un día</option>';
 
     (state.activePlan?.days || []).forEach(day => {
         select.add(
@@ -2079,7 +2114,19 @@ function currentSessionDayLabel() {
 
 async function startSession() {
     if (!requireAuth()) return;
-    const body = {workoutDayId:optionalNumber($('session-day').value), sessionDate:$('session-date').value, sessionCategory:$('session-category').value, sessionIntensity:$('session-intensity').value, durationMinutes:null, notes:$('session-notes').value.trim() || null, estimatedTotalCaloriesBurned:null};
+    const fromPlan = selectedSessionRadio('session-source', 'free') === 'plan';
+    const workoutDayId = fromPlan ? optionalNumber($('session-day').value) : null;
+    if (fromPlan && !workoutDayId) return toast('Selecciona un día de tu plan.', true);
+    const muscleSelectionMode = selectedSessionRadio('session-muscle-mode', 'AUTO');
+    const manualMuscleGroups = muscleSelectionMode === 'MANUAL' ? sessionManualMuscles('session-manual-muscles') : [];
+    if (muscleSelectionMode === 'MANUAL' && manualMuscleGroups.length === 0) {
+        return toast('Selecciona al menos un grupo muscular.', true);
+    }
+    const body = {
+        workoutDayId, sessionDate:$('session-date').value, muscleSelectionMode, manualMuscleGroups,
+        durationMinutes:null, notes:$('session-notes').value.trim() || null,
+        estimatedTotalCaloriesBurned:null
+    };
     try {
         state.currentSession = await api(`/api/users/${state.auth.userId}/workout-sessions`, {method:'POST', body:JSON.stringify(body)});
         state.currentSession.workoutDayId ??= body.workoutDayId;
@@ -2274,17 +2321,11 @@ function currentSessionMetaLabel() {
             ? dateValue.split('-').reverse().join('/')
             : 'Sin fecha';
 
-    const category = friendly(
-        session.sessionCategory ||
-        $('session-category').value
-    );
-
-    const intensity = friendly(
-        session.sessionIntensity ||
-        $('session-intensity').value
-    );
-
-    return `${dateLabel} · ${category} · ${intensity}`;
+    const groups = session.muscleSelectionMode === 'MANUAL'
+        ? (session.manualMuscleGroups || [])
+        : state.resolvedSessionMuscleGroups;
+    const label = groups.length ? groups.map(friendly).join(' · ') : 'Grupos por determinar';
+    return `${dateLabel} · ${label}`;
 }
 
 
@@ -2318,15 +2359,14 @@ function openSessionSettings() {
         ''
     ).slice(0, 10);
 
-    // Categoría
-    $('session-edit-category').value =
-        session.sessionCategory ||
-        $('session-category').value;
-
-    // Intensidad
-    $('session-edit-intensity').value =
-        session.sessionIntensity ||
-        $('session-intensity').value;
+    // Los tipos de sesión heredados se conservan en la API, pero ya no se editan aquí.
+    const mode = session.muscleSelectionMode || 'AUTO';
+    document.querySelector(`input[name="session-edit-muscle-mode"][value="${mode}"]`).checked = true;
+    const selectedGroups = new Set(session.manualMuscleGroups || []);
+    $('session-edit-manual-muscles').querySelectorAll('input[type=checkbox]').forEach(input => {
+        input.checked = selectedGroups.has(input.value);
+    });
+    toggleSessionMuscleMode(true);
 
     // Notas
     $('session-edit-notes').value =
@@ -2358,21 +2398,17 @@ async function saveSessionSettings(event) {
     }
 
     // Datos actualizados
+    const muscleSelectionMode = selectedSessionRadio('session-edit-muscle-mode', 'AUTO');
+    const manualMuscleGroups = muscleSelectionMode === 'MANUAL'
+        ? sessionManualMuscles('session-edit-manual-muscles') : [];
+    if (muscleSelectionMode === 'MANUAL' && !manualMuscleGroups.length) {
+        return toast('Selecciona al menos un grupo muscular.', true);
+    }
     const updated = {
         sessionDate: $('session-edit-date').value,
-
-        sessionCategory:
-        $('session-edit-category').value,
-
-        sessionIntensity:
-        $('session-edit-intensity').value,
-
-        durationMinutes: null,
-
-        notes:
-            $('session-edit-notes').value.trim(),
-
-        estimatedTotalCaloriesBurned: null
+        muscleSelectionMode,
+        manualMuscleGroups,
+        notes: $('session-edit-notes').value.trim()
     };
 
     const saveButton = $('session-settings-save');
@@ -2406,13 +2442,8 @@ async function saveSessionSettings(event) {
                 server.sessionDate ??
                 updated.sessionDate,
 
-            sessionCategory:
-                server.sessionCategory ??
-                updated.sessionCategory,
-
-            sessionIntensity:
-                server.sessionIntensity ??
-                updated.sessionIntensity,
+            muscleSelectionMode: server.muscleSelectionMode ?? updated.muscleSelectionMode,
+            manualMuscleGroups: server.manualMuscleGroups ?? updated.manualMuscleGroups,
 
             notes:
                 server.notes ??
@@ -2423,16 +2454,11 @@ async function saveSessionSettings(event) {
         $('session-date').value =
             state.currentSession.sessionDate.slice(0, 10);
 
-        $('session-category').value =
-            state.currentSession.sessionCategory;
-
-        $('session-intensity').value =
-            state.currentSession.sessionIntensity;
-
         $('session-notes').value =
             state.currentSession.notes ?? '';
 
         // Actualizar el resumen superior
+        await refreshSessionMuscleGroups();
         syncSessionHeader();
 
         // Cerrar configuración
@@ -2895,9 +2921,25 @@ async function loadSessionExercises() {
         }));
         state.sessionSets = new Map(details.map(item => [item.id, item.sets]));
         state.sessionPrevious = new Map(details.map(item => [item.id, item.previous]));
+        await refreshSessionMuscleGroups();
         renderSession();
         await renderSessionMiniMap();
     } catch (error) { toast(error.message, true); }
+}
+
+async function refreshSessionMuscleGroups() {
+    if (!state.currentSession || !state.auth) {
+        state.resolvedSessionMuscleGroups = [];
+        return;
+    }
+    try {
+        state.resolvedSessionMuscleGroups = await api(
+            `/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/muscle-groups`
+        );
+        syncSessionHeader();
+    } catch (error) {
+        state.resolvedSessionMuscleGroups = state.currentSession.manualMuscleGroups || [];
+    }
 }
 
 function renderSession() {
@@ -4178,6 +4220,16 @@ function bindEvents() {
         deleteSession
     );
 
+    renderSessionMuscleChoices();
+    document.querySelectorAll('input[name="session-source"]').forEach(input =>
+        input.addEventListener('change', toggleSessionSource));
+    document.querySelectorAll('input[name="session-muscle-mode"]').forEach(input =>
+        input.addEventListener('change', () => toggleSessionMuscleMode(false)));
+    document.querySelectorAll('input[name="session-edit-muscle-mode"]').forEach(input =>
+        input.addEventListener('change', () => toggleSessionMuscleMode(true)));
+    toggleSessionSource();
+    toggleSessionMuscleMode();
+    toggleSessionMuscleMode(true);
     $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener(
         'click',
         () => openExercisePicker('session')
