@@ -2188,8 +2188,14 @@ async function renderPlanMuscleDialog() {
         );
     });
 
-    $('plan-muscle-day-picker').hidden =
-        scope === 'week';
+    // The day selector keeps its layout space in both scopes.
+    // Only its visibility and accessibility change: switching Day/Week
+    // must not resize the toolbar, anatomical SVG or distribution panel.
+    const dayPicker = $('plan-muscle-day-picker');
+    const isWeek = scope === 'week';
+    dayPicker.classList.toggle('is-inactive', isWeek);
+    dayPicker.setAttribute('aria-hidden', String(isWeek));
+    $('plan-muscle-day-select').disabled = isWeek;
 
     $('plan-muscle-analysis-title').textContent =
         scope === 'week'
