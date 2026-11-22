@@ -62,6 +62,19 @@
         FOREARMS:[0,0],QUADRICEPS:[1,0],HAMSTRINGS:[2,0],GLUTES:[3,0],
         ADDUCTORS:[0,1],CALVES:[1,1],CORE:[2,1]
     });
+    // Individually redrawn, centered anatomical portraits. Unlike the older
+    // sprite crops, both illustrations have identical viewBox framing and
+    // reveal both upper arms symmetrically.
+    const CENTERED=Object.freeze({
+        BICEPS:'./muscle-icon-biceps.webp',
+        TRICEPS:'./muscle-icon-triceps.webp'
+    });
+    function centeredIcon(code,css){
+        return '<svg class="'+css+' mi-premium mi-centered" viewBox="0 0 64 64" '+
+            'focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+
+            '<image href="'+CENTERED[code]+'" x="0" y="0" width="64" height="64" '+
+            'preserveAspectRatio="xMidYMid meet"/></svg>';
+    }
     const PREMIUM_ATLAS='./muscle-icons-premium.webp';
     const PREMIUM_ATLAS_BATCH2='./muscle-icons-premium-2.webp';
     function premiumIcon(code,css){
@@ -79,6 +92,7 @@
         const art=ART[code||'ALL']||ART.ALL;
         const css=options.className||'fitcore-muscle-icon';
         if(!/^[a-zA-Z0-9 _-]+$/.test(css))throw new TypeError('Invalid icon class');
+        if(Object.prototype.hasOwnProperty.call(CENTERED,code))return centeredIcon(code,css);
         if(Object.prototype.hasOwnProperty.call(PREMIUM,code) ||
            Object.prototype.hasOwnProperty.call(PREMIUM_BATCH2,code))return premiumIcon(code,css);
         return '<svg class="'+css+'" viewBox="0 0 64 64" focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+
