@@ -78,8 +78,14 @@
     // Clock injection keeps timing deterministic in unit tests.
     function createHoldController(onStep, options={}){
         if(typeof onStep!=='function')throw new TypeError('onStep must be a function');
+        // Browser timer functions must be called with the window/global
+        // receiver. Calling an extracted timer as clock.setTimeout can throw
+        // "Illegal invocation" in Chromium and prevent long presses.
         const clock=options.clock||{
-            setTimeout,clearTimeout,setInterval,clearInterval
+            setTimeout:(callback,delay)=>setTimeout(callback,delay),
+            clearTimeout:id=>clearTimeout(id),
+            setInterval:(callback,interval)=>setInterval(callback,interval),
+            clearInterval:id=>clearInterval(id)
         };
         const delayMs=options.delayMs??350;
         const intervalMs=options.intervalMs??90;
