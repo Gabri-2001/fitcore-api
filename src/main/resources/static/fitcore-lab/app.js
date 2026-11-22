@@ -2216,13 +2216,13 @@ async function renderPlanMuscleDialog() {
             'No se pudo cargar el mapa anatómico.';
     }
 
+    // Separate the summary metrics from the muscle-specific equivalent-set list.
+    $('plan-muscle-stat-exercises').textContent=String(result.exerciseCount);
+    $('plan-muscle-stat-sets').textContent=String(result.plannedSets);
+    $('plan-muscle-stat-muscles').textContent=String(result.data.length);
     $('plan-muscle-analysis-summary').textContent =
-        `${result.exerciseCount} ejercicios · ` +
-        `${result.plannedSets} series programadas · ` +
-        `${result.data.length} músculos identificados` +
-        (result.failed
-            ? ` · ${result.failed} ejercicios sin datos`
-            : '');
+        'Series equivalentes por músculo, ordenadas de mayor a menor.' +
+        (result.failed ? ` Datos parciales: ${result.failed} ejercicio(s) sin activaciones.` : '');
 
     $('plan-muscle-legend').innerHTML =
         scope === 'week'
@@ -2260,7 +2260,8 @@ async function renderPlanMuscleDialog() {
                 </span>
             </div>
 
-            <div class="plan-muscle-track">
+            <div class="plan-muscle-track" role="img"
+                 aria-label="${escapeHtml(item.name)}: ${formatNumber(item.estimatedSets)} series equivalentes; barra relativa al músculo con mayor valor">
                 <i style="width:${
         Math.round(
             item.estimatedSets / max * 100
