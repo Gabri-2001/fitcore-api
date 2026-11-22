@@ -1350,28 +1350,31 @@ function openPlanEditDayDialog() {
         `).join('');
 
     updatePlanEditTypeMode();
-    // Deshabilitar movimientos imposibles
-    $('plan-edit-move-up').disabled =
-        state.selectedPlanDayIndex === 0;
-
-    $('plan-edit-move-down').disabled =
-        state.selectedPlanDayIndex ===
-        state.planDays.length - 1;
-
     $('plan-edit-day-dialog').showModal();
 }
 
 
 function updatePlanEditTypeMode(){
     const automatic=$('plan-edit-day-auto').checked;
+    $('plan-edit-day-dialog').dataset.classificationMode=automatic?'auto':'manual';
+    $('plan-edit-auto-panel').hidden=!automatic;
+    $('plan-edit-manual-panel').hidden=automatic;
+    document.querySelectorAll('[data-plan-edit-mode]').forEach(button=>{
+        const selected=button.dataset.planEditMode===(automatic?'auto':'manual');
+        button.setAttribute('aria-pressed',String(selected));
+        button.classList.toggle('is-selected',selected);
+    });
     $('plan-edit-day-types').querySelectorAll('input[type="radio"]')
         .forEach(input=>{input.disabled=automatic;});
     const day=state.planDays[state.selectedPlanDayIndex];
     const outcome=day?.classification;
-    $('plan-edit-classification-preview').textContent=outcome
-        ? 'Sugerencia: '+FitCoreDayClassifier.describe(outcome)+
-          (outcome.provisional?' (provisional)':'')
-        : 'La sugerencia aparecerá al añadir ejercicios.';
+    const preview=$('plan-edit-classification-preview');
+    const descriptor=outcome?FitCoreDayClassifier.describe(outcome):'Pendiente de ejercicios';
+    const status=outcome?(outcome.provisional?'Provisional':'Consolidada'):'Sin clasificar';
+    const focus=outcome?.focus?.map(code=>FitCoreDayClassifier.NAMES[code]||code).join(' y ')||'';
+    preview.innerHTML='<span class="plan-edit-preview-icon" aria-hidden="true">✧</span>'+
+        '<span class="plan-edit-preview-text"><strong>'+escapeHtml(descriptor)+'</strong>'+
+        '<small>'+escapeHtml(status)+(focus?' · '+escapeHtml(focus):'')+'</small></span>';
 }
 
 // Aplicar los valores al borrador del plan
@@ -1434,12 +1437,11 @@ function savePlanEditDay(event) {
 }
 
 
-// Duplicar el día seleccionado
-function duplicateSelectedPlanDay() {
-    if (!applyPlanEditDraft()) return;
-
-    const day =
-        state.planDays[state.selectedPlanDayIndex];
+// Duplicate from the day-card action menu, without opening the settings dialog.
+function duplicateSelectedPlanDay(index=state.selectedPlanDayIndex) {
+    syncPlanEditor();
+    const day=state.planDays[index];
+    if(!day)return;
 
     const copy = {
         name: `${day.name} (copia)`,
@@ -1460,10 +1462,6 @@ function duplicateSelectedPlanDay() {
         }))
     };
 
-    $('plan-edit-day-dialog').close();
-
-    // La función existente selecciona
-    // automáticamente el nuevo día
     addPlanDay(copy);
 
     toast(
@@ -1499,13 +1497,10 @@ function moveSelectedPlanDay(direction) {
 
 
 // Eliminar un día con confirmación
-async function deleteSelectedPlanDay() {
-    const index = state.selectedPlanDayIndex;
-    const day = state.planDays[index];
-
-    if (!day) return;
-
-    $('plan-edit-day-dialog').close();
+async function deleteSelectedPlanDay(index=state.selectedPlanDayIndex) {
+    syncPlanEditor();
+    const day=state.planDays[index];
+    if(!day)return;
 
     const confirmed = await confirmAction(
         'Eliminar día',
@@ -4723,30 +4718,12 @@ function bindEvents() {
 
         });
 
-// Duplicar
-    $('plan-edit-duplicate').addEventListener(
-        'click',
-        duplicateSelectedPlanDay
-    );
-
-// Mover antes
-    $('plan-edit-move-up').addEventListener(
-        'click',
-        () => moveSelectedPlanDay(-1)
-    );
-
-// Mover después
-    $('plan-edit-move-down').addEventListener(
-        'click',
-        () => moveSelectedPlanDay(1)
-    );
-
-// Eliminar con confirmación
-    $('plan-edit-delete').addEventListener(
-        'click',
-        () => void deleteSelectedPlanDay()
-    );
-
+    $('plan-edit-day-dialog').querySelectorAll('[data-plan-edit-mode]').forEach(button=>{
+        button.addEventListener('click',()=>{
+            $('plan-edit-day-auto').checked=button.dataset.planEditMode==='auto';
+            updatePlanEditTypeMode();
+        });
+    });
 
     $('plan-new-day-auto').addEventListener('change',()=>{
         $('plan-new-day-type').disabled=$('plan-new-day-auto').checked;
