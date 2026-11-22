@@ -3270,3 +3270,64 @@ body.resting .toast-region { bottom: 190px; }
 .plan-edit-classification-preview {padding:10px 12px;background:#eff5f0;
     color:var(--green-2);font-size:12px;line-height:1.5;border-radius:10px;}
 .plan-edit-type-card input:disabled + .plan-edit-type-content {opacity:.45;cursor:not-allowed;}
+
+/* Stable plan editor header: title flexes, actions stay in the right column. */
+#view-plans .plan-day-editor-head {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) max-content;
+    align-items:center;
+    column-gap:16px;
+    row-gap:8px;
+}
+#view-plans .plan-day-title {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    flex-wrap:nowrap;
+    gap:6px;
+    min-width:0;
+    max-width:100%;
+}
+#view-plans .plan-day-title .plan-day-eyebrow {
+    flex-basis:auto;
+    max-width:100%;
+}
+#view-plans .plan-day-title h3 {
+    max-width:100%;
+    overflow-wrap:anywhere;
+}
+#view-plans .plan-day-controls {
+    grid-column:2;
+    grid-row:1;
+    flex-wrap:nowrap;
+    justify-content:flex-end;
+    width:max-content;
+    min-width:0;
+    margin-left:auto;
+}
+#view-plans .plan-day-controls .button {
+    flex:0 0 auto;
+}
+#view-plans .plan-day-classification {
+    gap:5px;
+}
+#view-plans .plan-day-classification .plan-classification-reason {
+    opacity:.85;
+}
+@media (max-width:760px) {
+    #view-plans .plan-day-editor-head {
+        grid-template-columns:minmax(0,1fr);
+    }
+    #view-plans .plan-day-controls {
+        grid-column:1;
+        grid-row:2;
+        justify-content:flex-start;
+        width:100%;
+        margin-left:0;
+        flex-wrap:wrap;
+    }
+    #view-plans .plan-day-controls .button {
+        flex:1 1 135px;
+    }
+}
