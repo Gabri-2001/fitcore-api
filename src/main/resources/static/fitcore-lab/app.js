@@ -1562,7 +1562,7 @@ async function savePlan() {
 }
 
 async function loadActivePlan(silent = false) {
-    if (!state.auth) return;
+    if (!state.auth) return false;
     try {
         const summary = await api(`/api/users/${state.auth.userId}/workout-plans/active`);
         const plan = await api(`/api/users/${state.auth.userId}/workout-plans/${summary.id}/detail`);
@@ -1602,9 +1602,11 @@ async function loadActivePlan(silent = false) {
 
         state.selectedPlanDayIndex = 0; renderPlanMode(); fillSessionDays(); $('metric-plan').textContent = `v${plan.version}`;
         if (!silent) toast('Plan activo cargado.');
+        return true;
     } catch (error) {
         if (error.status === 404) { state.activePlan = null; state.planDays = []; addPlanDay(); renderPlanMode(); fillSessionDays(); $('metric-plan').textContent = 'Ninguno'; if (!silent) toast('Aún no existe un plan activo.'); }
         else if (!silent) toast(error.message, true);
+        return false;
     }
 }
 
@@ -2281,8 +2283,21 @@ async function renderPlanMuscleDialog() {
 
 
 function renderPlanMode() {
-    const box = $('plan-version'); if (!box) return;
-    box.innerHTML = state.activePlan ? `<span>Modo revisión</span><strong>Versión ${state.activePlan.version}</strong><small>Al guardar se creará la versión ${state.activePlan.version + 1}</small>` : '<span>Modo</span><strong>Nuevo plan</strong><small>Se creará la versión 1</small>';
+    const box=$('plan-version');
+    if(!box)return;
+    const version=Number(state.activePlan?.version);
+    const saved=Number.isInteger(version)&&version>=1;
+    const next=saved?version+1:1;
+    box.innerHTML=saved
+        ? '<span>VERSIÓN ACTUAL</span><strong>Versión '+version+'</strong>'+
+          '<span class="plan-version-status">Activa</span>'
+        : '<span>PLAN SIN GUARDAR</span><strong>Nuevo plan</strong>'+
+          '<span class="plan-version-status">Borrador</span>';
+    const note=$('plan-settings-version-note');
+    if(note)note.textContent=saved
+        ? 'Al guardar el plan se creará la versión '+next+
+          '. Aplicar cambios solo actualiza el borrador.'
+        : 'La versión 1 se creará cuando guardes el plan.';
     renderPlanDays();
 }
 
@@ -4765,8 +4780,14 @@ function bindEvents() {
         toast('Configuración del plan actualizada.');
     });
     $('plan-load').addEventListener('click', async () => {
-        await loadActivePlan();
-        $('plan-settings-dialog').close();
+        if(!state.activePlan)return toast('Todavía no hay un plan activo para recargar.',true);
+        const confirmed=await confirmAction(
+            'Recargar plan activo',
+            'Se descartarán los cambios del borrador que todavía no hayas guardado. ¿Continuar?'
+        );
+        if(!confirmed)return;
+        const loaded=await loadActivePlan();
+        if(loaded)$('plan-settings-dialog').close();
     });
 
 
