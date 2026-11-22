@@ -3361,7 +3361,9 @@ body.resting .toast-region { bottom: 190px; }
     font-variant-numeric:tabular-nums;
     letter-spacing:-.03em;
 }
-#view-plans .plan-time-stepper input:invalid {
+/* Avoid the intrusive error color while the six-digit HH:MM:SS mask is being edited.
+   The value is still validated on blur and before the plan is saved. */
+#view-plans .plan-time-stepper input:invalid:not(:focus) {
     background:#fff1f1;color:#a52626;
 }
 #plan-picker-duration {
@@ -3820,9 +3822,13 @@ body.resting .toast-region { bottom: 190px; }
     min-width:0;min-height:0;
     padding:6px 0 6px 13px;
 }
+/* Identical metric-card footprint for both day and week analysis.
+   Never let flex-grow redistribute unused space and change the card heights. */
 #plan-muscle-dialog .plan-muscle-stat{
     display:flex;align-items:center;gap:11px;
-    min-width:0;flex:1 1 75px;
+    min-width:0;flex:0 0 96px;
+    box-sizing:border-box;
+    height:96px;min-height:96px;max-height:96px;
     padding:10px;border-radius:13px;background:#f5f8f6;
 }
 #plan-muscle-dialog .plan-muscle-stat > svg{
@@ -4190,6 +4196,8 @@ body.resting .toast-region { bottom: 190px; }
 }
 @media (max-width:560px) {
     #plan-muscle-dialog .plan-muscle-stat {
+        /* A slightly taller, but still fixed size for vertically stacked mobile labels. */
+        height:104px;min-height:104px;max-height:104px;
         padding:9px 4px;
         gap:5px;
     }
