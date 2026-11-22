@@ -3557,3 +3557,167 @@ body.resting .toast-region { bottom: 190px; }
     #plan-edit-day-dialog .plan-edit-day-heading {padding-inline:16px;}
     #plan-edit-day-dialog .plan-edit-day-footer {padding:12px 16px;}
 }
+
+/* Create day inherits exactly the same compact two-mode layout as Configure day. */
+#plan-new-day-dialog[open]{
+    width:min(930px,calc(100vw - 36px));
+    max-width:930px;
+    max-height:min(85dvh,760px);
+    overflow:hidden;
+    border-radius:22px;
+}
+#plan-new-day-dialog > form{
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr) auto;
+    min-height:0;
+    max-height:min(85dvh,760px);
+}
+#plan-new-day-dialog .plan-edit-day-heading{
+    padding:19px 24px 15px;
+    align-items:center;
+}
+#plan-new-day-dialog .plan-edit-day-heading h2{font-size:22px;}
+#plan-new-day-dialog .plan-edit-day-heading p:not(.eyebrow){font-size:11px;line-height:1.45;}
+#plan-new-day-dialog .plan-edit-day-layout{
+    display:grid;
+    grid-template-columns:minmax(265px,.82fr) minmax(0,1.18fr);
+    gap:24px;
+    min-width:0;
+    min-height:0;
+    padding:21px 24px 23px;
+}
+#plan-new-day-dialog .plan-edit-day-identity{
+    display:grid;
+    align-content:start;
+    gap:9px;
+    min-width:0;
+    padding-right:23px;
+    border-right:1px solid var(--line);
+}
+#plan-new-day-dialog .plan-edit-day-identity > label{font-size:12px;color:var(--ink);}
+#plan-new-day-dialog #plan-new-day-name{background:white;font-size:14px;font-weight:700;}
+#plan-new-day-dialog .plan-edit-mode-section{display:grid;gap:12px;margin-top:18px;}
+#plan-new-day-dialog .plan-edit-mode-heading{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);}
+#plan-new-day-dialog .plan-edit-info-icon{
+    display:inline-grid;place-items:center;width:17px;height:17px;
+    border:1px solid #82998d;border-radius:50%;color:#557167;
+    font-size:11px;font-weight:800;cursor:help;
+}
+#plan-new-day-dialog .plan-edit-mode-options{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+#plan-new-day-dialog .plan-edit-mode-option{
+    display:flex;align-items:center;gap:9px;text-align:left;
+    padding:12px 9px;min-width:0;min-height:64px;
+    border:1px solid #d7e0d9;border-radius:13px;background:white;color:var(--green);
+}
+#plan-new-day-dialog .plan-edit-mode-option.is-selected{
+    border-color:#87c834;background:#f0fbe4;box-shadow:inset 0 0 0 1px #a6db60;
+}
+#plan-new-day-dialog .plan-edit-mode-option > span:last-child{display:grid;min-width:0;gap:3px;}
+#plan-new-day-dialog .plan-edit-mode-option strong{font-size:12px;}
+#plan-new-day-dialog .plan-edit-mode-option small{
+    font-size:9px;font-weight:500;color:var(--muted);line-height:1.25;
+}
+#plan-new-day-dialog .plan-edit-mode-icon{
+    display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;
+    border-radius:9px;background:#edf4ef;font-size:20px;font-weight:650;color:var(--green-2);
+}
+#plan-new-day-dialog .plan-edit-mode-option.is-selected .plan-edit-mode-icon{background:#d9f5a8;}
+#plan-new-day-dialog .plan-edit-day-classification{
+    min-width:0;display:grid;align-content:start;
+}
+#plan-new-day-dialog .plan-edit-auto-panel{
+    display:grid;gap:14px;padding:19px;
+    background:#f4f9f1;border:1px solid #dbe8d8;border-radius:17px;
+}
+#plan-new-day-dialog .plan-edit-panel-eyebrow{
+    margin:0;font-size:10px;font-weight:850;letter-spacing:.08em;color:var(--green-2);
+}
+#plan-new-day-dialog .plan-edit-classification-preview{
+    display:flex;align-items:center;gap:12px;min-width:0;padding:14px;
+    background:white;border:1px solid #e0e9e1;border-radius:12px;
+}
+#plan-new-day-dialog .plan-edit-preview-icon{
+    display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;
+    background:#e5f5df;border-radius:11px;color:var(--green);font-size:24px;
+}
+#plan-new-day-dialog .plan-edit-preview-text{display:grid;min-width:0;gap:5px;}
+#plan-new-day-dialog .plan-edit-preview-text strong{font-size:16px;color:var(--ink);}
+#plan-new-day-dialog .plan-edit-preview-text small{font-size:11px;font-weight:550;line-height:1.4;color:var(--muted);}
+#plan-new-day-dialog .plan-edit-auto-caption{
+    margin:0;color:var(--muted);font-size:11px;line-height:1.6;
+}
+#plan-new-day-dialog .plan-edit-type-fieldset legend{
+    margin-bottom:11px;font-size:12px;color:var(--ink);
+}
+#plan-new-day-dialog .plan-edit-type-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+}
+#plan-new-day-dialog .plan-edit-type-content{
+    min-height:73px;padding:8px 5px;gap:5px;font-size:10px;line-height:1.2;
+}
+#plan-new-day-dialog .plan-edit-type-symbol{
+    width:29px;height:29px;border-radius:9px;
+}
+#plan-new-day-dialog .plan-edit-type-symbol svg{width:19px;height:19px;}
+#plan-new-day-dialog .plan-edit-day-footer{
+    padding:13px 24px;
+    justify-content:flex-end;
+}
+#plan-new-day-dialog [hidden]{display:none!important;}
+
+/* Compact secondary management actions live in Configure day only. */
+#plan-edit-day-dialog .plan-edit-day-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+#plan-edit-day-dialog .plan-edit-day-extra-actions,
+#plan-edit-day-dialog .plan-edit-day-save-actions{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+#plan-edit-day-dialog .plan-edit-day-save-actions{
+    margin-left:auto;
+}
+#plan-edit-day-dialog .plan-edit-action-quiet{
+    display:inline-flex;align-items:center;gap:7px;
+    min-height:36px;padding:8px 10px;border:1px solid transparent;
+    border-radius:9px;background:transparent;color:var(--green-2);
+    font-weight:750;font-size:12px;cursor:pointer;
+}
+#plan-edit-day-dialog .plan-edit-action-quiet svg{width:17px;height:17px;flex:none;}
+#plan-edit-day-dialog .plan-edit-action-quiet:hover{background:#edf5ef;}
+#plan-edit-day-dialog .plan-edit-action-quiet.danger{color:#ad3838;}
+#plan-edit-day-dialog .plan-edit-action-quiet.danger:hover{background:#fff1ed;}
+#plan-edit-day-dialog .plan-edit-action-quiet:focus-visible{
+    outline:3px solid #b1e967;outline-offset:2px;
+}
+@media (max-width:800px), (max-height:560px){
+    #plan-new-day-dialog[open]{
+        width:min(640px,calc(100vw - 20px));
+        max-height:calc(100dvh - 20px);overflow:auto;
+    }
+    #plan-new-day-dialog > form{max-height:none;}
+    #plan-new-day-dialog .plan-edit-day-layout{
+        grid-template-columns:minmax(0,1fr);gap:18px;padding:17px;
+    }
+    #plan-new-day-dialog .plan-edit-day-identity{border-right:0;padding-right:0;}
+    #plan-new-day-dialog .plan-edit-mode-section{margin-top:5px;}
+    #plan-new-day-dialog .plan-edit-type-grid{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+}
+@media (max-width:460px){
+    #plan-new-day-dialog .plan-edit-type-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+    #plan-new-day-dialog .plan-edit-day-heading{padding-inline:16px;}
+    #plan-new-day-dialog .plan-edit-day-footer{padding:12px 16px;}
+    #plan-edit-day-dialog .plan-edit-day-extra-actions{width:100%;}
+    #plan-edit-day-dialog .plan-edit-day-save-actions{
+        width:100%;justify-content:flex-end;
+    }
+}
