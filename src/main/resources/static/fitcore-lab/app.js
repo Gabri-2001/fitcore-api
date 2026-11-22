@@ -5102,23 +5102,9 @@ function bindEvents() {
         document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
     });
     bindPlanDurationMask();
-    const durationHold=FitCoreDurationInput.createHoldController(stepPlanDuration);
-    const durationButton=target=>target.closest?.('[data-step-field="durationSeconds"]');
-    $('plan-days').addEventListener('pointerdown',event=>{
-        const button=durationButton(event.target);
-        if(!button||event.button!==0)return;
-        // Pointer input is applied immediately; the subsequent click is consumed.
-        button.dataset.durationPointerHandled='true';
-        durationHold.start(button);
-        event.preventDefault();
-    });
-    document.addEventListener('pointerup',()=>durationHold.stop());
-    document.addEventListener('pointercancel',()=>durationHold.stop());
-    $('plan-days').addEventListener('pointerleave',()=>durationHold.stop());
-    window.addEventListener('blur',()=>durationHold.stop());
-    document.addEventListener('visibilitychange',()=>{
-        if(document.hidden)durationHold.stop();
-    });
+    // Pointer capture prevents a held press from being cancelled if the mouse
+    // drifts off the narrow + / − button. Delegation also survives row changes.
+    FitCoreDurationInput.bindHoldButtons($('plan-days'),stepPlanDuration);
     $('plan-days').addEventListener('click', event => {
 
 
@@ -5183,11 +5169,9 @@ function bindEvents() {
             const field = button.dataset.stepField;
             const input = row.querySelector(`[data-exercise-${field}]`);
             if(field==='durationSeconds'){
-                if(button.dataset.durationPointerHandled==='true'){
-                    delete button.dataset.durationPointerHandled;
-                    return; // Avoid a second increment from the pointer's click.
-                }
-                stepPlanDuration(button); // Keyboard/assistive click: one step.
+                // Mouse/touch are handled by pointerdown; only synthesized
+                // keyboard/assistive clicks should cause a second action here.
+                if(event.detail===0)stepPlanDuration(button);
                 return;
             }else{
                 const minimum=Number(input.min||0);
