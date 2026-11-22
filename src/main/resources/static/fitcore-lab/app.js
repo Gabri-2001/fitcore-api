@@ -1218,6 +1218,27 @@ function bindPlanDurationMask() {
         notify(input);
     });
 }
+// Step without rebuilding the row: holding the button must preserve focus and
+// keep the edited value/summaries synchronized with the plan draft.
+function stepPlanDuration(button) {
+    if(!button?.isConnected)return false;
+    const row=button.closest('.exercise-editor');
+    const input=row?.querySelector('[data-exercise-durationSeconds]');
+    if(!input)return false;
+    const next=FitCoreDurationInput.step(input.value,Number(button.dataset.step));
+    if(next===null){
+        input.setCustomValidity('Introduce un tiempo válido en formato HH:MM:SS.');
+        input.reportValidity();
+        return false;
+    }
+    if(next===input.value)return false; // 00:00:01 and 99:59:59 are hard stops.
+    input.value=next;
+    FitCoreDurationInput.endEdit(input);
+    input.setCustomValidity('');
+    syncPlanEditor();
+    refreshPlanSessionSummary();
+    return true;
+}
 function planTimedStepper(seconds) {
     const formatted=FitCoreDurationInput.format(Number(seconds)||45)||'00:00:45';
     return '<div class="plan-stepper plan-time-stepper" data-plan-stepper>'+
@@ -5081,6 +5102,23 @@ function bindEvents() {
         document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
     });
     bindPlanDurationMask();
+    const durationHold=FitCoreDurationInput.createHoldController(stepPlanDuration);
+    const durationButton=target=>target.closest?.('[data-step-field="durationSeconds"]');
+    $('plan-days').addEventListener('pointerdown',event=>{
+        const button=durationButton(event.target);
+        if(!button||event.button!==0)return;
+        // Pointer input is applied immediately; the subsequent click is consumed.
+        button.dataset.durationPointerHandled='true';
+        durationHold.start(button);
+        event.preventDefault();
+    });
+    document.addEventListener('pointerup',()=>durationHold.stop());
+    document.addEventListener('pointercancel',()=>durationHold.stop());
+    $('plan-days').addEventListener('pointerleave',()=>durationHold.stop());
+    window.addEventListener('blur',()=>durationHold.stop());
+    document.addEventListener('visibilitychange',()=>{
+        if(document.hidden)durationHold.stop();
+    });
     $('plan-days').addEventListener('click', event => {
 
 
@@ -5145,15 +5183,12 @@ function bindEvents() {
             const field = button.dataset.stepField;
             const input = row.querySelector(`[data-exercise-${field}]`);
             if(field==='durationSeconds'){
-                const next=FitCoreDurationInput.step(input.value,Number(button.dataset.step));
-                if(next===null){
-                    input.setCustomValidity('Introduce un tiempo válido en formato HH:MM:SS.');
-                    input.reportValidity();
-                    return;
+                if(button.dataset.durationPointerHandled==='true'){
+                    delete button.dataset.durationPointerHandled;
+                    return; // Avoid a second increment from the pointer's click.
                 }
-                input.value=next;
-                FitCoreDurationInput.endEdit(input);
-                input.setCustomValidity('');
+                stepPlanDuration(button); // Keyboard/assistive click: one step.
+                return;
             }else{
                 const minimum=Number(input.min||0);
                 input.value=Math.max(minimum,Number(input.value||0)+Number(button.dataset.step));
