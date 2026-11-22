@@ -682,7 +682,24 @@ function renderPlanDayTabs() {
 function refreshPlanSessionSummary() {
     const day=state.planDays[state.selectedPlanDayIndex];
     if(!day || !$('plan-session-exercise-count'))return;
-    const result=FitCorePlanSummary.summarize(day.exercises,exerciseDefaultUnit);
+    const result=FitCorePlanSummary.summarize(day.exercises,exerciseDefaultUnit,{
+        restCategoryFor:variantCode=>{
+            const variant=state.variants.find(v=>v.code===variantCode);
+            const exercise=state.exercises.find(e=>e.code===variant?.exerciseCode);
+            const compound=new Set(['HORIZONTAL_PUSH','VERTICAL_PUSH','HORIZONTAL_PULL',
+                'VERTICAL_PULL','SQUAT','HIP_HINGE','LUNGE','HIP_EXTENSION','CARRY']);
+            const isolation=new Set(['ELBOW_FLEXION','ELBOW_EXTENSION','KNEE_EXTENSION',
+                'KNEE_FLEXION','HIP_ABDUCTION','HIP_ADDUCTION','ANKLE_PLANTAR_FLEXION',
+                'ANKLE_DORSIFLEXION','SHOULDER_ABDUCTION','SHOULDER_FLEXION',
+                'SHOULDER_HORIZONTAL_ABDUCTION','WRIST_FLEXION','WRIST_EXTENSION',
+                'FOREARM_ROTATION','WRIST_FLEXION_EXTENSION','TRUNK_FLEXION',
+                'HIP_TRUNK_FLEXION','ANTI_EXTENSION','ANTI_ROTATION',
+                'ANTI_LATERAL_FLEXION','GRIP_ISOMETRIC','ISOLATION']);
+            if(compound.has(exercise?.movementPattern))return 'COMPOUND';
+            if(isolation.has(exercise?.movementPattern))return 'ISOLATION';
+            return 'GENERAL';
+        }
+    });
     $('plan-session-exercise-count').textContent=String(result.exerciseCount);
     $('plan-session-series-count').textContent=String(result.plannedSets);
     $('plan-session-duration').textContent=result.durationLabel;
@@ -691,10 +708,12 @@ function refreshPlanSessionSummary() {
     const notice=$('plan-session-context');
     if(!notice)return;
     const message=result.missingTargets
-        ? 'La duración es parcial: faltan objetivos o descansos en algún ejercicio.'
-        : result.hasTimedExercise
-            ? 'Los ejercicios isométricos se planifican por tiempo, no por repeticiones.'
-            : '';
+        ? 'Estimación parcial: faltan objetivos o hay datos inválidos en algún ejercicio.'
+        : result.hasAssumedRest
+            ? 'Duración orientativa: se estiman pausas entre series con el temporizador apagado. No incluye calentamiento.'
+            : result.hasTimedExercise
+                ? 'Los ejercicios isométricos se planifican por tiempo, no por repeticiones.'
+                : '';
     notice.hidden=!message;
     notice.textContent=message;
 }
