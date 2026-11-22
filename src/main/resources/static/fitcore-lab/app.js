@@ -2644,17 +2644,11 @@ function currentSessionMetaLabel() {
             ? dateValue.split('-').reverse().join('/')
             : 'Sin fecha';
 
-    const category = friendly(
-        session.sessionCategory ||
-        $('session-category').value
-    );
-
-    const intensity = friendly(
-        session.sessionIntensity ||
-        $('session-intensity').value
-    );
-
-    return `${dateLabel} · ${category} · ${intensity}`;
+    const type=session.trainingDayType;
+    const typeLabel=type
+        ? (FitCoreDayClassifier.STRUCTURE[type]||friendly(type))
+        : 'Sin clasificar';
+    return `${dateLabel} · ${typeLabel}`;
 }
 
 
@@ -2673,6 +2667,14 @@ function syncSessionHeader() {
     $('session-meta-summary').hidden = !active;
 }
 
+
+function toggleSessionEditManualTypes(){
+    const manual=!$('session-edit-auto').checked;
+    $('session-edit-manual-types').hidden=!manual;
+    $('session-edit-manual-types').querySelectorAll('input').forEach(input=>{
+        input.disabled=!manual;
+    });
+}
 
 function openSessionSettings() {
     const session = state.currentSession;
@@ -2707,7 +2709,12 @@ function openSessionSettings() {
     $('session-edit-day').value =
         currentSessionDayLabel();
 
-    // Mostrar ventana modal
+    // The classification is independent from the legacy goal and intensity.
+    renderTrainingTypeOptions('session-edit-manual-types','session-edit-type',
+        session.trainingDayType&&session.trainingDayType!=='REST'
+            ?session.trainingDayType:'FULL_BODY');
+    $('session-edit-auto').checked=!session.trainingDayTypeManual;
+    toggleSessionEditManualTypes();
     $('session-settings-dialog').showModal();
 }
 
@@ -2727,9 +2734,15 @@ async function saveSessionSettings(event) {
         return;
     }
 
-    // Datos actualizados
+    const manual=!$('session-edit-auto').checked;
+    const selectedType=manual?chosenSessionType('session-edit-manual-types'):null;
+    if(manual&&(!selectedType||selectedType==='REST')){
+        return toast('Selecciona un tipo de entrenamiento manual válido.',true);
+    }
     const updated = {
         sessionDate: $('session-edit-date').value,
+        trainingDayTypeManual:manual,
+        trainingDayType:manual?selectedType:(state.currentSession.trainingDayType||null),
 
         sessionCategory:
         $('session-edit-category').value,
@@ -2786,7 +2799,9 @@ async function saveSessionSettings(event) {
 
             notes:
                 server.notes ??
-                updated.notes
+                updated.notes,
+            trainingDayType:server.trainingDayType??updated.trainingDayType,
+            trainingDayTypeManual:server.trainingDayTypeManual??updated.trainingDayTypeManual
         };
 
         // Sincronizar formulario original
@@ -5154,6 +5169,7 @@ function bindEvents() {
         }));
     $('session-day').addEventListener('change',updateTrainingPreparation);
     updateTrainingPreparation();
+    $('session-edit-auto').addEventListener('change',toggleSessionEditManualTypes);
     $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener(
         'click',
         () => openExercisePicker('session')
