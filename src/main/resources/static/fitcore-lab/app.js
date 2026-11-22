@@ -2742,7 +2742,7 @@ async function saveSessionSettings(event) {
     const updated = {
         sessionDate: $('session-edit-date').value,
         trainingDayTypeManual:manual,
-        trainingDayType:manual?selectedType:(state.currentSession.trainingDayType||null),
+        trainingDayType:manual?selectedType:null,
 
         sessionCategory:
         $('session-edit-category').value,
@@ -2817,8 +2817,9 @@ async function saveSessionSettings(event) {
         $('session-notes').value =
             state.currentSession.notes ?? '';
 
-        // Actualizar el resumen superior
+        // Refrescar la sugerencia si se ha vuelto al modo automático.
         syncSessionHeader();
+        if(!manual)void refreshAutomaticSessionClassification();
 
         // Cerrar configuración
         $('session-settings-dialog').close();
