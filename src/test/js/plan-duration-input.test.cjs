@@ -66,6 +66,36 @@ test('mask editing handles typing, pasting, deletion and numeric maximum',()=>{
  assert.equal(input.error,'');
  time.endEdit(input);
 });
+test('press-and-hold steps immediately, repeats, and stops cleanly',()=>{
+ let id=0;const tasks=new Map();
+ const clock={
+  setTimeout(fn,ms){const k=++id;tasks.set(k,{fn,ms,type:'timeout'});return k;},
+  clearTimeout(k){tasks.delete(k);},
+  setInterval(fn,ms){const k=++id;tasks.set(k,{fn,ms,type:'interval'});return k;},
+  clearInterval(k){tasks.delete(k);}
+ };
+ const tick=type=>{const entry=[...tasks].find(([,task])=>task.type===type);
+  assert.ok(entry,type+' should be scheduled');
+  if(type==='timeout')tasks.delete(entry[0]);
+  entry[1].fn();};
+ let seconds=10;
+ const button={dataset:{step:'1'}};
+ const hold=time.createHoldController(()=>{seconds++;return seconds<13;},{clock});
+ hold.start(button);
+ assert.equal(seconds,11);
+ assert.ok(hold.isActive(button));
+ tick('timeout');
+ assert.equal(seconds,12);
+ tick('interval');
+ assert.equal(seconds,13);
+ assert.ok(!hold.isActive(button));
+ assert.equal(tasks.size,0);
+ hold.start(button); // new gesture
+ assert.equal(seconds,14);
+ hold.stop();
+ assert.equal(tasks.size,0);
+ assert.ok(!hold.isActive(button));
+});
 test('both plan editor and exercise picker use HH:MM:SS without changing API seconds',()=>{
  assert.match(html,/plan-duration-input\.js/);
  assert.match(html,/id="plan-picker-duration" type="text"/);
@@ -80,6 +110,11 @@ test('both plan editor and exercise picker use HH:MM:SS without changing API sec
  assert.ok(app.includes('FitCoreDurationInput.beginEdit(event.target)'));
  assert.ok(app.includes("FitCoreDurationInput.edit(input,'insert'"));
  assert.ok(app.includes('bindPlanDurationMask();'));
+ assert.ok(app.includes('FitCoreDurationInput.createHoldController(stepPlanDuration)'));
+ assert.ok(app.includes("document.addEventListener('pointerup',()=>durationHold.stop())"));
+ assert.ok(app.includes("document.addEventListener('pointercancel',()=>durationHold.stop())"));
+ assert.ok(app.includes("button.dataset.durationPointerHandled='true'"));
+ assert.ok(app.includes("if(next===input.value)return false"));
  assert.match(css,/plan-time-stepper/);
 });
 test('consolidated classification badge does not appear for manual or provisional days',()=>{
