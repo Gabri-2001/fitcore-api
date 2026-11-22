@@ -112,6 +112,14 @@ This keeps traceability while still allowing real-world flexibility.
 - get diet plan by id
 - support plan versioning
 
+### Workout session setup (current development branch)
+- start a free workout or initialize a real session from a planned workout day
+- copy ordered planned exercises and pending sets into the session on creation, preserving the original plan
+- select muscle groups automatically (based on primary and secondary exercise activation) or manually
+- store session-level muscle classification separately from actual performed-series statistics
+- make legacy category and session-wide intensity optional; use recorded RPE/RIR on each set
+- `GET /api/users/{userId}/workout-sessions/{workoutSessionId}/muscle-groups` returns the resolved session group labels
+
 ### Workout execution
 - create workout sessions
 - list workout sessions

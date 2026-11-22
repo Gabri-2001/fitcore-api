@@ -2919,3 +2919,33 @@ body.resting .toast-region { bottom: 190px; }
 .muscle-choice-chip:has(input:focus-visible) span { outline:2px solid #1d6848; outline-offset:2px; }
 #session-plan-field[hidden], #session-manual-muscles[hidden], #session-edit-manual-muscles[hidden] { display:none !important; }
 @media (max-width:640px) { .training-source-card { padding:12px; } .session-muscle-chooser { padding:10px; } }
+
+/* Make the pre-workout experience a focused start screen instead of a sticky sidebar. */
+#view-training:not(.session-running) .training-layout {
+    display: block;
+    max-width: 1020px;
+    margin-inline: auto;
+}
+#view-training:not(.session-running) .session-builder {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 22px;
+    padding: clamp(20px, 3vw, 34px);
+}
+#view-training:not(.session-running) .session-builder > .section-heading,
+#view-training:not(.session-running) .session-builder > .training-source-picker,
+#view-training:not(.session-running) .session-builder > .session-actions {
+    grid-column: 1 / -1;
+}
+#view-training:not(.session-running) .training-source-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+#view-training:not(.session-running) .session-builder > #session-start { align-self: end; min-height: 47px; }
+#view-training:not(.session-running) .session-actions { display: none; }
+#view-training:not(.session-running) .session-workspace { display: none; }
+@media (max-width: 700px) {
+    #view-training:not(.session-running) .session-builder { grid-template-columns: minmax(0,1fr); }
+    #view-training:not(.session-running) .session-builder > * { grid-column: 1 / -1; }
+    #view-training:not(.session-running) .training-source-picker { grid-template-columns: 1fr; }
+}
