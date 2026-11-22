@@ -3818,18 +3818,18 @@ body.resting .toast-region { bottom: 190px; }
     filter:none!important;
 }
 #plan-muscle-dialog .plan-muscle-figure-sidebar {
-    display:flex;flex-direction:column;gap:10px;
+    display:flex;flex-direction:column;gap:7px;
     min-width:0;min-height:0;
-    padding:6px 0 6px 13px;
+    padding:3px 0 3px 11px;
     overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
 }
 /* Identical metric-card footprint for both day and week analysis.
    Never let flex-grow redistribute unused space and change the card heights. */
 #plan-muscle-dialog .plan-muscle-stat{
     display:flex;align-items:center;gap:11px;
-    min-width:0;flex:0 0 78px;
+    min-width:0;flex:0 0 66px;
     box-sizing:border-box;
-    height:78px;min-height:78px;max-height:78px;
+    height:66px;min-height:66px;max-height:66px;
     padding:10px;border-radius:13px;background:#f5f8f6;
 }
 #plan-muscle-dialog .plan-muscle-stat > svg{
@@ -3846,15 +3846,15 @@ body.resting .toast-region { bottom: 190px; }
     color:#536e64;font-size:11px;line-height:1.35;
 }
 #plan-muscle-dialog .plan-muscle-legend-wrap{
-    display:grid;gap:7px;flex:0 0 auto;
-    padding:10px 4px 3px;
+    display:grid;gap:5px;flex:0 0 auto;
+    padding:7px 4px 3px;
     border-top:1px solid #dce5e0;
 }
 #plan-muscle-dialog .plan-muscle-legend-wrap > strong{
     color:#153c30;font-size:12px;
 }
 #plan-muscle-dialog .plan-muscle-legend{
-    display:flex;flex-direction:column;gap:6px;
+    display:flex;flex-direction:column;gap:4px;
     padding:0;
 }
 #plan-muscle-dialog .plan-muscle-legend span{
@@ -3967,7 +3967,7 @@ body.resting .toast-region { bottom: 190px; }
     #plan-muscle-dialog .plan-muscle-map{height:300px;}
     #plan-muscle-dialog .plan-muscle-figure-sidebar{
         display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
-        grid-template-rows:88px auto;
+        grid-template-rows:76px auto;
         padding:0;gap:7px;
         overflow:visible;
     }
@@ -4161,25 +4161,25 @@ body.resting .toast-region { bottom: 190px; }
 
 /* Unified icons for muscular analysis metrics: clear silhouettes, even optical weight. */
 #plan-muscle-dialog .plan-muscle-stat {
-    gap:12px;
-    padding:12px;
+    gap:10px;
+    padding:9px;
     border:1px solid #e5eee7;
     background:#f6faf7;
 }
 #plan-muscle-dialog .plan-muscle-stat-icon {
     display:grid;
     place-items:center;
-    flex:0 0 40px;
-    width:40px;
-    height:40px;
+    flex:0 0 36px;
+    width:36px;
+    height:36px;
     border-radius:12px;
     background:#e4f3e8;
     color:#256a49;
 }
 #plan-muscle-dialog .plan-muscle-stat-icon > svg {
     display:block;
-    width:22px;
-    height:22px;
+    width:20px;
+    height:20px;
     stroke:currentColor;
 }
 #plan-muscle-dialog .plan-muscle-stat-copy {
@@ -4188,7 +4188,7 @@ body.resting .toast-region { bottom: 190px; }
     gap:4px;
 }
 #plan-muscle-dialog .plan-muscle-stat-copy strong {
-    font-size:24px;
+    font-size:22px;
     line-height:1.05;
     color:#153d2f;
 }
@@ -4199,10 +4199,10 @@ body.resting .toast-region { bottom: 190px; }
 }
 @media (max-width:560px) {
     #plan-muscle-dialog .plan-muscle-stat {
-        /* Mobile cards remain uniform without shrinking their labels. */
-        flex:0 0 88px;
-        height:88px;min-height:88px;max-height:88px;
-        padding:9px 4px;
+        /* Keep a compact fixed footprint in both day and week modes. */
+        flex:0 0 76px;
+        height:76px;min-height:76px;max-height:76px;
+        padding:7px 4px;
         gap:5px;
     }
     #plan-muscle-dialog .plan-muscle-stat-icon {
@@ -4408,4 +4408,14 @@ body.resting .toast-region { bottom: 190px; }
 }
 #session-settings-dialog .session-manual-type > input:focus-visible + .session-manual-type-body {
     outline:3px solid #b5e87d;outline-offset:2px;
+}
+
+/* Long-press time controls: feedback without browser text selection. */
+#view-plans .plan-time-stepper [data-step-field="durationSeconds"] {
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+}
+#view-plans .plan-time-stepper [data-step-field="durationSeconds"]:active {
+    background:var(--lime-soft);
 }
