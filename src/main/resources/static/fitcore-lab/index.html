@@ -198,85 +198,76 @@
                 </form>
             </dialog>
 
-            <!-- MODAL: AÑADIR DÍA AL PLAN -->
-            <dialog
-                    id="plan-new-day-dialog"
+            <!-- AÑADIR DÍA · MISMO DISEÑO Y MODOS QUE CONFIGURAR DÍA -->
+            <dialog id="plan-new-day-dialog"
                     class="compact-dialog plan-new-day-dialog"
                     aria-labelledby="plan-new-day-title">
-
                 <form id="plan-new-day-form">
-
-                    <div class="dialog-heading compact">
+                    <div class="dialog-heading compact plan-edit-day-heading">
                         <div>
-                            <p class="eyebrow">
-                                PLANIFICACIÓN SEMANAL
-                            </p>
-                            <h2 id="plan-new-day-title">
-                                Añadir día
-                            </h2>
-                            <p>
-                                Elige un nombre y el tipo de entrenamiento.
-                            </p>
+                            <p class="eyebrow">PLANIFICACIÓN SEMANAL</p>
+                            <h2 id="plan-new-day-title">Añadir día</h2>
+                            <p>Crea un nuevo día en tu plan de entrenamiento.</p>
                         </div>
-
-                        <button type="button"
-                                class="icon-button"
-                                data-close-new-day
-                                aria-label="Cerrar">
-                            ×
-                        </button>
+                        <button type="button" class="icon-button" data-close-new-day aria-label="Cerrar">×</button>
                     </div>
 
-                    <div class="plan-new-day-fields">
+                    <div class="plan-edit-day-layout">
+                        <section class="plan-edit-day-identity" aria-label="Información del nuevo día">
+                            <label for="plan-new-day-name">Nombre del día</label>
+                            <input id="plan-new-day-name" type="text" maxlength="80"
+                                   placeholder="Ej. Espalda y bíceps" required>
 
-                        <label>
-                            Nombre del día
-                            <input
-                                    id="plan-new-day-name"
-                                    type="text"
-                                    maxlength="80"
-                                    placeholder="Ej. Día de tirón"
-                                    required>
-                        </label>
+                            <div class="plan-edit-mode-section">
+                                <div class="plan-edit-mode-heading">
+                                    <strong>Clasificación del día</strong>
+                                    <span class="plan-edit-info-icon"
+                                          title="Automática: FitCore reconoce el día al añadir ejercicios. Manual: eliges el tipo."
+                                          aria-label="Automática: según ejercicios y series. Manual: eliges el tipo.">i</span>
+                                </div>
+                                <input type="checkbox" id="plan-new-day-auto" checked hidden>
+                                <div class="plan-edit-mode-options" role="group"
+                                     aria-label="Modo de clasificación del nuevo día">
+                                    <button type="button" class="plan-edit-mode-option"
+                                            data-plan-new-mode="auto" aria-pressed="true">
+                                        <span class="plan-edit-mode-icon" aria-hidden="true">✧</span>
+                                        <span><strong>Automática</strong><small>Según ejercicios y series</small></span>
+                                    </button>
+                                    <button type="button" class="plan-edit-mode-option"
+                                            data-plan-new-mode="manual" aria-pressed="false">
+                                        <span class="plan-edit-mode-icon" aria-hidden="true">✎</span>
+                                        <span><strong>Manual</strong><small>Elegir el tipo de día</small></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
 
-                        <label class="plan-day-auto-toggle">
-                            <input type="checkbox" id="plan-new-day-auto" checked>
-                            <span>Clasificar automáticamente según los ejercicios</span>
-                        </label>
-                        <label>
-                            Tipo de entrenamiento (si eliges manual)
-                            <select id="plan-new-day-type" disabled required>
-                                <option value="FULL_BODY">Cuerpo completo</option>
-                                <option value="PUSH">Empuje</option>
-                                <option value="PULL">Tirón</option>
-                                <option value="LEGS">Piernas</option>
-                                <option value="UPPER">Tren superior</option>
-                                <option value="LOWER">Tren inferior</option>
-                                <option value="CARDIO">Cardio</option>
-                                <option value="MOBILITY">Movilidad</option>
-                                <option value="REST">Descanso</option>
-                                <option value="ARMS">Brazos</option>
-                                <option value="CORE">Core</option>
-                                <option value="MIXED">Mixto</option>
-                                <option value="CONDITIONING">Acondicionamiento</option>
-                            </select>
-                        </label>
-
+                        <section class="plan-edit-day-classification" aria-label="Tipo de entrenamiento del nuevo día">
+                            <div id="plan-new-auto-panel" class="plan-edit-mode-panel plan-edit-auto-panel">
+                                <p class="plan-edit-panel-eyebrow">CLASIFICACIÓN AUTOMÁTICA</p>
+                                <div class="plan-edit-classification-preview" aria-live="polite">
+                                    <span class="plan-edit-preview-icon" aria-hidden="true">✧</span>
+                                    <span class="plan-edit-preview-text">
+                                        <strong>Pendiente de ejercicios</strong>
+                                        <small>Se clasificará al añadir ejercicios y series al día.</small>
+                                    </span>
+                                </div>
+                                <p class="plan-edit-auto-caption">
+                                    Podrás cambiar a clasificación manual cuando quieras.
+                                </p>
+                            </div>
+                            <fieldset id="plan-new-manual-panel"
+                                      class="plan-edit-type-fieldset plan-edit-mode-panel" hidden>
+                                <legend>Tipo de entrenamiento</legend>
+                                <div id="plan-new-day-types" class="plan-edit-type-grid"></div>
+                            </fieldset>
+                        </section>
                     </div>
 
-                    <div class="dialog-actions">
-                        <button type="button"
-                                class="button button-secondary"
-                                data-close-new-day>
-                            Cancelar
-                        </button>
-
-                        <button type="submit"
-                                class="button button-primary">
-                            Crear día
-                        </button>
+                    <div class="dialog-actions plan-edit-day-footer">
+                        <button type="button" class="button button-secondary" data-close-new-day>Cancelar</button>
+                        <button type="submit" class="button button-primary">Añadir día</button>
                     </div>
-
                 </form>
             </dialog>
 
@@ -346,8 +337,29 @@
                     </div>
 
                     <div class="dialog-actions plan-edit-day-footer">
-                        <button type="button" class="button button-secondary" data-close-edit-day>Cancelar</button>
-                        <button type="submit" class="button button-primary">Aplicar cambios</button>
+                        <div class="plan-edit-day-extra-actions" aria-label="Opciones del día">
+                            <button type="button" class="plan-edit-action-quiet" data-plan-edit-duplicate
+                                    title="Crear una copia de este día y sus ejercicios">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+                                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="8" y="8" width="12" height="12" rx="2"/>
+                                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>
+                                </svg>
+                                Duplicar
+                            </button>
+                            <button type="button" class="plan-edit-action-quiet danger" data-plan-edit-delete
+                                    title="Eliminar este día del borrador; requiere confirmación">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor"
+                                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18M8 6V4h8v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/>
+                                </svg>
+                                Eliminar
+                            </button>
+                        </div>
+                        <div class="plan-edit-day-save-actions">
+                            <button type="button" class="button button-secondary" data-close-edit-day>Cancelar</button>
+                            <button type="submit" class="button button-primary">Aplicar cambios</button>
+                        </div>
                     </div>
                 </form>
             </dialog>
