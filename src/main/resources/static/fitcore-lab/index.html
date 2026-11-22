@@ -910,8 +910,12 @@
                     </label>
 
                     <label id="plan-picker-duration-label" hidden>
-                        Tiempo por serie (s)
-                        <input id="plan-picker-duration" type="number" min="1" max="86400" step="1" value="45">
+                        Tiempo por serie (hh:mm:ss)
+                        <input id="plan-picker-duration" type="text" inputmode="numeric"
+                               maxlength="8" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}"
+                               placeholder="00:00:00" value="00:00:45"
+                               aria-label="Duración por serie en horas, minutos y segundos"
+                               required>
                     </label>
                     <div class="plan-rest-control">
                         <label for="plan-picker-rest-button">Descanso</label>
@@ -1054,6 +1058,7 @@
 <script src="./exercise-variant-ui.js" defer></script>
 <script src="./exercise-picker-search.js" defer></script>
 <script src="./exercise-progress-ui.js" defer></script>
+<script src="./plan-duration-input.js" defer></script>
 <script src="./plan-session-summary.js" defer></script>
 <script src="./day-classifier.js" defer></script>
 <script src="./rest-wheel.js" defer></script>
