@@ -73,3 +73,15 @@ test('metric icons describe exercises, planned sets and muscles distinctly',()=>
  assert.match(css,/#plan-muscle-dialog \.plan-muscle-stat-icon/);
  assert.match(css,/#plan-muscle-dialog \.plan-muscle-stat-copy/);
 });
+
+test('day/week switching preserves the toolbar and SVG footprint',()=>{
+ const renderer=app.slice(app.indexOf('async function renderPlanMuscleDialog()'),
+     app.indexOf('const result = await calculatePlanMuscles(',app.indexOf('async function renderPlanMuscleDialog()')));
+ assert.doesNotMatch(renderer,/plan-muscle-day-picker'\)\.hidden\s*=/);
+ assert.match(renderer,/dayPicker\.classList\.toggle\('is-inactive', isWeek\)/);
+ assert.match(renderer,/dayPicker\.setAttribute\('aria-hidden', String\(isWeek\)\)/);
+ assert.match(renderer,/plan-muscle-day-select'\)\.disabled = isWeek/);
+ assert.match(css,/#plan-muscle-dialog #plan-muscle-day-picker\.is-inactive\s*\{[^}]*visibility:hidden/);
+ assert.match(css,/#plan-muscle-dialog \.plan-muscle-toolbar\s*\{\s*min-height:94px/);
+ assert.match(css, /@media \(max-width:560px\)\s*\{\s*#plan-muscle-dialog \.plan-muscle-toolbar\s*\{\s*min-height:143px/);
+});
