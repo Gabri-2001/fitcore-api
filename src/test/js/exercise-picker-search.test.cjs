@@ -401,7 +401,8 @@ test('Sin equipamiento incluye flexiones y variante en pared, excluye barras y p
 test('plan distingue tiempo vs repeticiones según la unidad del catálogo',()=>{
  assert.match(app,/function exerciseDefaultUnit\(/);
  assert.match(app,/plan-picker-duration-label/);
- assert.match(app,/targetDurationSeconds=readPositiveInteger/);
+ assert.match(app,/FitCoreDurationInput\.parse\(\$\('plan-picker-duration'\)\.value\)/);
+ assert.match(app,/targetDurationSeconds=seconds/);
  assert.match(app,/targetDurationSeconds:e.targetDurationSeconds/);
 });
 
