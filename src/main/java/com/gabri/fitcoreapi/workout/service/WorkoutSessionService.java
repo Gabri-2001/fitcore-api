@@ -212,7 +212,10 @@ public class WorkoutSessionService {
                 sessionDate, category, intensity, durationMinutes, notes, estimatedCalories);
         if(trainingType != null || manualType != null) {
             boolean manual = manualType != null ? manualType : session.isTrainingDayTypeManual();
-            var type = trainingType != null ? trainingType : session.getTrainingDayType();
+            // Explicitly changing to automatic without a type clears any previous
+            // manual label until the current exercises support a new classification.
+            var type = Boolean.FALSE.equals(manualType) ? trainingType :
+                    trainingType != null ? trainingType : session.getTrainingDayType();
             if(type == com.gabri.fitcoreapi.workout.domain.WorkoutDayType.REST) {
                 throw new BusinessRuleException("Descanso no puede ser una sesión de entrenamiento");
             }
