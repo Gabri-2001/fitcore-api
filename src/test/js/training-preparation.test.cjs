@@ -15,7 +15,7 @@ test('preparing a workout offers free or planned session with a plan-day preview
  assert.match(html,/id="session-plan-preview"/);
  assert.match(app,/const dayId=fromPlan\?optionalNumber/);
  assert.match(app,/workoutDayId:dayId/);
- assert.match(app,/populateFromWorkoutDay/);
+ assert.match(app,/await loadSessionExercises\(\)/);
 });
 test('manual workout categories match plan taxonomy except REST',()=>{
  assert.match(html,/data-session-classification="auto"/);
