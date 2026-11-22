@@ -96,6 +96,62 @@ test('press-and-hold steps immediately, repeats, and stops cleanly',()=>{
  assert.equal(tasks.size,0);
  assert.ok(!hold.isActive(button));
 });
+test('delegated pointer controls continue stepping while held and stop on release',()=>{
+ let nextId=0;
+ const timers=new Map();
+ const clock={
+  setTimeout(fn,delay){const id=++nextId;timers.set(id,{fn,delay,repeat:false});return id;},
+  clearTimeout(id){timers.delete(id);},
+  setInterval(fn,delay){const id=++nextId;timers.set(id,{fn,delay,repeat:true});return id;},
+  clearInterval(id){timers.delete(id);}
+ };
+ const listeners=()=>new Map();
+ const listen=(target,name,handler)=>{
+  if(!target.handlers.has(name))target.handlers.set(name,[]);
+  target.handlers.get(name).push(handler);
+ };
+ const fire=(target,name,event={})=>
+  (target.handlers.get(name)||[]).forEach(fn=>fn(event));
+ const win={handlers:listeners(),addEventListener(name,fn){listen(win,name,fn);}};
+ const doc={handlers:listeners(),hidden:false,defaultView:win,
+  addEventListener(name,fn){listen(doc,name,fn);}};
+ const root={handlers:listeners(),ownerDocument:doc,
+  addEventListener(name,fn){listen(root,name,fn);},
+  contains(button){return button===btn;}};
+ const btn={captures:new Set(),
+  closest(selector){return selector.includes('durationSeconds')?this:null;},
+  setPointerCapture(id){this.captures.add(id);},
+  hasPointerCapture(id){return this.captures.has(id);},
+  releasePointerCapture(id){this.captures.delete(id);}};
+ let count=0;
+ const binder=time.bindHoldButtons(root,()=>{count++;return true;},{clock});
+ const event={target:btn,button:0,isPrimary:true,pointerId:3,
+  preventDefault(){this.prevented=true;}};
+ fire(root,'pointerdown',event);
+ assert.ok(event.prevented);
+ assert.ok(btn.captures.has(3));
+ assert.equal(count,1);
+ const runTimer=type=>{
+  const entry=[...timers].find(([,timer])=>timer.repeat===type);
+  assert.ok(entry,'expected '+(type?'interval':'delay'));
+  if(!type)timers.delete(entry[0]);
+  entry[1].fn();
+ };
+ runTimer(false);
+ assert.equal(count,2);
+ runTimer(true);
+ runTimer(true);
+ assert.equal(count,4);
+ fire(doc,'pointerup',{pointerId:3});
+ assert.equal(timers.size,0);
+ assert.equal(btn.captures.size,0);
+ assert.ok(!binder.isActive());
+ // A fresh press can run again without stale click-consumption markers.
+ fire(root,'pointerdown',{...event,pointerId:4});
+ assert.equal(count,5);
+ fire(doc,'pointercancel',{pointerId:4});
+ assert.equal(timers.size,0);
+});
 test('both plan editor and exercise picker use HH:MM:SS without changing API seconds',()=>{
  assert.match(html,/plan-duration-input\.js/);
  assert.match(html,/id="plan-picker-duration" type="text"/);
@@ -110,10 +166,8 @@ test('both plan editor and exercise picker use HH:MM:SS without changing API sec
  assert.ok(app.includes('FitCoreDurationInput.beginEdit(event.target)'));
  assert.ok(app.includes("FitCoreDurationInput.edit(input,'insert'"));
  assert.ok(app.includes('bindPlanDurationMask();'));
- assert.ok(app.includes('FitCoreDurationInput.createHoldController(stepPlanDuration)'));
- assert.ok(app.includes("document.addEventListener('pointerup',()=>durationHold.stop())"));
- assert.ok(app.includes("document.addEventListener('pointercancel',()=>durationHold.stop())"));
- assert.ok(app.includes("button.dataset.durationPointerHandled='true'"));
+ assert.ok(app.includes("FitCoreDurationInput.bindHoldButtons($('plan-days'),stepPlanDuration)"));
+ assert.ok(app.includes('if(event.detail===0)stepPlanDuration(button)'));
  assert.ok(app.includes("if(next===input.value)return false"));
  assert.match(css,/plan-time-stepper/);
 });
