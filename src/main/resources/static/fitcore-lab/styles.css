@@ -4206,3 +4206,18 @@ body.resting .toast-region { bottom: 190px; }
     #plan-muscle-dialog .plan-muscle-stat-copy strong {font-size:20px;}
     #plan-muscle-dialog .plan-muscle-stat-copy small {font-size:9px;}
 }
+
+/* Keep the Day/Week toolbar footprint identical across both scopes.
+   The day picker is invisible in week mode but still reserves its slot. */
+#plan-muscle-dialog .plan-muscle-toolbar {
+    min-height:94px;
+}
+#plan-muscle-dialog #plan-muscle-day-picker.is-inactive {
+    visibility:hidden;
+    pointer-events:none;
+}
+@media (max-width:560px) {
+    #plan-muscle-dialog .plan-muscle-toolbar {
+        min-height:143px;
+    }
+}
