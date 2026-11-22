@@ -4149,3 +4149,60 @@ body.resting .toast-region { bottom: 190px; }
     #plan-settings-dialog .plan-settings-actions .button {flex:1 1 auto;}
     #plan-settings-dialog .plan-settings-save-actions .button {width:auto;}
 }
+
+/* Unified icons for muscular analysis metrics: clear silhouettes, even optical weight. */
+#plan-muscle-dialog .plan-muscle-stat {
+    gap:12px;
+    padding:12px;
+    border:1px solid #e5eee7;
+    background:#f6faf7;
+}
+#plan-muscle-dialog .plan-muscle-stat-icon {
+    display:grid;
+    place-items:center;
+    flex:0 0 40px;
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    background:#e4f3e8;
+    color:#256a49;
+}
+#plan-muscle-dialog .plan-muscle-stat-icon > svg {
+    display:block;
+    width:22px;
+    height:22px;
+    stroke:currentColor;
+}
+#plan-muscle-dialog .plan-muscle-stat-copy {
+    display:grid;
+    min-width:0;
+    gap:4px;
+}
+#plan-muscle-dialog .plan-muscle-stat-copy strong {
+    font-size:24px;
+    line-height:1.05;
+    color:#153d2f;
+}
+#plan-muscle-dialog .plan-muscle-stat-copy small {
+    font-size:11px;
+    line-height:1.35;
+    color:#587268;
+}
+@media (max-width:560px) {
+    #plan-muscle-dialog .plan-muscle-stat {
+        padding:9px 4px;
+        gap:5px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat-icon {
+        flex-basis:32px;
+        width:32px;
+        height:32px;
+        border-radius:9px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat-icon > svg {
+        width:18px;
+        height:18px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat-copy strong {font-size:20px;}
+    #plan-muscle-dialog .plan-muscle-stat-copy small {font-size:9px;}
+}
