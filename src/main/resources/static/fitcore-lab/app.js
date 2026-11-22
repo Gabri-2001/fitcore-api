@@ -3512,6 +3512,46 @@ async function recoverPlannedSessionExercises() {
     }
 }
 
+// Auto-classification is descriptive and uses the same canonical exercise catalog.
+// Never replaces a manual choice, and never manufactures a type for incomplete logs.
+async function refreshAutomaticSessionClassification(){
+    const session=state.currentSession;
+    if(!session||session.status!=='IN_PROGRESS'||
+       session.trainingDayTypeManual||sessionClassificationSyncing||
+       !state.variants.length||!state.exercises.length)return;
+    const inputs=await Promise.all(state.sessionExercises.map(async item=>{
+        const variant=state.variants.find(v=>v.code===item.exerciseVariantCode);
+        const exercise=state.exercises.find(e=>e.code===variant?.exerciseCode);
+        const sets=(state.sessionSets.get(item.id)||[]).length;
+        if(!exercise||!variant)return {code:item.exerciseVariantCode,sets};
+        const response=await getPlanVariantActivations(item.exerciseVariantCode);
+        return {code:item.exerciseVariantCode,sets,group:exercise.mainMuscleGroup,
+            pattern:exercise.movementPattern,family:exercise.code,
+            activations:response.failed?null:response.rows};
+    }));
+    // Another exercise may have been added while loading metadata.
+    if(session!==state.currentSession||session.trainingDayTypeManual)return;
+    const result=FitCoreDayClassifier.classify(inputs);
+    if(result.provisional||!result.structure||result.structure==='REST'
+        ||result.structure===session.trainingDayType)return;
+    sessionClassificationSyncing=true;
+    try{
+        const changed=await api(`/api/users/${state.auth.userId}/workout-sessions/${session.id}`,{
+            method:'PATCH',body:JSON.stringify({
+                trainingDayType:result.structure,trainingDayTypeManual:false
+            })
+        });
+        if(session===state.currentSession){
+            state.currentSession={...session,...changed};
+            syncSessionHeader();
+        }
+    }catch(error){
+        console.warn('No se pudo actualizar la clasificación de sesión:',error);
+    }finally{
+        sessionClassificationSyncing=false;
+    }
+}
+
 async function loadSessionExercises() {
     if (!state.currentSession) return renderSession();
     try {
@@ -3527,6 +3567,7 @@ async function loadSessionExercises() {
         state.sessionPrevious = new Map(details.map(item => [item.id, item.previous]));
         renderSession();
         await renderSessionMiniMap();
+        void refreshAutomaticSessionClassification();
     } catch (error) { toast(error.message, true); }
 }
 
