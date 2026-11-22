@@ -641,14 +641,17 @@ test('day display labels remain separate from structural type',()=>{
  assert.match(classifier.describe(a),/predominio de pecho/i);
 });
 
-test('classification appears only in the session summary, not in day tabs or editor heading',()=>{
+test('classification appears in summary and as a consolidated-only badge beside the day title',()=>{
  const fs=require('node:fs');
  const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/fitcore-lab/app.js'),'utf8');
  const css=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/fitcore-lab/styles.css'),'utf8');
  const dayTabs=source.slice(source.indexOf('function renderPlanDayTabs()'),source.indexOf('function refreshPlanSessionSummary()'));
  const editor=source.slice(source.indexOf('function renderPlanDays()'),source.indexOf('/* =============================================',source.indexOf('function renderPlanDays()')));
  assert.doesNotMatch(dayTabs,/plan-tab-classification|planDayLabel\(day\)/);
- assert.doesNotMatch(editor,/plan-day-type-badge/);
+ assert.match(editor,/consolidatedDayBadge\(day\)/);
+ assert.match(source,/day\.dayTypeManual!==false\|\|!day\.classification/);
+ assert.match(source,/day\.classification\.provisional/);
+ assert.match(source,/function consolidatedDayBadge\(day\)/);
  assert.match(editor,/id="plan-day-classification"/);
  assert.match(source,/function updatePlanClassificationVisuals\(\)/);
  assert.match(css,/#view-plans \.plan-day-editor-head \{\s*display:grid;\s*grid-template-columns:minmax\(0,1fr\) max-content;/);
