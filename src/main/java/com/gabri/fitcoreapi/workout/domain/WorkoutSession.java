@@ -42,6 +42,13 @@ public class WorkoutSession extends BaseEntity {
     @Column(name = "session_intensity", nullable = false, length = 40)
     private WorkoutSessionIntensity sessionIntensity;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "training_day_type", length = 40)
+    private WorkoutDayType trainingDayType;
+
+    @Column(name = "training_day_type_manual", nullable = false)
+    private boolean trainingDayTypeManual = false;
+
     @Column(name = "duration_minutes")
     private Integer durationMinutes;
 
@@ -112,6 +119,19 @@ public class WorkoutSession extends BaseEntity {
 
     public WorkoutSessionIntensity getSessionIntensity() {
         return sessionIntensity;
+    }
+
+    public WorkoutDayType getTrainingDayType() { return trainingDayType; }
+
+    public boolean isTrainingDayTypeManual() { return trainingDayTypeManual; }
+
+    public void setTrainingDayClassification(WorkoutDayType type, boolean manual) {
+        requireInProgress();
+        if (type == WorkoutDayType.REST) {
+            throw new IllegalArgumentException("REST cannot classify an actual workout session");
+        }
+        this.trainingDayType = type;
+        this.trainingDayTypeManual = manual;
     }
 
     public Integer getDurationMinutes() {
