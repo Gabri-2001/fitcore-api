@@ -35,22 +35,22 @@ test('duration controls step in seconds, handling minute and hour rollovers',()=
  assert.equal(time.step('00:XX:00',1),null);
 });
 test('both plan editor and exercise picker use HH:MM:SS without changing API seconds',()=>{
- assert.match(html,/plan-duration-input\\.js/);
+ assert.match(html,/plan-duration-input\.js/);
  assert.match(html,/id="plan-picker-duration" type="text"/);
  assert.match(html,/placeholder="00:00:00"/);
- assert.match(app,/function planTimedStepper\\(seconds\\)/);
+ assert.match(app,/function planTimedStepper\(seconds\)/);
  assert.match(app,/data-exercise-durationSeconds type="text"/);
- assert.match(app,/FitCoreDurationInput\\.parse\\(durationField\\.value\\)/);
+ assert.match(app,/FitCoreDurationInput\.parse\(durationField\.value\)/);
  assert.match(app,/targetDurationSeconds=seconds/);
- assert.match(app,/targetDurationSeconds:e\\.targetDurationSeconds/);
- assert.match(app,/FitCoreDurationInput\\.step\\(input\\.value/);
+ assert.match(app,/targetDurationSeconds:e\.targetDurationSeconds/);
+ assert.match(app,/FitCoreDurationInput\.step\(input\.value/);
  assert.match(css,/plan-time-stepper/);
 });
 test('consolidated classification badge does not appear for manual or provisional days',()=>{
  const fn=app.slice(app.indexOf('function consolidatedDayBadge(day){'),
     app.indexOf('function planDayLabel(day){'));
  assert.match(fn,/dayTypeManual!==false/);
- assert.match(fn,/classification\\.provisional/);
- assert.match(fn,/!day\\.classification\\.structure/);
+ assert.match(fn,/classification\.provisional/);
+ assert.match(fn,/!day\.classification\.structure/);
  assert.match(app,/plan-day-type-slot/);
 });
