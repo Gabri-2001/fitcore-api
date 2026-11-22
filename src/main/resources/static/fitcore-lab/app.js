@@ -1239,6 +1239,40 @@ function stepPlanDuration(button) {
     refreshPlanSessionSummary();
     return true;
 }
+// The picker uses the same +/- interaction as the day editor. Its inputs
+// remain authoritative so the existing validation and save payload stay intact.
+function stepPlanPickerGoal(button) {
+    if(!button?.isConnected || !$('exercise-picker-dialog').open ||
+       state.pickerMode!=='plan' || state.planPickerAction!=='add')return false;
+    const field=button.dataset.pickerStep;
+    const input=$(field==='duration' ? 'plan-picker-duration' :
+        field==='sets' ? 'plan-picker-sets' : field==='reps' ? 'plan-picker-reps' : '');
+    if(!input)return false;
+    const delta=Number(button.dataset.step);
+    if(delta!==1&&delta!==-1)return false;
+    if(field==='duration'){
+        const next=FitCoreDurationInput.step(input.value,delta);
+        if(next===null){
+            input.setCustomValidity('Introduce un tiempo válido entre 00:00:01 y 99:59:59.');
+            input.reportValidity();
+            return false;
+        }
+        if(next===input.value)return false;
+        input.value=next;
+        FitCoreDurationInput.endEdit(input);
+    }else{
+        const current=Number(input.value);
+        const min=Number(input.min),max=Number(input.max);
+        if(!Number.isSafeInteger(current)||current<min||current>max){
+            input.reportValidity();return false;
+        }
+        const next=Math.min(max,Math.max(min,current+delta));
+        if(next===current)return false;
+        input.value=String(next);
+    }
+    input.setCustomValidity('');
+    return true;
+}
 function planTimedStepper(seconds) {
     const formatted=FitCoreDurationInput.format(Number(seconds)||45)||'00:00:45';
     return '<div class="plan-stepper plan-time-stepper" data-plan-stepper>'+
@@ -5452,6 +5486,15 @@ function bindEvents() {
         if(legacy)legacy.hidden=mode.value!=='EXTERNAL_LOAD';
     });
     $('rest-settings-form').addEventListener('submit',saveRestSettings);
+    const pickerStepRoot=$('plan-picker-fields');
+    // Pointer-hold and keyboard click use the same bounded step operation.
+    FitCoreDurationInput.bindHoldButtons(pickerStepRoot,stepPlanPickerGoal,{
+        selector:'button[data-picker-step]'
+    });
+    pickerStepRoot.addEventListener('click',event=>{
+        const button=event.target.closest('button[data-picker-step]');
+        if(button && event.detail===0)stepPlanPickerGoal(button);
+    });
     $('plan-picker-rest-button').addEventListener('click',openPlanPickerRestEditor);
     $('rest-wheel-list').addEventListener('pointerdown',startRestWheelPointerDrag);
     $('rest-wheel-list').addEventListener('pointermove',moveRestWheelPointerDrag);
