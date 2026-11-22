@@ -5488,9 +5488,10 @@ function bindEvents() {
     $('rest-settings-form').addEventListener('submit',saveRestSettings);
     const pickerStepRoot=$('plan-picker-fields');
     // Pointer-hold and keyboard click use the same bounded step operation.
-    FitCoreDurationInput.bindHoldButtons(pickerStepRoot,stepPlanPickerGoal,{
+    const pickerGoalHold=FitCoreDurationInput.bindHoldButtons(pickerStepRoot,stepPlanPickerGoal,{
         selector:'button[data-picker-step]'
     });
+    $('exercise-picker-dialog').addEventListener('close',()=>pickerGoalHold.stop());
     pickerStepRoot.addEventListener('click',event=>{
         const button=event.target.closest('button[data-picker-step]');
         if(button && event.detail===0)stepPlanPickerGoal(button);
