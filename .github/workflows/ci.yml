@@ -15,5 +15,7 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
+      - name: Check FitCore Lab JavaScript syntax
+        run: node --check src/main/resources/static/fitcore-lab/app.js
       - name: Test
         run: ./mvnw -B verify
