@@ -3020,6 +3020,9 @@ async function openExercisePicker(mode = 'session', options = {}) {
         $('session-exercise-query').value = '';
         $('session-exercise-equipment').value = '';
         $('session-exercise-muscle').value = '';
+        // The visual picker shares the native filter value, including when
+        // reopening after a previous muscle was selected.
+        $('session-exercise-muscle').dispatchEvent(new Event('change',{bubbles:true}));
 
         // Adaptar la ventana
         const pickerCopy = mode !== 'plan'
