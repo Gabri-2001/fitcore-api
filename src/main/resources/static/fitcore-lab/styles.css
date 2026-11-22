@@ -3368,3 +3368,53 @@ body.resting .toast-region { bottom: 190px; }
     font-variant-numeric:tabular-nums;
     letter-spacing:.04em;
 }
+
+/* Shared FitCore icon system for every training-day type. */
+#view-plans .plan-edit-type-content {
+    gap:9px;
+    min-height:94px;
+    padding:12px 10px;
+    color:#315a50;
+}
+#view-plans .plan-edit-type-symbol {
+    display:grid;
+    place-items:center;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    background:#edf3f0;
+    color:#2d6658;
+    transition:background .15s ease,color .15s ease;
+}
+#view-plans .plan-edit-type-content .plan-training-type-icon {
+    width:23px;
+    height:23px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.85;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+#view-plans .plan-edit-type-card input:checked + .plan-edit-type-content {
+    color:#164c3a;
+    background:#f3fbe8;
+    border-color:#94ce46;
+}
+#view-plans .plan-edit-type-card input:checked + .plan-edit-type-content .plan-edit-type-symbol {
+    background:#d7f49d;
+    color:#194c35;
+}
+#view-plans .plan-edit-type-card:not(:has(input:disabled)):hover .plan-edit-type-symbol {
+    background:#e2f1dd;
+}
+#view-plans .plan-day-tab-icon .plan-training-type-icon {
+    width:22px;
+    height:22px;
+}
+#view-plans .plan-day-type-badge .plan-training-type-icon {
+    width:15px;
+    height:15px;
+}
+@media (prefers-reduced-motion:reduce){
+    #view-plans .plan-edit-type-symbol {transition:none;}
+}
