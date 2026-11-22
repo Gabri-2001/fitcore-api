@@ -956,14 +956,27 @@
             </select>
         </label>
 
-        <label>
-            Grupo muscular
-            <select id="session-exercise-muscle">
-                <option value="">
-                    Todos los músculos
-                </option>
-            </select>
-        </label>
+        <div class="muscle-filter-field">
+            <label id="session-muscle-filter-label" for="session-muscle-filter-button">Grupo muscular</label>
+            <div class="muscle-filter-anchor" id="session-muscle-filter-anchor">
+                <select id="session-exercise-muscle" class="muscle-filter-native" tabindex="-1" aria-hidden="true">
+                    <option value="">Todos los músculos</option>
+                </select>
+                <button type="button" id="session-muscle-filter-button"
+                        class="muscle-filter-trigger" aria-haspopup="listbox"
+                        aria-expanded="false" aria-controls="session-muscle-filter-list"
+                        aria-labelledby="session-muscle-filter-label session-muscle-filter-current">
+                    <span class="muscle-filter-trigger-icon" id="session-muscle-filter-icon" aria-hidden="true"></span>
+                    <span id="session-muscle-filter-current" class="muscle-filter-current">Todos los músculos</span>
+                    <svg class="muscle-filter-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="muscle-filter-menu" id="session-muscle-filter-menu" hidden>
+                    <div class="muscle-filter-menu-heading">Selecciona el grupo muscular</div>
+                    <div id="session-muscle-filter-list" class="muscle-filter-list" role="listbox"
+                         aria-label="Filtrar ejercicios por grupo muscular" tabindex="-1"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- LISTADO Y CONFIGURACIÓN -->
@@ -1174,6 +1187,7 @@
 <script src="./plan-session-summary.js" defer></script>
 <script src="./day-classifier.js" defer></script>
 <script src="./rest-wheel.js" defer></script>
+<script src="./muscle-picker-icons.js" defer></script>
 <script src="./app.js" defer></script>
 
 
