@@ -11,6 +11,8 @@ import java.time.LocalDate;
 
 public record UpdateWorkoutSessionRequest(
         LocalDate sessionDate,
+        com.gabri.fitcoreapi.workout.domain.WorkoutDayType trainingDayType,
+        Boolean trainingDayTypeManual,
         WorkoutSessionCategory sessionCategory,
         WorkoutSessionIntensity sessionIntensity,
         @Min(1) Integer durationMinutes,
