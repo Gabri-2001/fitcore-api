@@ -121,7 +121,8 @@
         if(!root || typeof root.addEventListener!=='function')
             throw new TypeError('A root element is required');
         const hold=createHoldController(onStep,options);
-        const selector='button[data-step-field="durationSeconds"]';
+        // Reuse the same pointer-hold behavior in the plan editor and exercise picker.
+        const selector=options.selector||'button[data-step-field="durationSeconds"]';
         const doc=root.ownerDocument;
         const win=doc.defaultView;
         let activeButton=null,activePointer=null;
