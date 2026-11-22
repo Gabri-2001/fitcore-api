@@ -4914,6 +4914,11 @@ function bindEvents() {
             '[data-exercise-rest]'
         )) return;
         syncPlanEditor();
+        if(event.target.matches('[data-exercise-durationSeconds]') &&
+           !event.target.checkValidity()){
+            event.target.reportValidity();
+            return;
+        }
         renderPlanDays();
     });
 
@@ -4923,7 +4928,8 @@ function bindEvents() {
         if(!event.target.matches('[data-exercise-sets], [data-exercise-reps], '+
                 '[data-exercise-durationSeconds], [data-exercise-rest]'))return;
         syncPlanEditor();
-        refreshPlanSessionSummary();
+        if(!event.target.matches('[data-exercise-durationSeconds]')||
+           event.target.checkValidity())refreshPlanSessionSummary();
         if(event.target.matches('[data-exercise-sets]'))
             void renderPlanMusclePreview();
     });
