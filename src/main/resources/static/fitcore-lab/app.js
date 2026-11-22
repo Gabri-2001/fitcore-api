@@ -481,48 +481,57 @@ function addPlanDay(source = null) {
 }
 
 
-function openPlanNewDayDialog() {
+function planDayTypeOptions(inputName, selectedType='FULL_BODY'){
+    return enums.dayTypes.map(type=>`
+        <label class="plan-edit-type-card">
+            <input type="radio" name="${inputName}" value="${type}"
+                ${type===selectedType?'checked':''}>
+            <span class="plan-edit-type-content">
+                <span class="plan-edit-type-symbol">${planDayIcon(type)}</span>
+                <span>${escapeHtml(friendly(type))}</span>
+            </span>
+        </label>
+    `).join('');
+}
+
+function updatePlanNewDayTypeMode(){
+    const automatic=$('plan-new-day-auto').checked;
+    $('plan-new-day-dialog').dataset.classificationMode=automatic?'auto':'manual';
+    $('plan-new-auto-panel').hidden=!automatic;
+    $('plan-new-manual-panel').hidden=automatic;
+    $('plan-new-day-dialog').querySelectorAll('[data-plan-new-mode]').forEach(button=>{
+        const selected=button.dataset.planNewMode===(automatic?'auto':'manual');
+        button.setAttribute('aria-pressed',String(selected));
+        button.classList.toggle('is-selected',selected);
+    });
+    $('plan-new-day-types').querySelectorAll('input[type="radio"]')
+        .forEach(input=>{input.disabled=automatic;});
+}
+
+function openPlanNewDayDialog(){
     syncPlanEditor();
-
-    $('plan-new-day-name').value =
-        `Día ${state.planDays.length + 1}`;
-
-    $('plan-new-day-type').value = 'FULL_BODY';
+    $('plan-new-day-name').value=`Día ${state.planDays.length+1}`;
     $('plan-new-day-auto').checked=true;
-    $('plan-new-day-type').disabled=true;
-
+    $('plan-new-day-types').innerHTML=planDayTypeOptions('plan-new-day-type','FULL_BODY');
+    updatePlanNewDayTypeMode();
     $('plan-new-day-dialog').showModal();
     $('plan-new-day-name').focus();
 }
 
-function submitPlanNewDay(event) {
+function submitPlanNewDay(event){
     event.preventDefault();
-
-    const name =
-        $('plan-new-day-name').value.trim();
-
-    const dayType =
-        $('plan-new-day-type').value;
-
-    if (!name || !enums.dayTypes.includes(dayType)) {
-        return toast(
-            'Indica un nombre y un tipo de día válido.',
-            true
-        );
+    const name=$('plan-new-day-name').value.trim();
+    const automatic=$('plan-new-day-auto').checked;
+    const selected=$('plan-new-day-types')
+        .querySelector('input[name="plan-new-day-type"]:checked');
+    const dayType=automatic?'FULL_BODY':selected?.value;
+    if(!name||!enums.dayTypes.includes(dayType)){
+        toast('Indica un nombre y selecciona un tipo de día válido.',true);
+        return;
     }
-
-    addPlanDay({
-        name,
-        dayType,
-        dayTypeManual:!$('plan-new-day-auto').checked,
-        exercises: []
-    });
-
+    addPlanDay({name,dayType,dayTypeManual:!automatic,exercises:[]});
     $('plan-new-day-dialog').close();
-
-    toast(
-        `Día «${name}» añadido al plan. Recuerda guardar el plan.`
-    );
+    toast(`Día «${name}» añadido al plan. Recuerda guardar el plan.`);
 }
 
 
@@ -1334,29 +1343,7 @@ function openPlanEditDayDialog() {
     $('plan-edit-day-name').value = day.name || '';
     $('plan-edit-day-auto').checked=day.dayTypeManual===false;
 
-    // Crear las opciones visuales con sus iconos SVG
-    $('plan-edit-day-types').innerHTML =
-        enums.dayTypes.map(type => `
-
-            <label class="plan-edit-type-card">
-
-                <input
-                    type="radio"
-                    name="plan-edit-day-type"
-                    value="${type}"
-                    ${day.dayType === type ? 'checked' : ''}>
-
-                <span class="plan-edit-type-content">
-                    <span class="plan-edit-type-symbol">${planDayIcon(type)}</span>
-
-                    <span>
-                        ${escapeHtml(friendly(type))}
-                    </span>
-                </span>
-
-            </label>
-
-        `).join('');
+    $('plan-edit-day-types').innerHTML=planDayTypeOptions('plan-edit-day-type',day.dayType);
 
     updatePlanEditTypeMode();
     $('plan-edit-day-dialog').showModal();
@@ -1446,7 +1433,36 @@ function savePlanEditDay(event) {
 }
 
 
-// Duplicate from the day-card action menu, without opening the settings dialog.
+function duplicateDayFromSettings(){
+    if(!applyPlanEditDraft())return;
+    const index=state.selectedPlanDayIndex;
+    $('plan-edit-day-dialog').close();
+    duplicateSelectedPlanDay(index);
+}
+
+async function deleteDayFromSettings(){
+    const index=state.selectedPlanDayIndex;
+    const day=state.planDays[index];
+    if(!day)return;
+    // Confirm while settings stay open; cancellation retains editable form values.
+    const confirmed=await confirmAction(
+        'Eliminar día',
+        `¿Eliminar «${day.name}» y sus ${day.exercises.length} ejercicios del borrador del plan?`
+    );
+    if(!confirmed)return;
+    $('plan-edit-day-dialog').close();
+    removePlanDayAt(index);
+}
+
+function removePlanDayAt(index){
+    if(index<0||index>=state.planDays.length)return;
+    state.planDays.splice(index,1);
+    state.selectedPlanDayIndex=Math.max(0,Math.min(index,state.planDays.length-1));
+    renderPlanMode();
+    toast('Día eliminado del borrador. Guarda el plan para conservar el cambio.');
+}
+
+// Duplicar un día desde el menú de tarjeta o desde Configurar día.
 function duplicateSelectedPlanDay(index=state.selectedPlanDayIndex) {
     syncPlanEditor();
     const day=state.planDays[index];
@@ -1506,33 +1522,15 @@ function moveSelectedPlanDay(direction) {
 
 
 // Eliminar un día con confirmación
-async function deleteSelectedPlanDay(index=state.selectedPlanDayIndex) {
+async function deleteSelectedPlanDay(index=state.selectedPlanDayIndex){
     syncPlanEditor();
     const day=state.planDays[index];
     if(!day)return;
-
-    const confirmed = await confirmAction(
+    const confirmed=await confirmAction(
         'Eliminar día',
-        `¿Eliminar «${day.name}» y sus ` +
-        `${day.exercises.length} ejercicios ` +
-        `del borrador del plan?`
+        `¿Eliminar «${day.name}» y sus ${day.exercises.length} ejercicios del borrador del plan?`
     );
-
-    if (!confirmed) return;
-
-    state.planDays.splice(index, 1);
-
-    state.selectedPlanDayIndex = Math.max(
-        0,
-        Math.min(index, state.planDays.length - 1)
-    );
-
-    renderPlanMode();
-
-    toast(
-        'Día eliminado del borrador. ' +
-        'Guarda el plan para conservar el cambio.'
-    );
+    if(confirmed)removePlanDayAt(index);
 }
 
 
@@ -4734,10 +4732,18 @@ function bindEvents() {
         });
     });
 
-    $('plan-new-day-auto').addEventListener('change',()=>{
-        $('plan-new-day-type').disabled=$('plan-new-day-auto').checked;
+    $('plan-new-day-dialog').querySelectorAll('[data-plan-new-mode]').forEach(button=>{
+        button.addEventListener('click',()=>{
+            $('plan-new-day-auto').checked=button.dataset.planNewMode==='auto';
+            updatePlanNewDayTypeMode();
+        });
     });
+    $('plan-new-day-auto').addEventListener('change',updatePlanNewDayTypeMode);
     $('plan-edit-day-auto').addEventListener('change',updatePlanEditTypeMode);
+    $('plan-edit-day-dialog').querySelector('[data-plan-edit-duplicate]')
+        .addEventListener('click',duplicateDayFromSettings);
+    $('plan-edit-day-dialog').querySelector('[data-plan-edit-delete]')
+        .addEventListener('click',()=>void deleteDayFromSettings());
     $('plan-new-day-form').addEventListener(
         'submit',
         submitPlanNewDay
