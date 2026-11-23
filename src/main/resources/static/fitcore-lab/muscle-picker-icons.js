@@ -76,7 +76,7 @@
         CORE:'./muscle-icon-core.svg?v=1',
         NECK:'./muscle-icon-neck.svg?v=1',
         FULL_BODY:'./muscle-icon-full-body.svg?v=1',
-        ALL:'./muscle-icon-all.svg?v=1'
+        ALL:'./muscle-icon-all.svg?v=2'
     });
     function centeredIcon(code,css){
         return '<svg class="'+css+' mi-premium mi-centered" viewBox="0 0 64 64" '+
