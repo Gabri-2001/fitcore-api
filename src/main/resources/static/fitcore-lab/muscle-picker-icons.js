@@ -62,15 +62,15 @@
         FOREARMS:[0,0],QUADRICEPS:[1,0],HAMSTRINGS:[2,0],GLUTES:[3,0],
         ADDUCTORS:[0,1],CALVES:[1,1],CORE:[2,1]
     });
-    // All five portraits are independently centered. The three lower-body
-    // SVGs embed one cropped, compressed WebP each, never the original atlas.
-    // A revision query avoids stale icons after asset replacement.
+    // All five portraits have individual framing. Glutes and hamstrings are
+    // newly illustrated instead of atlas crops; their SVGs embed only their
+    // own WebP portrait. A revision query avoids stale browser caches.
     const CENTERED=Object.freeze({
         BICEPS:'./muscle-icon-biceps.webp',
         TRICEPS:'./muscle-icon-triceps.webp',
         QUADRICEPS:'./muscle-icon-quadriceps.svg?v=2',
-        HAMSTRINGS:'./muscle-icon-hamstrings.svg?v=2',
-        GLUTES:'./muscle-icon-glutes.svg?v=2'
+        HAMSTRINGS:'./muscle-icon-hamstrings.svg?v=3',
+        GLUTES:'./muscle-icon-glutes.svg?v=3'
     });
     function centeredIcon(code,css){
         return '<svg class="'+css+' mi-premium mi-centered" viewBox="0 0 64 64" '+
