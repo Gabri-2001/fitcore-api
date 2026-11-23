@@ -62,12 +62,15 @@
         FOREARMS:[0,0],QUADRICEPS:[1,0],HAMSTRINGS:[2,0],GLUTES:[3,0],
         ADDUCTORS:[0,1],CALVES:[1,1],CORE:[2,1]
     });
-    // Individually redrawn, centered anatomical portraits. Unlike the older
-    // sprite crops, both illustrations have identical viewBox framing and
-    // reveal both upper arms symmetrically.
+    // Independent, centrally framed assets. Biceps and triceps are WebP;
+    // quadriceps, hamstrings and glutes are self-contained SVG portraits.
+    // Each SVG embeds the original artwork to avoid external atlas requests.
     const CENTERED=Object.freeze({
         BICEPS:'./muscle-icon-biceps.webp',
-        TRICEPS:'./muscle-icon-triceps.webp'
+        TRICEPS:'./muscle-icon-triceps.webp',
+        QUADRICEPS:'./muscle-icon-quadriceps.svg',
+        HAMSTRINGS:'./muscle-icon-hamstrings.svg',
+        GLUTES:'./muscle-icon-glutes.svg'
     });
     function centeredIcon(code,css){
         return '<svg class="'+css+' mi-premium mi-centered" viewBox="0 0 64 64" '+

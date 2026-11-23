@@ -16,8 +16,8 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
   'CALVES','CORE','NECK','FULL_BODY'];
  assert.deepEqual([...icons.CODES],expected);
  const batch1=['CHEST','BACK','SHOULDERS','SCAPULAR','ROTATOR_CUFF'];
- const centered=['BICEPS','TRICEPS'];
- const batch2=['FOREARMS','QUADRICEPS','HAMSTRINGS','GLUTES','ADDUCTORS','CALVES','CORE'];
+ const centered=['BICEPS','TRICEPS','QUADRICEPS','HAMSTRINGS','GLUTES'];
+ const batch2=['FOREARMS','ADDUCTORS','CALVES','CORE'];
  const premium=[...batch1,...centered,...batch2];
  const vectorHighlights=[],positions1=[],positions2=[];
  for(const filename of ['muscle-icons-premium.webp','muscle-icons-premium-2.webp']){
@@ -33,18 +33,33 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
   if(premium.includes(code)){
    assert.match(svg,/mi-premium/);
    if(centered.includes(code)){
-    const filename=code==='BICEPS'?'muscle-icon-biceps.webp':'muscle-icon-triceps.webp';
-    assert.ok(svg.includes('<image href="./'+filename+'"'),code+' uses its centered portrait');
+    const filenames={
+     BICEPS:'muscle-icon-biceps.webp',
+     TRICEPS:'muscle-icon-triceps.webp',
+     QUADRICEPS:'muscle-icon-quadriceps.svg',
+     HAMSTRINGS:'muscle-icon-hamstrings.svg',
+     GLUTES:'muscle-icon-glutes.svg'
+    };
+    const filename=filenames[code];
+    assert.ok(svg.includes('<image href="./'+filename+'"'),code+' uses its own centered portrait');
     assert.match(svg,/mi-centered/);
     assert.match(svg,/x="0" y="0" width="64" height="64"/);
     assert.match(svg,/preserveAspectRatio="xMidYMid meet"/);
     const asset=fs.readFileSync(path.join(dir,filename));
-    assert.ok(asset.length>10000,code+' has detailed illustration bytes');
-    assert.equal(asset.toString('ascii',0,4),'RIFF');
-    assert.equal(asset.toString('ascii',8,12),'WEBP');
-    assert.equal(asset.toString('ascii',12,16),'VP8X');
-    assert.equal(asset.readUIntLE(24,3)+1,360);
-    assert.equal(asset.readUIntLE(27,3)+1,360);
+    assert.ok(asset.length>10000,code+' includes high-definition artwork');
+    if(filename.endsWith('.webp')){
+     assert.equal(asset.toString('ascii',0,4),'RIFF');
+     assert.equal(asset.toString('ascii',8,12),'WEBP');
+     assert.equal(asset.toString('ascii',12,16),'VP8X');
+     assert.equal(asset.readUIntLE(24,3)+1,360);
+     assert.equal(asset.readUIntLE(27,3)+1,360);
+    }else{
+     const contents=asset.toString('utf8');
+     assert.match(contents,/width="360" height="360" viewBox="0 0 360 360"/);
+     assert.match(contents,/<clipPath id="portrait-clip"><circle cx="180" cy="180" r="170"\/><\/clipPath>/);
+     assert.match(contents,/href="data:image\/webp;base64,/);
+     assert.doesNotMatch(contents,/https?:\/\//);
+    }
    }else{
     const filename=batch1.includes(code)?'muscle-icons-premium.webp':'muscle-icons-premium-2.webp';
     assert.ok(svg.includes('<image href="./'+filename+'"'),code+' has its original atlas');
@@ -58,10 +73,24 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
   }
  }
  assert.equal(new Set(positions1).size,5,'the other five batch-one sprites are unchanged');
- assert.equal(new Set(positions2).size,7,'seven distinct illustrations in batch two');
+ assert.equal(new Set(positions2).size,4,'four atlas illustrations remain after centering three portraits');
  assert.equal(new Set(vectorHighlights).size,2,'neck and full body remain vector-based');
  assert.match(icons.icon(''),/mi-accent/);
 });
+
+test('three lower-body portraits are independently framed and reproducible',()=>{
+ const builder=require(path.resolve(__dirname,'../../../scripts/build-centered-muscle-icons.cjs'));
+ const base64=fs.readFileSync(path.join(dir,'muscle-icons-premium-2.webp')).toString('base64');
+ const cellX={QUADRICEPS:192,HAMSTRINGS:384,GLUTES:576};
+ for(const spec of builder.specs){
+  const svg=fs.readFileSync(path.join(dir,spec.filename),'utf8');
+  assert.equal(svg,builder.renderIcon(spec,base64),'portrait must match its reproducible generator');
+  assert.ok(svg.includes('viewBox="'+cellX[spec.code]+' 0 192 192"'));
+  assert.match(svg,/clip-path="url\(#portrait-clip\)"/);
+  assert.match(svg,/viewBox="0 0 360 360"/);
+ }
+});
+
 test('muscle filter uses custom listbox yet keeps native select as source of truth',()=>{
  assert.match(html,/id="session-muscle-filter-button"/);
  assert.match(html,/id="session-muscle-filter-list"[\s\S]*?role="listbox"/);
