@@ -41,7 +41,7 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
      GLUTES:'muscle-icon-glutes.svg'
     };
     const filename=filenames[code];
-    const urlSuffix=filename.endsWith('.svg')?'?v=2':'';
+    const urlSuffix=code==='HAMSTRINGS'||code==='GLUTES'?'?v=3':filename.endsWith('.svg')?'?v=2':'';
     assert.ok(svg.includes('<image href="./'+filename+urlSuffix+'"'),code+' uses its own centered portrait');
     assert.match(svg,/mi-centered/);
     assert.match(svg,/x="0" y="0" width="64" height="64"/);
@@ -88,23 +88,23 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
  assert.match(icons.icon(''),/mi-accent/);
 });
 
-test('optimized lower-body portraits embed only one individually centered WebP',()=>{
+test('quadriceps is regenerable while redrawn muscles remain independent',()=>{
  const builder=require(path.resolve(__dirname,'../../../scripts/build-centered-muscle-icons.cjs'));
- const expected={QUADRICEPS:-9,HAMSTRINGS:-17,GLUTES:-18};
+ assert.deepEqual(builder.specs.map(spec=>spec.code),['QUADRICEPS']);
+ assert.equal(builder.specs[0].offsetX,-9);
  const atlas=fs.readFileSync(path.join(dir,'muscle-icons-premium-2.webp'));
- let totalSize=0;
- assert.equal(builder.specs.length,3);
- for(const spec of builder.specs){
-  assert.equal(spec.offsetX,expected[spec.code],'calibrated centering offset must remain stable');
-  const asset=fs.readFileSync(path.join(dir,spec.filename),'utf8');
+ let totalBytes=0;
+ for(const code of ['QUADRICEPS','HAMSTRINGS','GLUTES']){
+  const filename='muscle-icon-'+code.toLowerCase()+'.svg';
+  const asset=fs.readFileSync(path.join(dir,filename),'utf8');
   const match=asset.match(/href="data:image\/webp;base64,([A-Za-z0-9+/=]+)"/);
-  assert.ok(match,'a single cropped portrait is embedded');
+  assert.ok(match,code+' embeds its independent illustration');
   const decoded=Buffer.from(match[1],'base64');
-  assert.ok(decoded.length<30000,'portrait contains only the required source image');
-  assert.notDeepEqual(decoded,atlas,'original full atlas must not be embedded');
-  totalSize+=Buffer.byteLength(asset);
+  assert.ok(decoded.length<30000,code+' stays compact');
+  assert.notDeepEqual(decoded,atlas,code+' must not embed full atlas');
+  totalBytes+=Buffer.byteLength(asset);
  }
- assert.ok(totalSize<atlas.length,'all three optimized SVGs fit within a single atlas size');
+ assert.ok(totalBytes<atlas.length);
 });
 
 test('muscle filter uses custom listbox yet keeps native select as source of truth',()=>{
