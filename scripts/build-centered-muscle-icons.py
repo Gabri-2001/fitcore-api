@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the three centered lower-body FitCore portraits from atlas batch 2.
+"""Regenerate only the quadriceps icon from the second FitCore atlas.
 
-Only the matching 192x192 atlas cell is extracted for each muscle.
-Each generated 360px SVG embeds its own compressed WebP portrait, not the atlas.
+Glutes and hamstrings were redrawn as standalone anatomical illustrations.
+They must NEVER be regenerated from the legacy atlas by this script.
+The quadriceps SVG embeds only its own WebP crop, not the entire atlas.
 
 Requires Pillow: python -m pip install Pillow
 Run: python scripts/build-centered-muscle-icons.py
@@ -27,12 +28,10 @@ RADIUS = 174
 FEATHER = 12
 BG = (231, 242, 227)
 
-# The midline of the actual anatomy is to the right of the sprite cell centre.
+# Quadriceps source-cell anatomical midline needs an explicit correction.
 # Horizontal translations are measured in source pixels.
 SPECS = (
     ("QUADRICEPS", "Cuádriceps", "muscle-icon-quadriceps.svg", 1, -9),
-    ("HAMSTRINGS", "Isquiotibiales", "muscle-icon-hamstrings.svg", 2, -17),
-    ("GLUTES", "Glúteos", "muscle-icon-glutes.svg", 3, -18),
 )
 
 
