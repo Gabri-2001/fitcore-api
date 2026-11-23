@@ -52,7 +52,7 @@
     });
     // High-definition sprite atlas, 192x192 per cell, 4 columns x 2 rows.
     // Batch 1 is preserved, and batch 2 supplies seven additional detailed icons.
-    // Neck and full body retain their existing vector illustrations.
+    // Neck, full body and all-muscles use independent premium artwork.
     const PREMIUM=Object.freeze({
         CHEST:[0,0],BACK:[1,0],SHOULDERS:[2,0],SCAPULAR:[3,0],
         ROTATOR_CUFF:[0,1],BICEPS:[1,1],TRICEPS:[2,1]
@@ -73,7 +73,10 @@
         GLUTES:'./muscle-icon-glutes.svg?v=6',
         ADDUCTORS:'./muscle-icon-adductors.svg?v=1',
         CALVES:'./muscle-icon-calves.svg?v=1',
-        CORE:'./muscle-icon-core.svg?v=1'
+        CORE:'./muscle-icon-core.svg?v=1',
+        NECK:'./muscle-icon-neck.svg?v=1',
+        FULL_BODY:'./muscle-icon-full-body.svg?v=1',
+        ALL:'./muscle-icon-all.svg?v=1'
     });
     function centeredIcon(code,css){
         return '<svg class="'+css+' mi-premium mi-centered" viewBox="0 0 64 64" '+
@@ -95,12 +98,13 @@
             '" width="256" height="128" preserveAspectRatio="none"/></svg>';
     }
     function icon(code,options={}){
-        const art=ART[code||'ALL']||ART.ALL;
+        const selected=code||'ALL';
+        const art=ART[selected]||ART.ALL;
         const css=options.className||'fitcore-muscle-icon';
         if(!/^[a-zA-Z0-9 _-]+$/.test(css))throw new TypeError('Invalid icon class');
-        if(Object.prototype.hasOwnProperty.call(CENTERED,code))return centeredIcon(code,css);
-        if(Object.prototype.hasOwnProperty.call(PREMIUM,code) ||
-           Object.prototype.hasOwnProperty.call(PREMIUM_BATCH2,code))return premiumIcon(code,css);
+        if(Object.prototype.hasOwnProperty.call(CENTERED,selected))return centeredIcon(selected,css);
+        if(Object.prototype.hasOwnProperty.call(PREMIUM,selected) ||
+           Object.prototype.hasOwnProperty.call(PREMIUM_BATCH2,selected))return premiumIcon(selected,css);
         return '<svg class="'+css+'" viewBox="0 0 64 64" focusable="false" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'+
             '<circle class="mi-halo" cx="32" cy="32" r="30"/>'+
             (art.active?'<g class="mi-active">'+art.active+'</g>':'')+
