@@ -3,6 +3,7 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const crypto=require('node:crypto');
 const vm=require('node:vm');
 const dir=path.resolve(__dirname,'../../main/resources/static/fitcore-lab');
 const icons=require(path.join(dir,'muscle-picker-icons.js'));
@@ -41,7 +42,7 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
      GLUTES:'muscle-icon-glutes.svg'
     };
     const filename=filenames[code];
-    const urlSuffix=code==='HAMSTRINGS'||code==='GLUTES'?'?v=5':filename.endsWith('.svg')?'?v=2':'';
+    const urlSuffix=code==='HAMSTRINGS'||code==='GLUTES'?'?v=6':filename.endsWith('.svg')?'?v=2':'';
     assert.ok(svg.includes('<image href="./'+filename+urlSuffix+'"'),code+' uses its own centered portrait');
     assert.match(svg,/mi-centered/);
     assert.match(svg,/x="0" y="0" width="64" height="64"/);
@@ -106,6 +107,11 @@ test('quadriceps is regenerable while redrawn muscles remain independent',()=>{
   const decoded=Buffer.from(match[1],'base64');
   assert.ok(decoded.length<30000,code+' stays compact');
   assert.notDeepEqual(decoded,atlas,code+' must not embed full atlas');
+  if(code==='HAMSTRINGS'||code==='GLUTES'){
+   const expectedHash={HAMSTRINGS:'e42cebf5816e',GLUTES:'6d0fae63b4c3'}[code];
+   assert.equal(crypto.createHash('sha256').update(decoded).digest('hex').slice(0,12),expectedHash,
+    'keep the approved anatomy and color palette unchanged');
+  }
   totalBytes+=Buffer.byteLength(asset);
  }
  assert.ok(totalBytes<atlas.length*1.5,'standalone artwork stays far smaller than three copies of the atlas');
