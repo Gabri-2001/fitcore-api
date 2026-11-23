@@ -62,15 +62,15 @@
         FOREARMS:[0,0],QUADRICEPS:[1,0],HAMSTRINGS:[2,0],GLUTES:[3,0],
         ADDUCTORS:[0,1],CALVES:[1,1],CORE:[2,1]
     });
-    // Independent, centrally framed assets. Biceps and triceps are WebP;
-    // quadriceps, hamstrings and glutes are self-contained SVG portraits.
-    // Each SVG embeds the original artwork to avoid external atlas requests.
+    // All five portraits are independently centered. The three lower-body
+    // SVGs embed one cropped, compressed WebP each, never the original atlas.
+    // A revision query avoids stale icons after asset replacement.
     const CENTERED=Object.freeze({
         BICEPS:'./muscle-icon-biceps.webp',
         TRICEPS:'./muscle-icon-triceps.webp',
-        QUADRICEPS:'./muscle-icon-quadriceps.svg',
-        HAMSTRINGS:'./muscle-icon-hamstrings.svg',
-        GLUTES:'./muscle-icon-glutes.svg'
+        QUADRICEPS:'./muscle-icon-quadriceps.svg?v=2',
+        HAMSTRINGS:'./muscle-icon-hamstrings.svg?v=2',
+        GLUTES:'./muscle-icon-glutes.svg?v=2'
     });
     function centeredIcon(code,css){
         return '<svg class="'+css+' mi-premium mi-centered" viewBox="0 0 64 64" '+
