@@ -17,8 +17,8 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
   'CALVES','CORE','NECK','FULL_BODY'];
  assert.deepEqual([...icons.CODES],expected);
  const batch1=['CHEST','BACK','SHOULDERS','SCAPULAR','ROTATOR_CUFF'];
- const centered=['BICEPS','TRICEPS','QUADRICEPS','HAMSTRINGS','GLUTES'];
- const batch2=['FOREARMS','ADDUCTORS','CALVES','CORE'];
+ const centered=['BICEPS','TRICEPS','QUADRICEPS','HAMSTRINGS','GLUTES','ADDUCTORS','CALVES','CORE'];
+ const batch2=['FOREARMS'];
  const premium=[...batch1,...centered,...batch2];
  const vectorHighlights=[],positions1=[],positions2=[];
  for(const filename of ['muscle-icons-premium.webp','muscle-icons-premium-2.webp']){
@@ -39,10 +39,14 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
      TRICEPS:'muscle-icon-triceps.webp',
      QUADRICEPS:'muscle-icon-quadriceps.svg',
      HAMSTRINGS:'muscle-icon-hamstrings.svg',
-     GLUTES:'muscle-icon-glutes.svg'
+     GLUTES:'muscle-icon-glutes.svg',
+     ADDUCTORS:'muscle-icon-adductors.svg',
+     CALVES:'muscle-icon-calves.svg',
+     CORE:'muscle-icon-core.svg'
     };
     const filename=filenames[code];
-    const urlSuffix=code==='HAMSTRINGS'||code==='GLUTES'?'?v=6':filename.endsWith('.svg')?'?v=2':'';
+    const urlSuffix=['ADDUCTORS','CALVES','CORE'].includes(code)?'?v=1':
+     code==='HAMSTRINGS'||code==='GLUTES'?'?v=6':filename.endsWith('.svg')?'?v=2':'';
     assert.ok(svg.includes('<image href="./'+filename+urlSuffix+'"'),code+' uses its own centered portrait');
     assert.match(svg,/mi-centered/);
     assert.match(svg,/x="0" y="0" width="64" height="64"/);
@@ -88,7 +92,7 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
   }
  }
  assert.equal(new Set(positions1).size,5,'the other five batch-one sprites are unchanged');
- assert.equal(new Set(positions2).size,4,'four atlas illustrations remain after centering three portraits');
+ assert.equal(new Set(positions2).size,1,'only forearms still use atlas batch two');
  assert.equal(new Set(vectorHighlights).size,2,'neck and full body remain vector-based');
  assert.match(icons.icon(''),/mi-accent/);
 });
@@ -115,6 +119,30 @@ test('quadriceps is regenerable while redrawn muscles remain independent',()=>{
   totalBytes+=Buffer.byteLength(asset);
  }
  assert.ok(totalBytes<atlas.length*1.5,'standalone artwork stays far smaller than three copies of the atlas');
+});
+
+test('adductors calves and core retain their approved standalone artwork',()=>{
+ const expected={
+  ADDUCTORS:{bytes:12928,sha256:'3e7e1e32aae9b7acf0265e92df54be5391a632100419ec763cfda4360c57a2bd'},
+  CALVES:{bytes:10174,sha256:'63b326dde35e8072d50a77eb04df348ad8adf21c538d8655b4c15b5068267e85'},
+  CORE:{bytes:13892,sha256:'dd34fc232f91c54763281f3e9376f009d8251752bafe8bd21f490b6a212496ef'}
+ };
+ for(const [code,spec] of Object.entries(expected)){
+  const filename='muscle-icon-'+code.toLowerCase()+'.svg';
+  const svg=fs.readFileSync(path.join(dir,filename),'utf8');
+  assert.match(svg,/width="360" height="360" viewBox="0 0 360 360"/);
+  const images=[...svg.matchAll(/href="data:image\/webp;base64,([A-Za-z0-9+/=]+)"/g)];
+  assert.equal(images.length,1,code+' embeds exactly one independent image');
+  const data=Buffer.from(images[0][1],'base64');
+  assert.equal(data.length,spec.bytes);
+  assert.equal(crypto.createHash('sha256').update(data).digest('hex'),spec.sha256);
+  assert.equal(data.toString('ascii',0,4),'RIFF');
+  assert.equal(data.toString('ascii',8,12),'WEBP');
+  assert.equal(data.readUIntLE(24,3)+1,360);
+  assert.equal(data.readUIntLE(27,3)+1,360);
+  assert.doesNotMatch(svg,/<clipPath|<mask|<image[^>]*href="https?:\/\//);
+  assert.ok(icons.icon(code).includes('./'+filename+'?v=1'));
+ }
 });
 
 test('muscle filter uses custom listbox yet keeps native select as source of truth',()=>{

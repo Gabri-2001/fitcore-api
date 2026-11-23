@@ -57,20 +57,23 @@
         CHEST:[0,0],BACK:[1,0],SHOULDERS:[2,0],SCAPULAR:[3,0],
         ROTATOR_CUFF:[0,1],BICEPS:[1,1],TRICEPS:[2,1]
     });
-    // Second batch retains the same 4×2 sprite layout and visual treatment.
+    // Only forearms still use atlas batch 2. Other lower-body/core
+    // anatomical portraits are independently framed and optimized.
     const PREMIUM_BATCH2=Object.freeze({
-        FOREARMS:[0,0],QUADRICEPS:[1,0],HAMSTRINGS:[2,0],GLUTES:[3,0],
-        ADDUCTORS:[0,1],CALVES:[1,1],CORE:[2,1]
+        FOREARMS:[0,0]
     });
-    // All five portraits have individual framing. Glutes and hamstrings are
-    // newly illustrated instead of atlas crops; their SVGs embed only their
-    // own WebP portrait. A revision query avoids stale browser caches.
+    // Individual portraits avoid crop bleed and keep artwork centered.
+    // Each SVG embeds only its own compressed WebP, never the whole atlas.
+    // Revision query parameters prevent stale browser caches.
     const CENTERED=Object.freeze({
         BICEPS:'./muscle-icon-biceps.webp',
         TRICEPS:'./muscle-icon-triceps.webp',
         QUADRICEPS:'./muscle-icon-quadriceps.svg?v=2',
         HAMSTRINGS:'./muscle-icon-hamstrings.svg?v=6',
-        GLUTES:'./muscle-icon-glutes.svg?v=6'
+        GLUTES:'./muscle-icon-glutes.svg?v=6',
+        ADDUCTORS:'./muscle-icon-adductors.svg?v=1',
+        CALVES:'./muscle-icon-calves.svg?v=1',
+        CORE:'./muscle-icon-core.svg?v=1'
     });
     function centeredIcon(code,css){
         return '<svg class="'+css+' mi-premium mi-centered" viewBox="0 0 64 64" '+
