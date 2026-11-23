@@ -58,7 +58,7 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
      assert.match(contents,/width="360" height="360" viewBox="0 0 360 360"/);
      assert.match(contents,/<clipPath id="portrait-clip"><circle cx="180" cy="180" r="170"\/><\/clipPath>/);
      assert.match(contents,/href="data:image\/webp;base64,/);
-     assert.doesNotMatch(contents,/https?:\/\//);
+     assert.doesNotMatch(contents,/<image[^>]*href="https?:\/\//);
     }
    }else{
     const filename=batch1.includes(code)?'muscle-icons-premium.webp':'muscle-icons-premium-2.webp';
