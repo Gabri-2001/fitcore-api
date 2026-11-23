@@ -41,7 +41,7 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
      GLUTES:'muscle-icon-glutes.svg'
     };
     const filename=filenames[code];
-    const urlSuffix=code==='HAMSTRINGS'||code==='GLUTES'?'?v=4':filename.endsWith('.svg')?'?v=2':'';
+    const urlSuffix=code==='HAMSTRINGS'||code==='GLUTES'?'?v=5':filename.endsWith('.svg')?'?v=2':'';
     assert.ok(svg.includes('<image href="./'+filename+urlSuffix+'"'),code+' uses its own centered portrait');
     assert.match(svg,/mi-centered/);
     assert.match(svg,/x="0" y="0" width="64" height="64"/);
@@ -69,6 +69,10 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
      assert.equal(webp.readUIntLE(24,3)+1,360);
      assert.equal(webp.readUIntLE(27,3)+1,360);
      assert.doesNotMatch(contents,/<image[^>]*href="https?:\/\//);
+     if(code==='HAMSTRINGS'||code==='GLUTES'){
+      assert.match(contents,/independently approved anatomical design; no atlas crop/);
+      assert.doesNotMatch(contents,/<clipPath|<mask/,'new artwork needs no additional SVG clipping or masks');
+     }
     }
    }else{
     const filename=batch1.includes(code)?'muscle-icons-premium.webp':'muscle-icons-premium-2.webp';

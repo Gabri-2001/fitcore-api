@@ -69,8 +69,8 @@
         BICEPS:'./muscle-icon-biceps.webp',
         TRICEPS:'./muscle-icon-triceps.webp',
         QUADRICEPS:'./muscle-icon-quadriceps.svg?v=2',
-        HAMSTRINGS:'./muscle-icon-hamstrings.svg?v=4',
-        GLUTES:'./muscle-icon-glutes.svg?v=4'
+        HAMSTRINGS:'./muscle-icon-hamstrings.svg?v=5',
+        GLUTES:'./muscle-icon-glutes.svg?v=5'
     });
     function centeredIcon(code,css){
         return '<svg class="'+css+' mi-premium mi-centered" viewBox="0 0 64 64" '+
