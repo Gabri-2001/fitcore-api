@@ -41,7 +41,8 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
      GLUTES:'muscle-icon-glutes.svg'
     };
     const filename=filenames[code];
-    assert.ok(svg.includes('<image href="./'+filename+'"'),code+' uses its own centered portrait');
+    const urlSuffix=filename.endsWith('.svg')?'?v=2':'';
+    assert.ok(svg.includes('<image href="./'+filename+urlSuffix+'"'),code+' uses its own centered portrait');
     assert.match(svg,/mi-centered/);
     assert.match(svg,/x="0" y="0" width="64" height="64"/);
     assert.match(svg,/preserveAspectRatio="xMidYMid meet"/);
@@ -56,8 +57,17 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
     }else{
      const contents=asset.toString('utf8');
      assert.match(contents,/width="360" height="360" viewBox="0 0 360 360"/);
-     assert.match(contents,/<clipPath id="portrait-clip"><circle cx="180" cy="180" r="170"\/><\/clipPath>/);
-     assert.match(contents,/href="data:image\/webp;base64,/);
+     assert.match(contents,/<image x="0" y="0" width="360" height="360"/);
+     const encoded=contents.match(/href="data:image\/webp;base64,([A-Za-z0-9+/=]+)"/);
+     assert.ok(encoded,'only its own cropped WebP is embedded');
+     const webp=Buffer.from(encoded[1],'base64');
+     assert.ok(webp.length<30000,'compressed source is smaller than the original atlas');
+     assert.ok(contents.length<40000,'the SVG must not include the whole atlas');
+     assert.equal(webp.toString('ascii',0,4),'RIFF');
+     assert.equal(webp.toString('ascii',8,12),'WEBP');
+     assert.equal(webp.toString('ascii',12,16),'VP8X');
+     assert.equal(webp.readUIntLE(24,3)+1,360);
+     assert.equal(webp.readUIntLE(27,3)+1,360);
      assert.doesNotMatch(contents,/<image[^>]*href="https?:\/\//);
     }
    }else{
@@ -78,17 +88,23 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
  assert.match(icons.icon(''),/mi-accent/);
 });
 
-test('three lower-body portraits are independently framed and reproducible',()=>{
+test('optimized lower-body portraits embed only one individually centered WebP',()=>{
  const builder=require(path.resolve(__dirname,'../../../scripts/build-centered-muscle-icons.cjs'));
- const base64=fs.readFileSync(path.join(dir,'muscle-icons-premium-2.webp')).toString('base64');
- const cellX={QUADRICEPS:192,HAMSTRINGS:384,GLUTES:576};
+ const expected={QUADRICEPS:-9,HAMSTRINGS:-17,GLUTES:-18};
+ const atlas=fs.readFileSync(path.join(dir,'muscle-icons-premium-2.webp'));
+ let totalSize=0;
+ assert.equal(builder.specs.length,3);
  for(const spec of builder.specs){
-  const svg=fs.readFileSync(path.join(dir,spec.filename),'utf8');
-  assert.equal(svg,builder.renderIcon(spec,base64),'portrait must match its reproducible generator');
-  assert.ok(svg.includes('viewBox="'+cellX[spec.code]+' 0 192 192"'));
-  assert.match(svg,/clip-path="url\(#portrait-clip\)"/);
-  assert.match(svg,/viewBox="0 0 360 360"/);
+  assert.equal(spec.offsetX,expected[spec.code],'calibrated centering offset must remain stable');
+  const asset=fs.readFileSync(path.join(dir,spec.filename),'utf8');
+  const match=asset.match(/href="data:image\/webp;base64,([A-Za-z0-9+/=]+)"/);
+  assert.ok(match,'a single cropped portrait is embedded');
+  const decoded=Buffer.from(match[1],'base64');
+  assert.ok(decoded.length<30000,'portrait contains only the required source image');
+  assert.notDeepEqual(decoded,atlas,'original full atlas must not be embedded');
+  totalSize+=Buffer.byteLength(asset);
  }
+ assert.ok(totalSize<atlas.length,'all three optimized SVGs fit within a single atlas size');
 });
 
 test('muscle filter uses custom listbox yet keeps native select as source of truth',()=>{
