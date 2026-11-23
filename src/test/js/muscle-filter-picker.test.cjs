@@ -41,7 +41,7 @@ test('every catalog muscle group has a distinct vector anatomical highlight',()=
      GLUTES:'muscle-icon-glutes.svg'
     };
     const filename=filenames[code];
-    const urlSuffix=code==='HAMSTRINGS'||code==='GLUTES'?'?v=3':filename.endsWith('.svg')?'?v=2':'';
+    const urlSuffix=code==='HAMSTRINGS'||code==='GLUTES'?'?v=4':filename.endsWith('.svg')?'?v=2':'';
     assert.ok(svg.includes('<image href="./'+filename+urlSuffix+'"'),code+' uses its own centered portrait');
     assert.match(svg,/mi-centered/);
     assert.match(svg,/x="0" y="0" width="64" height="64"/);
