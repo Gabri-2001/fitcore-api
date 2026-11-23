@@ -15,6 +15,8 @@ public class WorkoutSessionResponse {
     private Long workoutDayId;
     private LocalDate sessionDate;
     private WorkoutSessionCategory sessionCategory;
+    private com.gabri.fitcoreapi.workout.domain.WorkoutDayType trainingDayType;
+    private boolean trainingDayTypeManual;
     private WorkoutSessionIntensity sessionIntensity;
     private Integer durationMinutes;
     private String notes;
@@ -47,7 +49,7 @@ public class WorkoutSessionResponse {
     }
 
     public static WorkoutSessionResponse from(WorkoutSession workoutSession) {
-        return new WorkoutSessionResponse(
+        WorkoutSessionResponse response = new WorkoutSessionResponse(
                 workoutSession.getId(),
                 workoutSession.getWorkoutDay() != null ? workoutSession.getWorkoutDay().getId() : null,
                 workoutSession.getSessionDate(),
@@ -59,8 +61,13 @@ public class WorkoutSessionResponse {
                 workoutSession.getStatus(),
                 workoutSession.getCompletedAt()
         );
+        response.trainingDayType = workoutSession.getTrainingDayType();
+        response.trainingDayTypeManual = workoutSession.isTrainingDayTypeManual();
+        return response;
     }
 
+    public com.gabri.fitcoreapi.workout.domain.WorkoutDayType getTrainingDayType() { return trainingDayType; }
+    public boolean isTrainingDayTypeManual() { return trainingDayTypeManual; }
     public Long getId() {
         return id;
     }

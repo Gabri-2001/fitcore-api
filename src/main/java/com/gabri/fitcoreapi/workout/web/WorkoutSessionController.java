@@ -36,19 +36,33 @@ public class WorkoutSessionController {
             @Parameter(description = "User id") @PathVariable Long userId,
             @Valid @RequestBody CreateWorkoutSessionRequest request
     ) {
-        WorkoutSession workoutSession = workoutSessionService.createWorkoutSession(
-                userId,
-                request.getWorkoutDayId(),
-                request.getSessionDate(),
-                request.getSessionCategory(),
-                request.getSessionIntensity(),
-                request.getDurationMinutes(),
-                request.getNotes(),
-                request.getEstimatedTotalCaloriesBurned()
-        );
+        // Requests from older clients keep the original service entry point.
+        // The new type-aware path is used only when the user supplies a choice.
+        WorkoutSession workoutSession = request.getTrainingDayType() == null
+                && !request.isTrainingDayTypeManual()
+                ? workoutSessionService.createWorkoutSession(
+                        userId, request.getWorkoutDayId(), request.getSessionDate(),
+                        request.getSessionCategory(), request.getSessionIntensity(),
+                        request.getDurationMinutes(), request.getNotes(),
+                        request.getEstimatedTotalCaloriesBurned())
+                : workoutSessionService.createWorkoutSession(
+                        userId, request.getWorkoutDayId(), request.getSessionDate(),
+                        request.getSessionCategory(), request.getSessionIntensity(),
+                        request.getDurationMinutes(), request.getNotes(),
+                        request.getEstimatedTotalCaloriesBurned(), request.getTrainingDayType(),
+                        request.isTrainingDayTypeManual());
 
         URI location = URI.create("/api/users/" + userId + "/workout-sessions/" + workoutSession.getId());
         return ResponseEntity.created(location).body(WorkoutSessionResponse.from(workoutSession));
+    }
+
+    @Operation(summary = "Load the exercises of the linked plan day into an empty, in-progress session")
+    @PostMapping("/{workoutSessionId}/import-planned-exercises")
+    public WorkoutSessionResponse importPlannedExercises(
+            @PathVariable Long userId, @PathVariable Long workoutSessionId
+    ) {
+        return WorkoutSessionResponse.from(
+                workoutSessionService.importPlannedExercises(userId, workoutSessionId));
     }
 
     @Operation(summary = "Get workout sessions of a user, optionally filtered by date range")
@@ -92,7 +106,8 @@ public class WorkoutSessionController {
         return WorkoutSessionResponse.from(workoutSessionService.updateWorkoutSession(
                 userId, workoutSessionId, request.sessionDate(), request.sessionCategory(),
                 request.sessionIntensity(), request.durationMinutes(), request.notes(),
-                request.estimatedTotalCaloriesBurned()));
+                request.estimatedTotalCaloriesBurned(), request.trainingDayType(),
+                request.trainingDayTypeManual()));
     }
 
     @Operation(summary = "Complete an in-progress workout session")

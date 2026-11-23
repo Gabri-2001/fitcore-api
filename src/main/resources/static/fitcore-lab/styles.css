@@ -78,6 +78,9 @@ input:hover, select:hover, textarea:hover { border-color: #aebdb6; }
 .button-primary { color: var(--green); background: var(--lime); }.button-primary:hover { background: #afe449; }
 .button-secondary { color: var(--green); background: white; border-color: #bfcac5; }.button-secondary:hover { border-color: var(--green-2); background: #f8faf7; }
 .button-ghost { color: var(--green); background: transparent; border-color: var(--line); }.button-block { width: 100%; }
+.catalog-pagination { justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.catalog-pagination[hidden] { display: none; }
+.catalog-pagination span { color: var(--muted); font-size: 11px; font-weight: 700; }
 .text-button { padding: 4px; border: 0; color: var(--green-2); background: transparent; font-size: 11px; font-weight: 800; }.danger { color: var(--red); }
 .icon-button { display: inline-grid; place-items: center; width: 42px; height: 42px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 11px; color: var(--ink); background: white; font-weight: 900; }
 .status-pill { padding: 6px 9px; border-radius: 999px; color: #596a64; background: #edf0ed; white-space: nowrap; font-size: 10px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
@@ -1777,6 +1780,64 @@ body.resting .toast-region { bottom: 190px; }
     text-align: center;
 }
 
+/* Use the same compact +/- input pattern as the plan-day rows. */
+.plan-picker-numbers .plan-picker-stepper {
+    display:grid;
+    grid-template-columns:30px minmax(0,1fr) 30px;
+    width:100%;
+    min-width:0;
+    min-height:42px;
+    margin:0;
+    overflow:hidden;
+    border:1px solid #cdd8d2;
+    border-radius:11px;
+    background:#fff;
+}
+.plan-picker-numbers .plan-picker-stepper button {
+    min-width:0;
+    min-height:40px;
+    padding:0;
+    border:0;
+    color:var(--green);
+    background:transparent;
+    font-size:18px;
+    font-weight:850;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+}
+.plan-picker-numbers .plan-picker-stepper button:hover,
+.plan-picker-numbers .plan-picker-stepper button:active {
+    background:var(--lime-soft);
+}
+.plan-picker-numbers .plan-picker-stepper input {
+    min-width:0;
+    width:100%;
+    min-height:40px;
+    margin:0;
+    padding:4px 0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    text-align:center;
+    font-size:13px;
+    font-weight:850;
+    appearance:textfield;
+}
+.plan-picker-numbers .plan-picker-time-stepper input {
+    font-size:12px;
+    letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;
+}
+.plan-picker-numbers .plan-picker-stepper input::-webkit-inner-spin-button,
+.plan-picker-numbers .plan-picker-stepper input::-webkit-outer-spin-button {
+    appearance:none;
+}
+.plan-picker-numbers .plan-picker-stepper:focus-within {
+    border-color:#a0d94c;
+    box-shadow:0 0 0 3px rgba(189,241,90,.3);
+}
+
 .plan-picker-fields p {
     margin: 0;
 
@@ -2894,4 +2955,1622 @@ body.resting .toast-region { bottom: 190px; }
     #plan-advanced-config-dialog .plan-advanced-extra-fields {
         grid-template-columns: 1fr;
     }
+}
+
+
+/* FitCore · Configuración de la variante antes de añadir al plan */
+.picker-selected-configurable { grid-template-columns: 70px minmax(0,1fr) auto; gap: 12px; }
+.picker-selected-configurable .picker-selected-copy { min-width: 0; }
+.picker-config-toggle { align-self: start; display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 11px; border: 1px solid #cfdcd5; border-radius: 10px;
+    background: white; color: var(--green-2); font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.picker-config-toggle span:first-child { font-size: 17px; line-height: 1; }
+.picker-config-toggle:hover, .picker-config-toggle[aria-expanded="true"] { background: #edf7e9; border-color: var(--green-2); }
+.picker-config-toggle:focus-visible, .picker-config-editor select:focus-visible { outline: 3px solid #b9ef65; outline-offset: 2px; }
+.picker-config-editor { margin-top: 14px; padding: 15px; border: 1px solid #d7e2dc;
+    border-radius: 14px; background: white; }
+.picker-config-help { margin: 0 0 13px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.picker-config-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.picker-config-fields label { min-width: 0; font-size: 11px; }
+.picker-config-fields select { display: block; width: 100%; margin-top: 6px; background: white; }
+.picker-config-fields .plan-advanced-more, .picker-config-fields .plan-advanced-exact-choice,
+.picker-config-fields .plan-advanced-no-fields { grid-column: 1 / -1; }
+.picker-config-fields .plan-advanced-more { padding: 12px; border: 1px solid var(--line);
+    border-radius: 11px; background: #f8faf7; }
+.picker-config-fields .plan-advanced-more summary { cursor: pointer; color: var(--green-2);
+    font-size: 11px; font-weight: 800; }
+.picker-config-fields .plan-advanced-more p { color: var(--muted); font-size: 10px; }
+.picker-config-fields .plan-advanced-extra-fields { display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 10px; }
+.picker-config-footer { display: flex; justify-content: flex-end; margin-top: 12px; }
+.picker-config-footer .button { min-height: 36px; padding: 7px 12px; font-size: 10px; }
+@media (max-width: 680px) {
+    .picker-selected-configurable { grid-template-columns: 52px minmax(0,1fr); }
+    .picker-selected-configurable .picker-selected-thumb { width: 52px; height: 52px; }
+    .picker-config-toggle { grid-column: 1 / -1; justify-content: center; }
+    .picker-config-fields, .picker-config-fields .plan-advanced-extra-fields { grid-template-columns: 1fr; }
+}
+
+/* Selector FitCore: diálogo de configuración centrado */
+#picker-variant-dialog.picker-variant-dialog {
+    position: fixed; inset: 0; margin: auto;
+    width: min(780px, calc(100vw - 28px)); max-width: 780px;
+    /* Una medición del contenido de ESTE ejercicio determina la altura
+       cuando se abre. Los cambios posteriores no la modifican. */
+    height: min(var(--picker-variant-height, 520px), calc(100dvh - 24px));
+    max-height: min(800px, calc(100dvh - 24px));
+    padding: 0; overflow: hidden; border: 1px solid #d6e2da;
+    border-radius: 20px; background: #fff;
+    box-shadow: 0 28px 100px rgba(8, 35, 26, .30);
+}
+#picker-variant-dialog::backdrop { background: rgba(10, 31, 23, .62); backdrop-filter: blur(3px); }
+.picker-variant-modal-shell { display: grid; grid-template-rows: auto minmax(0,1fr) auto;
+    height: 100%; min-height: 0; max-height: 100%; }
+.picker-variant-heading { align-items: flex-start; }
+.picker-variant-heading h2 { font-size: 22px; }
+.picker-variant-dialog-body { display: grid; grid-template-columns: minmax(215px,.7fr) minmax(0,1.3fr);
+    align-items: start; gap: 20px; min-height: 0; padding: 22px 26px; overflow-y: auto;
+    overscroll-behavior: contain; background: #fbfcfa; }
+.picker-variant-identity { display: grid; grid-template-columns: minmax(0,1fr);
+    align-content: start; justify-items: start; gap: 12px; padding: 18px;
+    border: 1px solid var(--line); border-radius: 14px; background: #f2f7f3; }
+/* Misma superficie de miniatura que el selector del plan (#e7ede8):
+   icono ARRIBA y texto DEBAJO, como en la composición original. */
+.picker-variant-identity > .picker-variant-thumb {
+    display: grid; place-items: center;
+    width: 80px; height: 80px; max-width: 100%; object-fit: cover;
+    border: 1px solid #d4e0d7; border-radius: 14px;
+    background: #e7ede8; color: #155d46;
+}
+.picker-variant-identity > div { min-width: 0; overflow-wrap: anywhere; }
+.picker-variant-identity h3 { margin: 5px 0; font-size: 17px; }
+.picker-variant-identity p:not(.eyebrow) { margin: 0; color: var(--muted);
+    font-size: 11px; line-height: 1.5; }
+.picker-variant-workspace { min-width: 0; }
+.picker-variant-dialog-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr));
+    align-content: start; gap: 12px; }
+.picker-variant-dialog-fields label { min-width: 0; font-size: 11px; font-weight: 750; }
+.picker-variant-dialog-fields select { display: block; width: 100%; margin-top: 6px; background: white; }
+.picker-variant-dialog-fields .plan-advanced-more,
+.picker-variant-dialog-fields .plan-advanced-exact-choice,
+.picker-variant-dialog-fields .plan-advanced-no-fields { grid-column: 1/-1; }
+.picker-variant-dialog-fields .plan-advanced-more { padding: 13px; border: 1px solid var(--line);
+    border-radius: 12px; background: #f3f8f4; }
+.picker-variant-dialog-fields .plan-advanced-more summary { cursor: pointer;
+    color: var(--green-2); font-size: 11px; font-weight: 800; }
+.picker-variant-dialog-fields .plan-advanced-more p { color: var(--muted); font-size: 11px; }
+.picker-variant-dialog-fields .plan-advanced-extra-fields { display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; margin-top: 11px; }
+.picker-variant-dialog-result { margin-top: 16px; padding: 16px; border: 1px solid #d7e3db;
+    border-radius: 14px; background: white; }
+.picker-variant-dialog-result > span { display: block; margin-bottom: 7px; color: var(--muted);
+    font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.picker-variant-dialog-result > strong { display: block; font-size: 14px; }
+.picker-variant-dialog-result small { display: block; margin-top: 9px; color: var(--muted); font-size: 11px; }
+.picker-variant-dialog-actions { justify-content: space-between; align-items: center; }
+.picker-variant-dialog-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+#picker-variant-dialog select:focus-visible, #picker-variant-dialog button:focus-visible {
+    outline: 3px solid #b8ed63; outline-offset: 2px; }
+@media (max-width: 640px) {
+    .picker-variant-heading h2 { font-size: 19px; }
+    .picker-variant-dialog-body { grid-template-columns: 1fr; padding: 16px; gap: 14px; }
+    .picker-variant-identity { grid-template-columns: minmax(0,1fr); justify-items: start; }
+    .picker-variant-identity > .picker-variant-thumb { width: 60px; height: 60px; }
+    .picker-variant-dialog-fields,
+    .picker-variant-dialog-fields .plan-advanced-extra-fields { grid-template-columns: 1fr; }
+    .picker-variant-dialog-actions { flex-wrap: wrap; }
+}
+
+/* F34 · Progress by exercise: fixed cards and responsive SVG, no fake data. */
+.exercise-progress-panel {padding:24px; margin-top:20px;}
+.exercise-progress-controls {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px;}
+.exercise-progress-controls label {min-width:0;}
+.exercise-progress-controls select {width:100%;margin-top:6px;}
+.exercise-progress-highlights {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0;}
+.exercise-progress-highlight {padding:15px;border:1px solid #d9e4dd;border-radius:12px;background:#f5f8f5;}
+.exercise-progress-highlight small,.exercise-progress-highlight strong {display:block;}
+.exercise-progress-highlight small {color:var(--muted);margin-bottom:7px;}
+.exercise-progress-highlight strong {font-size:21px;color:var(--green);}
+.exercise-progress-chart {min-height:210px;padding:16px 8px;border:1px solid var(--line);border-radius:14px;background:#fff;}
+.exercise-progress-chart svg {display:block;width:100%;height:auto;max-height:290px;color:#526c60;}
+.exercise-progress-chart text {fill:currentColor;}
+.exercise-progress-chart .empty-state {border:none;}
+.exercise-progress-footnote {margin:12px 0 0;color:var(--muted);font-size:11px;line-height:1.55;}
+@media (max-width:700px){
+ .exercise-progress-controls {grid-template-columns:1fr;}
+ .exercise-progress-highlights {grid-template-columns:1fr 1fr;}
+}
+
+/* FitCore · Editor de planes: selector A y resumen real a la derecha.
+   Las filas, modales, menús y eventos siguen usando los componentes existentes. */
+#view-plans .plan-overview {padding:16px 20px;gap:18px;border-radius:20px;}
+#view-plans .plan-overview-icon {width:52px;height:52px;background:#e0f2e3;}
+#view-plans .plan-overview-actions {gap:9px;}
+#view-plans .plan-overview-actions .button {min-height:43px;padding:9px 14px;font-size:12px;}
+#view-plans .plan-save-button {min-width:165px;}
+#view-plans .plan-active-badge {padding:6px 10px;background:#d4fa91;}
+#view-plans .plan-page-intro {margin-bottom:14px;}
+
+#view-plans .plan-days-panel {margin-top:16px;padding:17px 18px 14px;
+    border:1px solid var(--line);border-radius:20px;background:#fff;
+    box-shadow:0 6px 22px rgba(18,63,53,.035);}
+#view-plans .plan-days-panel-heading {display:flex;align-items:center;
+    justify-content:space-between;gap:12px;margin-bottom:12px;}
+#view-plans .plan-days-panel-heading h2 {display:flex;align-items:center;
+    flex-wrap:wrap;gap:9px;margin:0;font-size:17px;letter-spacing:-.025em;}
+#view-plans .plan-days-panel-heading h2>span {color:var(--green);}
+#view-plans #plan-days-count {font-size:11px;font-weight:650;letter-spacing:0;color:var(--muted);}
+#view-plans .plan-days-drag-hint {white-space:nowrap;color:var(--green-2);font-size:11px;font-weight:750;}
+#view-plans .plan-day-tabs {margin:0;padding:2px 1px 7px;gap:9px;scroll-snap-type:x proximity;}
+#view-plans .plan-day-tab {flex:0 0 clamp(158px,14vw,208px);
+    grid-template-columns:32px minmax(0,1fr) 12px;min-width:0;min-height:80px;
+    gap:9px;padding:10px;border-radius:13px;scroll-snap-align:start;}
+#view-plans .plan-day-tab-icon {width:32px;height:32px;background:#edf4ee;}
+#view-plans .plan-day-tab.is-selected .plan-day-tab-icon {background:#daf69e;}
+#view-plans .plan-day-tab strong {white-space:normal;overflow:visible;
+    overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;line-height:1.25;}
+#view-plans .plan-day-tab em {margin-top:4px;}
+#view-plans .plan-day-add {flex:0 0 134px;min-width:134px;min-height:80px;
+    border-radius:13px;scroll-snap-align:end;}
+
+#view-plans .plan-days {min-width:0;margin-top:16px;}
+#view-plans .plan-editor-layout {display:grid;grid-template-columns:minmax(0,1.85fr) minmax(300px,1fr);
+    align-items:start;gap:16px;min-width:0;}
+#view-plans .plan-day-editor,
+#view-plans .plan-session-summary {min-width:0;min-height:100%;
+    overflow:visible;border:1px solid var(--line);border-radius:20px;
+    background:#fff;box-shadow:0 10px 30px rgba(18,63,53,.045);}
+#view-plans .plan-day-editor {overflow:hidden;}
+#view-plans .plan-day-editor-head {display:flex;align-items:center;
+    justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 18px;}
+#view-plans .plan-day-title {display:flex;align-items:center;flex-wrap:wrap;
+    gap:7px 10px;min-width:0;font-size:23px;line-height:1.2;}
+#view-plans .plan-day-title .plan-day-eyebrow {flex-basis:100%;
+    color:var(--muted);font-size:10px;font-weight:850;letter-spacing:.11em;}
+#view-plans .plan-day-title span::after {content:none;}
+#view-plans .plan-day-title h3 {margin:0;min-width:0;font-size:23px;
+    font-weight:850;letter-spacing:-.035em;overflow-wrap:anywhere;}
+#view-plans .plan-day-type-badge {margin:0;}
+#view-plans .plan-day-controls {display:flex;flex-wrap:wrap;gap:8px;
+    justify-content:flex-end;align-items:center;}
+#view-plans .plan-day-controls .button {min-height:39px;padding:8px 12px;
+    font-size:11px;white-space:nowrap;}
+#view-plans .plan-exercise-table {width:100%;min-width:0;overflow-x:auto;
+    overscroll-behavior-x:contain;}
+#view-plans .plan-exercise-columns,
+#view-plans .exercise-editor {grid-template-columns:minmax(220px,1fr)
+    94px 104px 112px 46px;min-width:630px;}
+#view-plans .plan-exercise-columns {padding:10px 12px 10px 50px;}
+#view-plans .exercise-editor {padding:10px 11px 10px 51px;min-height:72px;}
+#view-plans .plan-order-controls {left:7px;}
+#view-plans .plan-exercise-identity {grid-template-columns:38px minmax(0,1fr);
+    gap:8px;padding-right:5px;}
+#view-plans .plan-exercise-thumb {width:38px;height:38px;}
+#view-plans .plan-stepper {width:calc(100% - 5px);min-width:0;
+    grid-template-columns:23px minmax(20px,1fr) auto 23px;}
+#view-plans .plan-stepper button {font-size:15px;}
+#view-plans .plan-stepper input {font-size:12px;}
+#view-plans .plan-row-actions {min-width:34px;}
+
+#view-plans .plan-session-summary {padding:17px 17px 14px;container-type:inline-size;}
+#view-plans .plan-session-summary-heading {display:flex;align-items:center;
+    gap:9px;margin-bottom:16px;}
+#view-plans .plan-session-summary-heading h3 {margin:0;font-size:17px;
+    line-height:1.3;letter-spacing:-.025em;}
+#view-plans .plan-session-summary-mark {font-size:22px;color:var(--green);}
+#view-plans .plan-day-muscle-area {width:100%;min-width:0;}
+#view-plans .plan-day-muscle-button {display:grid;grid-template-columns:minmax(0,1.1fr) minmax(105px,.85fr);
+    width:100%;height:auto;min-height:220px;align-items:center;gap:12px;
+    padding:0 0 15px;border:0;border-bottom:1px solid var(--line);
+    border-radius:0;background:transparent;box-shadow:none;cursor:pointer;}
+#view-plans .plan-day-muscle-button:hover {background:transparent;}
+#view-plans .plan-day-muscle-mini {display:grid;place-items:center;width:100%;
+    height:220px;min-width:0;min-height:0;max-width:100%;padding:0;
+    margin:0;overflow:visible;border:0;border-radius:0;background:transparent;}
+#view-plans .plan-day-muscle-mini>svg {display:block;width:100%!important;
+    height:100%!important;max-width:100%;max-height:100%;overflow:visible;
+    opacity:1!important;transform:none!important;filter:none!important;
+    border-radius:0;clip-path:none;}
+#view-plans .plan-day-muscle-copy {display:grid;align-content:center;gap:8px;
+    min-width:0;overflow:visible;}
+#view-plans .plan-day-muscle-title {font-size:12px;white-space:normal;}
+#view-plans .plan-day-muscle-list {display:grid;gap:7px;}
+#view-plans .plan-day-muscle-row {font-size:11px;line-height:1.3;white-space:normal;}
+#view-plans .plan-day-muscle-row>span {white-space:normal;overflow-wrap:anywhere;}
+#view-plans .plan-day-muscle-dot.is-high {background:#79d314;}
+#view-plans .plan-day-muscle-dot.is-medium {background:#a7e535;}
+#view-plans .plan-day-muscle-dot.is-low {background:#c9ec8e;}
+#view-plans #plan-day-muscle-caption {margin-top:4px;font-size:10px;}
+#view-plans .plan-session-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    padding:15px 0 7px;gap:0;}
+#view-plans .plan-session-metric {display:grid;align-content:center;justify-items:center;
+    gap:4px;min-width:0;padding:1px 6px;text-align:center;}
+#view-plans .plan-session-metric+.plan-session-metric {border-left:1px solid var(--line);}
+#view-plans .plan-session-metric strong {font-size:19px;color:var(--ink);
+    font-weight:850;line-height:1.15;overflow-wrap:anywhere;}
+#view-plans .plan-session-metric span {color:var(--muted);font-size:10px;}
+#view-plans .plan-session-context {margin:12px 0 0;padding:11px 12px;
+    border-radius:12px;color:var(--green);background:#edf8e9;
+    font-size:11px;line-height:1.5;}
+#view-plans .plan-session-context[hidden] {display:none;}
+
+@container (max-width: 360px) {
+    .plan-day-muscle-button {grid-template-columns:1fr;gap:6px;}
+    .plan-day-muscle-mini {height:195px;}
+    .plan-day-muscle-copy {padding:0 8px;}
+    .plan-day-muscle-list {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+/* Contenedor por columna: no se usa un selector de ancestros dentro del
+   @container porque #view-plans está fuera de ese contexto de consulta. */
+@media (min-width:1191px) and (max-width:1450px) {
+    #view-plans .plan-day-muscle-button {grid-template-columns:1fr;}
+    #view-plans .plan-day-muscle-mini {height:210px;}
+    #view-plans .plan-day-muscle-list {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width: 1190px) {
+    #view-plans .plan-editor-layout {grid-template-columns:minmax(0,1fr);}
+    #view-plans .plan-day-editor-head {align-items:center;}
+    #view-plans .plan-exercise-columns,#view-plans .exercise-editor {min-width:650px;}
+    #view-plans .plan-session-summary {min-height:0;}
+    #view-plans .plan-day-muscle-mini {height:230px;}
+    #view-plans .plan-day-muscle-button {grid-template-columns:minmax(0,1fr) minmax(180px,.8fr);}
+}
+@media (max-width: 760px) {
+    #view-plans .plan-overview {display:grid;grid-template-columns:1fr;gap:13px;}
+    #view-plans .plan-overview-actions {display:flex;flex-wrap:wrap;gap:8px;width:100%;}
+    #view-plans .plan-overview-actions .button {width:auto;flex:1 1 160px;min-width:0;}
+    #view-plans .plan-day-editor-head {display:flex;align-items:flex-start;flex-direction:column;}
+    #view-plans .plan-day-controls {display:flex;width:100%;justify-content:flex-start;}
+    #view-plans .plan-day-controls .button {flex:1 1 130px;}
+    #view-plans .plan-days-panel-heading {align-items:flex-start;}
+    #view-plans .plan-days-drag-hint {white-space:normal;text-align:right;}
+    #view-plans .plan-exercise-table {overflow-x:auto;}
+    #view-plans .plan-exercise-columns {display:grid;}
+    #view-plans .plan-exercise-columns,#view-plans .exercise-editor {
+        display:grid;grid-template-columns:minmax(220px,1fr) 94px 104px 112px 46px;min-width:635px;}
+    #view-plans .exercise-editor {padding:10px 11px 10px 51px;gap:0;}
+    #view-plans .plan-exercise-identity {grid-column:auto;}
+    #view-plans .plan-row-menu {grid-column:auto;grid-row:auto;}
+    #view-plans .plan-stepper {grid-column:auto;}
+    #view-plans .plan-day-muscle-button {grid-template-columns:minmax(0,1fr);}
+    #view-plans .plan-day-muscle-mini {height:235px;}
+    #view-plans .plan-day-muscle-list {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
+/* FitCore · Selección de descanso por rueda, sin inputs numéricos duplicados. */
+#rest-settings-dialog.rest-wheel-dialog {
+    width:min(480px,calc(100vw - 28px));max-width:480px;
+    overflow:hidden;padding:0;background:#fff;border-radius:20px;
+}
+.rest-wheel-heading {padding-bottom:14px;}
+.rest-wheel-heading p:not(.eyebrow) {margin:5px 0 0;}
+.rest-wheel-body {padding:8px 23px 12px;}
+.rest-wheel-viewport {position:relative;max-width:100%;border-radius:16px;isolation:isolate;}
+.rest-wheel-list {height:280px;overflow-y:auto;padding:112px 0;
+    scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;touch-action:pan-y;outline:none;}
+.rest-wheel-list::-webkit-scrollbar {display:none;}
+.rest-wheel-option {display:grid;place-items:center;width:100%;height:56px;
+    padding:0 12px;border:0;background:transparent;color:#87958d;
+    font-size:20px;font-weight:550;scroll-snap-align:center;white-space:nowrap;
+    cursor:pointer;transition:color .12s ease,font-weight .12s ease;}
+.rest-wheel-option.is-selected {color:var(--ink);font-size:23px;font-weight:850;}
+.rest-wheel-list:focus-visible {outline:3px solid #c0ed7d;outline-offset:2px;}
+.rest-wheel-selection {position:absolute;z-index:-1;top:112px;left:0;right:0;
+    height:56px;border:1px solid #d8e4da;border-radius:13px;
+    background:#f1f6f0;pointer-events:none;}
+#rest-wheel-help {margin:8px 2px 2px;color:var(--muted);
+    font-size:11px;line-height:1.55;text-align:center;}
+.rest-wheel-actions {display:flex;justify-content:flex-end;gap:10px;}
+.rest-wheel-actions .button-primary {min-width:150px;}
+#view-training .rest-setting strong {white-space:nowrap;}
+#view-training .set-table input[data-numeric-mode] {min-height:45px;
+    padding:7px 9px;border:1px solid #cfdbd1;border-radius:11px;
+    background:#fff;color:var(--ink);text-align:center;font-size:16px;
+    font-weight:800;line-height:1.3;appearance:none;box-shadow:none;}
+#view-training .set-table input[data-numeric-mode]:focus,
+#view-training .set-table input[data-numeric-mode].is-editing {
+    outline:2px solid #9bdd28;outline-offset:1px;border-color:#4e9263;
+    background:#fff;box-shadow:0 0 0 3px rgba(163,234,65,.14);
+}
+#view-training .set-table input[data-set-rir] {width:62px;min-width:54px;}
+#view-training .set-table input[data-set-weight],
+#view-training .set-table input[data-set-extra-weight] {width:82px;min-width:58px;}
+#view-training .set-table input[data-set-reps],
+#view-training .set-table input[data-set-duration] {width:68px;min-width:54px;}
+@media(max-width:640px) {
+    #rest-settings-dialog.rest-wheel-dialog[open] {
+        position:fixed;inset:auto 0 0 0;margin:0 auto;
+        width:100vw;max-width:100vw;max-height:calc(100dvh - 28px);
+        border-radius:24px 24px 0 0;border-bottom:0;
+        padding-bottom:env(safe-area-inset-bottom,0px);
+    }
+    #rest-settings-dialog .rest-wheel-heading {padding:22px 20px 12px;}
+    #rest-settings-dialog .rest-wheel-body {padding:8px 18px 10px;}
+    #rest-settings-dialog .rest-wheel-actions {display:grid;grid-template-columns:1fr 1.3fr;
+        padding:14px 18px 18px;}
+    #rest-settings-dialog .rest-wheel-actions .button-primary {min-width:0;}
+    #view-training .set-table {min-width:780px;}
+}
+@media(prefers-reduced-motion:reduce) {
+    .rest-wheel-option {transition:none;}
+}
+
+/* Control de descanso compartido entre Planes y Entrenamiento */
+#view-plans .plan-rest-cell {min-width:0;padding:0 5px;}
+.plan-rest-trigger {display:flex;align-items:center;justify-content:center;
+    width:100%;min-width:0;min-height:39px;padding:7px 8px;
+    border:1px solid #cdd8d2;border-radius:10px;background:#fff;
+    color:var(--green);font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;}
+.plan-rest-trigger:hover {border-color:#97bd8d;background:var(--lime-soft);}
+.plan-rest-trigger:focus-visible {outline:3px solid rgba(189,241,90,.75);outline-offset:2px;}
+.plan-rest-control {min-width:0;display:flex;flex-direction:column;gap:5px;}
+.plan-rest-control label {font-size:12px;font-weight:750;}
+#plan-picker-rest-button {min-height:40px;}
+.rest-wheel-list {cursor:grab;user-select:none;-webkit-user-select:none;}
+.rest-wheel-list.is-dragging {cursor:grabbing;scroll-snap-type:none;scroll-behavior:auto;}
+.rest-wheel-list.is-dragging .rest-wheel-option {cursor:grabbing;}
+
+/* Plan day classification: informational, never a replacement for the user's name. */
+#view-plans .plan-tab-classification {display:block;margin-top:3px;font-size:10px;font-weight:700;
+    color:var(--green-2);line-height:1.35;white-space:normal;}
+#view-plans .plan-day-classification {display:flex;flex-direction:column;gap:5px;
+    padding:12px 14px;border:1px solid #dae7dd;border-radius:13px;
+    background:#f4f9f1;margin:0 0 14px;overflow-wrap:anywhere;}
+#view-plans .plan-classification-eyebrow {font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--green-2);font-weight:850;}
+#view-plans .plan-day-classification strong {font-size:14px;line-height:1.35;color:var(--green);}
+#view-plans .plan-day-classification small {font-size:11px;line-height:1.5;color:var(--muted);}
+.plan-day-auto-toggle {display:flex;align-items:center;gap:10px;line-height:1.4;
+    color:var(--ink);font-weight:750;letter-spacing:0;}
+.plan-day-auto-toggle input {min-height:18px;width:18px;flex:0 0 18px;accent-color:var(--green-2);}
+.plan-edit-classification-preview {padding:10px 12px;background:#eff5f0;
+    color:var(--green-2);font-size:12px;line-height:1.5;border-radius:10px;}
+.plan-edit-type-card input:disabled + .plan-edit-type-content {opacity:.45;cursor:not-allowed;}
+
+/* Stable plan editor header: title flexes, actions stay in the right column. */
+#view-plans .plan-day-editor-head {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) max-content;
+    align-items:center;
+    column-gap:16px;
+    row-gap:8px;
+}
+#view-plans .plan-day-title {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    flex-wrap:nowrap;
+    gap:6px;
+    min-width:0;
+    max-width:100%;
+}
+#view-plans .plan-day-title .plan-day-eyebrow {
+    flex-basis:auto;
+    max-width:100%;
+}
+#view-plans .plan-day-title h3 {
+    max-width:100%;
+    overflow-wrap:anywhere;
+}
+#view-plans .plan-day-controls {
+    grid-column:2;
+    grid-row:1;
+    flex-wrap:nowrap;
+    justify-content:flex-end;
+    width:max-content;
+    min-width:0;
+    margin-left:auto;
+}
+#view-plans .plan-day-controls .button {
+    flex:0 0 auto;
+}
+#view-plans .plan-day-classification {
+    gap:5px;
+}
+#view-plans .plan-day-classification .plan-classification-reason {
+    opacity:.85;
+}
+@media (max-width:760px) {
+    #view-plans .plan-day-editor-head {
+        grid-template-columns:minmax(0,1fr);
+    }
+    #view-plans .plan-day-controls {
+        grid-column:1;
+        grid-row:2;
+        justify-content:flex-start;
+        width:100%;
+        margin-left:0;
+        flex-wrap:wrap;
+    }
+    #view-plans .plan-day-controls .button {
+        flex:1 1 135px;
+    }
+}
+
+/* A small consolidated-only badge shares the title line, never the action column. */
+#view-plans .plan-day-heading-line {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:7px 10px;
+    min-width:0;
+    max-width:100%;
+}
+#view-plans .plan-day-heading-line h3 {min-width:0;overflow-wrap:anywhere;}
+#view-plans .plan-day-type-slot:empty {display:none;}
+#view-plans .plan-day-type-slot {display:inline-flex;align-items:center;min-width:0;}
+#view-plans .plan-day-type-slot .plan-day-type-badge {
+    display:inline-flex;align-items:center;gap:5px;
+    max-width:100%;white-space:nowrap;padding:6px 10px;
+    border-radius:999px;background:#edf5ef;color:#245745;
+    font-size:11px;font-weight:800;letter-spacing:0;
+}
+/* HH:MM:SS targets take exactly the allotted goal column without pushing other controls. */
+#view-plans .plan-time-stepper {
+    width:calc(100% - 5px);
+    min-width:0;
+    grid-template-columns:20px minmax(0,1fr) 20px;
+}
+#view-plans .plan-time-stepper input {
+    min-width:0;width:100%;font-size:11px;
+    font-variant-numeric:tabular-nums;
+    letter-spacing:-.03em;
+}
+/* Avoid the intrusive error color while the six-digit HH:MM:SS mask is being edited.
+   The value is still validated on blur and before the plan is saved. */
+#view-plans .plan-time-stepper input:invalid:not(:focus) {
+    background:#fff1f1;color:#a52626;
+}
+#plan-picker-duration {
+    font-variant-numeric:tabular-nums;
+    letter-spacing:.04em;
+}
+
+/* Shared FitCore icon system for every training-day type. */
+#view-plans .plan-edit-type-content {
+    gap:9px;
+    min-height:94px;
+    padding:12px 10px;
+    color:#315a50;
+}
+#view-plans .plan-edit-type-symbol {
+    display:grid;
+    place-items:center;
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    background:#edf3f0;
+    color:#2d6658;
+    transition:background .15s ease,color .15s ease;
+}
+#view-plans .plan-edit-type-content .plan-training-type-icon {
+    width:23px;
+    height:23px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.85;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+#view-plans .plan-edit-type-card input:checked + .plan-edit-type-content {
+    color:#164c3a;
+    background:#f3fbe8;
+    border-color:#94ce46;
+}
+#view-plans .plan-edit-type-card input:checked + .plan-edit-type-content .plan-edit-type-symbol {
+    background:#d7f49d;
+    color:#194c35;
+}
+#view-plans .plan-edit-type-card:not(:has(input:disabled)):hover .plan-edit-type-symbol {
+    background:#e2f1dd;
+}
+#view-plans .plan-day-tab-icon .plan-training-type-icon {
+    width:22px;
+    height:22px;
+}
+#view-plans .plan-day-type-badge .plan-training-type-icon {
+    width:15px;
+    height:15px;
+}
+@media (prefers-reduced-motion:reduce){
+    #view-plans .plan-edit-type-symbol {transition:none;}
+}
+
+/* Configure day v2 — compact, contextual and scroll-free at normal desktop heights. */
+#plan-edit-day-dialog[open] {
+    width:min(930px,calc(100vw - 36px));
+    max-width:930px;
+    max-height:min(85dvh,760px);
+    overflow:hidden;
+    border-radius:22px;
+}
+#plan-edit-day-dialog > form {
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr) auto;
+    min-height:0;
+    max-height:min(85dvh,760px);
+}
+#plan-edit-day-dialog .plan-edit-day-heading {
+    padding:19px 24px 15px;
+    align-items:center;
+}
+#plan-edit-day-dialog .plan-edit-day-heading h2 {font-size:22px;}
+#plan-edit-day-dialog .plan-edit-day-heading p:not(.eyebrow) {
+    font-size:11px;line-height:1.45;
+}
+#plan-edit-day-dialog .plan-edit-day-layout {
+    display:grid;
+    grid-template-columns:minmax(265px,.82fr) minmax(0,1.18fr);
+    gap:24px;
+    min-width:0;
+    min-height:0;
+    padding:21px 24px 23px;
+}
+#plan-edit-day-dialog .plan-edit-day-identity {
+    display:grid;
+    align-content:start;
+    gap:9px;
+    min-width:0;
+    padding-right:23px;
+    border-right:1px solid var(--line);
+}
+#plan-edit-day-dialog .plan-edit-day-identity > label {font-size:12px;color:var(--ink);}
+#plan-edit-day-dialog #plan-edit-day-name {background:white;font-size:14px;font-weight:700;}
+#plan-edit-day-dialog .plan-edit-mode-section {display:grid;gap:12px;margin-top:18px;}
+#plan-edit-day-dialog .plan-edit-mode-heading {display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);}
+#plan-edit-day-dialog .plan-edit-info-icon {display:inline-grid;place-items:center;width:17px;height:17px;border:1px solid #82998d;border-radius:50%;color:#557167;font-size:11px;font-weight:800;cursor:help;}
+#plan-edit-day-dialog .plan-edit-mode-options {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+#plan-edit-day-dialog .plan-edit-mode-option {
+    display:flex;align-items:center;gap:9px;text-align:left;
+    padding:12px 9px;min-width:0;min-height:64px;
+    border:1px solid #d7e0d9;border-radius:13px;background:white;color:var(--green);
+}
+#plan-edit-day-dialog .plan-edit-mode-option.is-selected {
+    border-color:#87c834;background:#f0fbe4;
+    box-shadow:inset 0 0 0 1px #a6db60;
+}
+#plan-edit-day-dialog .plan-edit-mode-option > span:last-child {display:grid;min-width:0;gap:3px;}
+#plan-edit-day-dialog .plan-edit-mode-option strong {font-size:12px;}
+#plan-edit-day-dialog .plan-edit-mode-option small {font-size:9px;font-weight:500;color:var(--muted);line-height:1.25;}
+#plan-edit-day-dialog .plan-edit-mode-icon {
+    display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;
+    border-radius:9px;background:#edf4ef;font-size:20px;font-weight:650;color:var(--green-2);
+}
+#plan-edit-day-dialog .plan-edit-mode-option.is-selected .plan-edit-mode-icon {background:#d9f5a8;}
+#plan-edit-day-dialog .plan-edit-day-classification {min-width:0;display:grid;align-content:start;}
+#plan-edit-day-dialog .plan-edit-auto-panel {display:grid;gap:14px;padding:19px;
+    background:#f4f9f1;border:1px solid #dbe8d8;border-radius:17px;}
+#plan-edit-day-dialog .plan-edit-panel-eyebrow {
+    margin:0;font-size:10px;font-weight:850;letter-spacing:.08em;color:var(--green-2);
+}
+#plan-edit-day-dialog .plan-edit-classification-preview {
+    display:flex;align-items:center;gap:12px;min-width:0;padding:14px;
+    background:white;border:1px solid #e0e9e1;border-radius:12px;
+}
+#plan-edit-day-dialog .plan-edit-preview-icon {
+    display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;
+    background:#e5f5df;border-radius:11px;color:var(--green);font-size:24px;
+}
+#plan-edit-day-dialog .plan-edit-preview-text {display:grid;min-width:0;gap:5px;}
+#plan-edit-day-dialog .plan-edit-preview-text strong {font-size:16px;color:var(--ink);}
+#plan-edit-day-dialog .plan-edit-preview-text small {font-size:11px;font-weight:550;line-height:1.4;color:var(--muted);}
+#plan-edit-day-dialog .plan-edit-auto-caption {margin:0;color:var(--muted);font-size:11px;line-height:1.6;}
+#plan-edit-day-dialog .plan-edit-type-fieldset legend {margin-bottom:11px;font-size:12px;color:var(--ink);}
+#plan-edit-day-dialog .plan-edit-type-grid {grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+#plan-edit-day-dialog .plan-edit-type-content {
+    min-height:73px;padding:8px 5px;gap:5px;
+    font-size:10px;line-height:1.2;
+}
+#plan-edit-day-dialog .plan-edit-type-symbol {
+    width:29px;height:29px;border-radius:9px;
+}
+#plan-edit-day-dialog .plan-edit-type-symbol svg {width:19px;height:19px;}
+#plan-edit-day-dialog .plan-edit-day-footer {padding:13px 24px;}
+#plan-edit-day-dialog [hidden] {display:none!important;}
+/* Day-card actions are outside the settings form, without nesting buttons. */
+#view-plans .plan-day-tab-shell {
+    position:relative;
+    flex:0 0 clamp(158px,14vw,208px);
+    min-width:0;
+    scroll-snap-align:start;
+}
+#view-plans .plan-day-tab-shell > .plan-day-tab {
+    display:grid;width:100%;height:100%;min-height:80px;flex:none;scroll-snap-align:none;
+}
+#view-plans .plan-day-actions-trigger {
+    display:grid;place-items:center;
+    position:absolute;right:5px;bottom:5px;z-index:2;
+    width:26px;height:25px;border:0;border-radius:7px;
+    background:transparent;color:var(--green-2);
+    font-size:21px;font-weight:800;line-height:1;cursor:pointer;
+}
+#view-plans .plan-day-actions-trigger:hover,
+#view-plans .plan-day-actions-trigger[aria-expanded="true"] {
+    background:#e2efdf;color:var(--green);
+}
+#view-plans .plan-day-actions-menu {
+    position:fixed;z-index:9999;display:grid;min-width:180px;padding:6px;
+    border:1px solid #d9e4dc;border-radius:12px;background:white;
+    box-shadow:0 16px 35px rgba(15,53,41,.18);
+}
+#view-plans .plan-day-actions-menu[hidden] {display:none!important;}
+#view-plans .plan-day-actions-menu button {
+    text-align:left;padding:11px 12px;border:0;border-radius:8px;
+    background:transparent;color:var(--green);font-size:12px;font-weight:750;
+}
+#view-plans .plan-day-actions-menu button:hover {background:#f0f7ee;}
+#view-plans .plan-day-actions-menu button.danger {color:var(--red);}
+#view-plans .plan-day-actions-menu button.danger:hover {background:#fff0ee;}
+@media (max-width:800px), (max-height:560px){
+    #plan-edit-day-dialog[open] {width:min(640px,calc(100vw - 20px));max-height:calc(100dvh - 20px);overflow:auto;}
+    #plan-edit-day-dialog > form {max-height:none;}
+    #plan-edit-day-dialog .plan-edit-day-layout {grid-template-columns:minmax(0,1fr);gap:18px;padding:17px;}
+    #plan-edit-day-dialog .plan-edit-day-identity {border-right:0;padding-right:0;}
+    #plan-edit-day-dialog .plan-edit-mode-section {margin-top:5px;}
+    #plan-edit-day-dialog .plan-edit-type-grid {grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:460px){
+    #plan-edit-day-dialog .plan-edit-type-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+    #plan-edit-day-dialog .plan-edit-day-heading {padding-inline:16px;}
+    #plan-edit-day-dialog .plan-edit-day-footer {padding:12px 16px;}
+}
+
+/* Create day inherits exactly the same compact two-mode layout as Configure day. */
+#plan-new-day-dialog[open]{
+    width:min(930px,calc(100vw - 36px));
+    max-width:930px;
+    max-height:min(85dvh,760px);
+    overflow:hidden;
+    border-radius:22px;
+}
+#plan-new-day-dialog > form{
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr) auto;
+    min-height:0;
+    max-height:min(85dvh,760px);
+}
+#plan-new-day-dialog .plan-edit-day-heading{
+    padding:19px 24px 15px;
+    align-items:center;
+}
+#plan-new-day-dialog .plan-edit-day-heading h2{font-size:22px;}
+#plan-new-day-dialog .plan-edit-day-heading p:not(.eyebrow){font-size:11px;line-height:1.45;}
+#plan-new-day-dialog .plan-edit-day-layout{
+    display:grid;
+    grid-template-columns:minmax(265px,.82fr) minmax(0,1.18fr);
+    gap:24px;
+    min-width:0;
+    min-height:0;
+    padding:21px 24px 23px;
+}
+#plan-new-day-dialog .plan-edit-day-identity{
+    display:grid;
+    align-content:start;
+    gap:9px;
+    min-width:0;
+    padding-right:23px;
+    border-right:1px solid var(--line);
+}
+#plan-new-day-dialog .plan-edit-day-identity > label{font-size:12px;color:var(--ink);}
+#plan-new-day-dialog #plan-new-day-name{background:white;font-size:14px;font-weight:700;}
+#plan-new-day-dialog .plan-edit-mode-section{display:grid;gap:12px;margin-top:18px;}
+#plan-new-day-dialog .plan-edit-mode-heading{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);}
+#plan-new-day-dialog .plan-edit-info-icon{
+    display:inline-grid;place-items:center;width:17px;height:17px;
+    border:1px solid #82998d;border-radius:50%;color:#557167;
+    font-size:11px;font-weight:800;cursor:help;
+}
+#plan-new-day-dialog .plan-edit-mode-options{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+#plan-new-day-dialog .plan-edit-mode-option{
+    display:flex;align-items:center;gap:9px;text-align:left;
+    padding:12px 9px;min-width:0;min-height:64px;
+    border:1px solid #d7e0d9;border-radius:13px;background:white;color:var(--green);
+}
+#plan-new-day-dialog .plan-edit-mode-option.is-selected{
+    border-color:#87c834;background:#f0fbe4;box-shadow:inset 0 0 0 1px #a6db60;
+}
+#plan-new-day-dialog .plan-edit-mode-option > span:last-child{display:grid;min-width:0;gap:3px;}
+#plan-new-day-dialog .plan-edit-mode-option strong{font-size:12px;}
+#plan-new-day-dialog .plan-edit-mode-option small{
+    font-size:9px;font-weight:500;color:var(--muted);line-height:1.25;
+}
+#plan-new-day-dialog .plan-edit-mode-icon{
+    display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;
+    border-radius:9px;background:#edf4ef;font-size:20px;font-weight:650;color:var(--green-2);
+}
+#plan-new-day-dialog .plan-edit-mode-option.is-selected .plan-edit-mode-icon{background:#d9f5a8;}
+#plan-new-day-dialog .plan-edit-day-classification{
+    min-width:0;display:grid;align-content:start;
+}
+#plan-new-day-dialog .plan-edit-auto-panel{
+    display:grid;gap:14px;padding:19px;
+    background:#f4f9f1;border:1px solid #dbe8d8;border-radius:17px;
+}
+#plan-new-day-dialog .plan-edit-panel-eyebrow{
+    margin:0;font-size:10px;font-weight:850;letter-spacing:.08em;color:var(--green-2);
+}
+#plan-new-day-dialog .plan-edit-classification-preview{
+    display:flex;align-items:center;gap:12px;min-width:0;padding:14px;
+    background:white;border:1px solid #e0e9e1;border-radius:12px;
+}
+#plan-new-day-dialog .plan-edit-preview-icon{
+    display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;
+    background:#e5f5df;border-radius:11px;color:var(--green);font-size:24px;
+}
+#plan-new-day-dialog .plan-edit-preview-text{display:grid;min-width:0;gap:5px;}
+#plan-new-day-dialog .plan-edit-preview-text strong{font-size:16px;color:var(--ink);}
+#plan-new-day-dialog .plan-edit-preview-text small{font-size:11px;font-weight:550;line-height:1.4;color:var(--muted);}
+#plan-new-day-dialog .plan-edit-auto-caption{
+    margin:0;color:var(--muted);font-size:11px;line-height:1.6;
+}
+#plan-new-day-dialog .plan-edit-type-fieldset legend{
+    margin-bottom:11px;font-size:12px;color:var(--ink);
+}
+#plan-new-day-dialog .plan-edit-type-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+}
+#plan-new-day-dialog .plan-edit-type-content{
+    min-height:73px;padding:8px 5px;gap:5px;font-size:10px;line-height:1.2;
+}
+#plan-new-day-dialog .plan-edit-type-symbol{
+    width:29px;height:29px;border-radius:9px;
+}
+#plan-new-day-dialog .plan-edit-type-symbol svg{width:19px;height:19px;}
+#plan-new-day-dialog .plan-edit-day-footer{
+    padding:13px 24px;
+    justify-content:flex-end;
+}
+#plan-new-day-dialog [hidden]{display:none!important;}
+
+/* Compact secondary management actions live in Configure day only. */
+#plan-edit-day-dialog .plan-edit-day-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+}
+#plan-edit-day-dialog .plan-edit-day-extra-actions,
+#plan-edit-day-dialog .plan-edit-day-save-actions{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+#plan-edit-day-dialog .plan-edit-day-save-actions{
+    margin-left:auto;
+}
+#plan-edit-day-dialog .plan-edit-action-quiet{
+    display:inline-flex;align-items:center;gap:7px;
+    min-height:36px;padding:8px 10px;border:1px solid transparent;
+    border-radius:9px;background:transparent;color:var(--green-2);
+    font-weight:750;font-size:12px;cursor:pointer;
+}
+#plan-edit-day-dialog .plan-edit-action-quiet svg{width:17px;height:17px;flex:none;}
+#plan-edit-day-dialog .plan-edit-action-quiet:hover{background:#edf5ef;}
+#plan-edit-day-dialog .plan-edit-action-quiet.danger{color:#ad3838;}
+#plan-edit-day-dialog .plan-edit-action-quiet.danger:hover{background:#fff1ed;}
+#plan-edit-day-dialog .plan-edit-action-quiet:focus-visible{
+    outline:3px solid #b1e967;outline-offset:2px;
+}
+@media (max-width:800px), (max-height:560px){
+    #plan-new-day-dialog[open]{
+        width:min(640px,calc(100vw - 20px));
+        max-height:calc(100dvh - 20px);overflow:auto;
+    }
+    #plan-new-day-dialog > form{max-height:none;}
+    #plan-new-day-dialog .plan-edit-day-layout{
+        grid-template-columns:minmax(0,1fr);gap:18px;padding:17px;
+    }
+    #plan-new-day-dialog .plan-edit-day-identity{border-right:0;padding-right:0;}
+    #plan-new-day-dialog .plan-edit-mode-section{margin-top:5px;}
+    #plan-new-day-dialog .plan-edit-type-grid{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+}
+@media (max-width:460px){
+    #plan-new-day-dialog .plan-edit-type-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+    #plan-new-day-dialog .plan-edit-day-heading{padding-inline:16px;}
+    #plan-new-day-dialog .plan-edit-day-footer{padding:12px 16px;}
+    #plan-edit-day-dialog .plan-edit-day-extra-actions{width:100%;}
+    #plan-edit-day-dialog .plan-edit-day-save-actions{
+        width:100%;justify-content:flex-end;
+    }
+}
+
+/* Muscle analysis redesign: two balanced cards, reusable anatomical SVG. */
+#plan-muscle-dialog[open] {
+    display:grid;
+    grid-template-rows:auto auto minmax(0,1fr) auto;
+    width:min(1370px,calc(100vw - 40px));
+    max-width:calc(100vw - 40px);
+    height:min(860px,calc(100dvh - 34px));
+    max-height:calc(100dvh - 34px);
+    overflow:hidden;
+    border:1px solid #dfe8e2;
+    border-radius:24px;
+    background:#fff;
+}
+#plan-muscle-dialog .plan-muscle-heading {
+    display:flex;align-items:center;gap:18px;
+    padding:23px 30px 22px;
+    border-bottom:1px solid #e2e9e4;
+    background:#fff;
+}
+#plan-muscle-dialog .plan-muscle-heading-symbol {
+    flex:0 0 62px;width:62px;height:62px;
+    display:grid;place-items:center;
+    border-radius:18px;background:#e1f5d1;color:#286b36;
+}
+#plan-muscle-dialog .plan-muscle-heading-symbol svg {width:30px;height:30px;}
+#plan-muscle-dialog .plan-muscle-heading-copy {flex:1;min-width:0;}
+#plan-muscle-dialog .plan-muscle-heading-copy h2 {
+    font-size:clamp(22px,2vw,29px);letter-spacing:-.035em;
+    margin:2px 0 4px;
+}
+#plan-muscle-dialog .plan-muscle-heading-copy > p:last-child{
+    margin:0;color:var(--muted);font-size:12px;line-height:1.5;
+}
+#plan-muscle-dialog .plan-muscle-heading > .icon-button{flex:0 0 auto;align-self:flex-start;}
+#plan-muscle-dialog .plan-muscle-toolbar {
+    display:flex;justify-content:space-between;align-items:center;
+    gap:14px;padding:15px 25px;border-bottom:1px solid #e1e9e3;
+}
+#plan-muscle-dialog .plan-muscle-switch{
+    gap:3px;border-radius:13px;border:1px solid #dce6e0;
+    background:#f4f8f5;padding:4px;
+}
+#plan-muscle-dialog .plan-muscle-switch button{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:9px 15px;min-height:42px;border-radius:10px;
+    font-size:12px;color:#244e43;white-space:nowrap;
+}
+#plan-muscle-dialog .plan-muscle-switch button svg {width:17px;height:17px;}
+#plan-muscle-dialog .plan-muscle-switch button[aria-pressed="true"] {
+    background:var(--lime);color:#153f30;
+}
+#plan-muscle-dialog #plan-muscle-day-picker{
+    display:grid;gap:4px;min-width:min(290px,45%);
+    color:#365c50;font-size:11px;font-weight:750;
+}
+#plan-muscle-dialog #plan-muscle-day-picker[hidden]{display:none!important;}
+#plan-muscle-dialog #plan-muscle-day-select{
+    border-radius:11px;background:#fff;border:1px solid #acd96d;
+    min-height:42px;font-size:12px;font-weight:750;color:#133c30;
+}
+#plan-muscle-dialog .plan-muscle-layout {
+    display:grid;
+    grid-template-columns:minmax(0,1.16fr) minmax(0,1fr);
+    gap:18px;padding:17px 23px 18px;min-height:0;overflow:hidden;
+    background:#fbfcfb;
+}
+#plan-muscle-dialog .plan-muscle-figure,
+#plan-muscle-dialog .plan-muscle-details {
+    min-height:0;min-width:0;
+    border:1px solid #dce6e1;border-radius:19px;
+    background:white;
+    box-shadow:0 6px 20px rgba(19,57,40,.035);
+}
+#plan-muscle-dialog .plan-muscle-figure {
+    display:block;overflow:hidden;
+}
+#plan-muscle-dialog .plan-muscle-figure-main {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(130px,34%);
+    align-items:stretch;height:100%;gap:0;padding:13px;
+}
+#plan-muscle-dialog .plan-muscle-map{
+    min-height:0;height:100%;min-width:0;
+    border-radius:14px;background:#f2f6f4;
+    display:grid;place-items:center;overflow:hidden;
+}
+#plan-muscle-dialog .plan-muscle-map svg{
+    width:100%!important;
+    height:100%!important;
+    max-width:100%;max-height:100%;
+    transform:none!important;
+    filter:none!important;
+}
+#plan-muscle-dialog .plan-muscle-figure-sidebar {
+    display:flex;flex-direction:column;gap:7px;
+    min-width:0;min-height:0;
+    padding:3px 0 3px 11px;
+    overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;
+}
+/* Identical metric-card footprint for both day and week analysis.
+   Never let flex-grow redistribute unused space and change the card heights. */
+#plan-muscle-dialog .plan-muscle-stat{
+    display:flex;align-items:center;gap:11px;
+    min-width:0;flex:0 0 66px;
+    box-sizing:border-box;
+    height:66px;min-height:66px;max-height:66px;
+    padding:10px;border-radius:13px;background:#f5f8f6;
+}
+#plan-muscle-dialog .plan-muscle-stat > svg{
+    width:24px;height:24px;flex:none;color:#216b48;
+}
+#plan-muscle-dialog .plan-muscle-stat > span{
+    min-width:0;display:grid;gap:3px;
+}
+#plan-muscle-dialog .plan-muscle-stat strong{
+    font-size:23px;color:#122f29;line-height:1.1;font-weight:850;
+    font-variant-numeric:tabular-nums;
+}
+#plan-muscle-dialog .plan-muscle-stat small{
+    color:#536e64;font-size:11px;line-height:1.35;
+}
+#plan-muscle-dialog .plan-muscle-legend-wrap{
+    display:grid;gap:5px;flex:0 0 auto;
+    padding:7px 4px 3px;
+    border-top:1px solid #dce5e0;
+}
+#plan-muscle-dialog .plan-muscle-legend-wrap > strong{
+    color:#153c30;font-size:12px;
+}
+#plan-muscle-dialog .plan-muscle-legend{
+    display:flex;flex-direction:column;gap:4px;
+    padding:0;
+}
+#plan-muscle-dialog .plan-muscle-legend span{
+    font-size:11px;color:#345649;align-items:center;
+}
+#plan-muscle-dialog .plan-muscle-legend small{
+    font-size:10px;color:var(--muted);line-height:1.3;
+}
+#plan-muscle-dialog .plan-muscle-details{
+    padding:20px;display:flex;flex-direction:column;overflow:hidden;
+}
+#plan-muscle-dialog .plan-muscle-details-heading{
+    display:flex;gap:12px;align-items:flex-start;
+    flex:0 0 auto;margin-bottom:13px;
+}
+#plan-muscle-dialog .plan-muscle-target-icon{
+    display:grid;place-items:center;
+    color:#1f7046;flex:0 0 30px;
+}
+#plan-muscle-dialog .plan-muscle-target-icon svg{width:29px;height:29px;}
+#plan-muscle-dialog .plan-muscle-details-heading h3{
+    color:#122f29;font-size:19px;margin:0 0 5px;line-height:1.22;
+}
+#plan-muscle-dialog .plan-muscle-details-heading p{
+    margin:0;color:#60776d;font-size:11px;line-height:1.45;
+}
+#plan-muscle-dialog #plan-muscle-analysis-list{
+    flex:1;min-height:0;max-height:none;
+    overflow:auto;overscroll-behavior:contain;
+    scrollbar-width:thin;padding:0 4px 4px 0;
+}
+#plan-muscle-dialog .plan-muscle-item{
+    padding:12px 0 14px;border-bottom:1px solid #e4ebe5;
+}
+#plan-muscle-dialog .plan-muscle-item-top{
+    display:flex;gap:10px;justify-content:space-between;
+    align-items:baseline;font-size:12px;line-height:1.4;
+}
+#plan-muscle-dialog .plan-muscle-item-top strong{color:#1b3730;min-width:0;}
+#plan-muscle-dialog .plan-muscle-item-top span{
+    flex:0 0 auto;font-size:11px;font-weight:800;color:#226d45;
+    font-variant-numeric:tabular-nums;
+}
+#plan-muscle-dialog .plan-muscle-track{
+    margin:9px 0 7px;height:9px;border-radius:9px;background:#e5f3df;
+}
+#plan-muscle-dialog .plan-muscle-track i{
+    background:linear-gradient(90deg,#55ad40,#87ca58);
+}
+#plan-muscle-dialog .plan-muscle-item small{
+    color:#6b8076;font-size:10px;line-height:1.4;
+}
+#plan-muscle-dialog .plan-muscle-disclaimer{
+    display:flex;align-items:flex-start;gap:11px;
+    flex:0 0 auto;margin:13px 0 0;
+    padding:13px 14px;background:#ecf5eb;border-radius:13px;
+    color:#2a5943;
+}
+#plan-muscle-dialog .plan-muscle-disclaimer svg{
+    width:21px;height:21px;flex:none;margin-top:1px;color:#276d45;
+}
+#plan-muscle-dialog .plan-muscle-disclaimer strong{
+    display:block;font-size:11px;margin-bottom:4px;
+}
+#plan-muscle-dialog .plan-muscle-disclaimer p{
+    font-size:10px;line-height:1.55;margin:0;color:#365f4e;
+}
+#plan-muscle-dialog .plan-muscle-footer{
+    border-top:1px solid #e1e9e4;background:white;
+    padding:12px 24px;flex:0 0 auto;justify-content:flex-end;
+}
+#plan-muscle-dialog .plan-muscle-footer .button{min-width:105px;}
+@media (max-width:950px){
+    #plan-muscle-dialog[open] {
+        width:min(780px,calc(100vw - 18px));
+        max-width:calc(100vw - 18px);
+        height:calc(100dvh - 20px);
+        max-height:calc(100dvh - 20px);
+    }
+    #plan-muscle-dialog .plan-muscle-layout{
+        grid-template-columns:minmax(0,1fr);overflow:auto;gap:13px;
+    }
+    #plan-muscle-dialog .plan-muscle-figure-main{
+        min-height:350px;max-height:460px;
+    }
+    #plan-muscle-dialog .plan-muscle-details{
+        min-height:280px;overflow:visible;
+    }
+    #plan-muscle-dialog #plan-muscle-analysis-list{max-height:300px;}
+}
+@media (max-width:560px){
+    #plan-muscle-dialog .plan-muscle-heading{padding:15px;gap:9px;}
+    #plan-muscle-dialog .plan-muscle-heading-symbol{
+        width:42px;height:42px;flex-basis:42px;border-radius:12px;
+    }
+    #plan-muscle-dialog .plan-muscle-heading-symbol svg{width:23px;height:23px;}
+    #plan-muscle-dialog .plan-muscle-heading-copy h2{font-size:19px;}
+    #plan-muscle-dialog .plan-muscle-heading-copy > p:last-child{font-size:10px;}
+    #plan-muscle-dialog .plan-muscle-toolbar{
+        padding:10px 13px;align-items:stretch;flex-wrap:wrap;
+    }
+    #plan-muscle-dialog .plan-muscle-switch{width:100%;justify-content:stretch;}
+    #plan-muscle-dialog .plan-muscle-switch button{flex:1;padding:8px;min-height:40px;}
+    #plan-muscle-dialog #plan-muscle-day-picker{min-width:0;width:100%;}
+    #plan-muscle-dialog .plan-muscle-layout{padding:10px;}
+    #plan-muscle-dialog .plan-muscle-figure-main{
+        grid-template-columns:minmax(0,1fr);gap:10px;
+        max-height:none;padding:9px;
+    }
+    #plan-muscle-dialog .plan-muscle-map{height:300px;}
+    #plan-muscle-dialog .plan-muscle-figure-sidebar{
+        display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+        grid-template-rows:76px auto;
+        padding:0;gap:7px;
+        overflow:visible;
+    }
+    #plan-muscle-dialog .plan-muscle-stat{
+        flex-direction:column;align-items:center;text-align:center;
+        padding:9px 5px;gap:4px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat > svg{height:19px;width:19px;}
+    #plan-muscle-dialog .plan-muscle-stat strong{font-size:19px;}
+    #plan-muscle-dialog .plan-muscle-stat small{font-size:9px;}
+    #plan-muscle-dialog .plan-muscle-legend-wrap{grid-column:1/-1;padding:8px 4px;}
+    #plan-muscle-dialog .plan-muscle-legend{flex-direction:row;flex-wrap:wrap;gap:10px;}
+    #plan-muscle-dialog .plan-muscle-details{padding:14px;}
+}
+
+/* FitCore: Plan settings v2 — compact two-column form and version summary. */
+#plan-settings-dialog[open] {
+    width:min(1010px,calc(100vw - 40px));
+    max-width:min(1010px,calc(100vw - 40px));
+    max-height:calc(100dvh - 38px);
+    overflow:hidden;
+    border-radius:22px;
+}
+#plan-settings-dialog > form {
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr) auto;
+    min-height:0;
+    max-height:calc(100dvh - 38px);
+}
+#plan-settings-dialog .plan-settings-heading {
+    display:flex;align-items:center;gap:17px;
+    padding:19px 26px;border-bottom:1px solid #e2eae4;
+}
+#plan-settings-dialog .plan-settings-heading-icon {
+    display:grid;place-items:center;
+    width:53px;height:53px;flex:0 0 53px;
+    border-radius:16px;background:#e5f5d9;color:#185842;
+}
+#plan-settings-dialog .plan-settings-heading-icon svg {width:27px;height:27px;}
+#plan-settings-dialog .plan-settings-heading-copy {min-width:0;flex:1;}
+#plan-settings-dialog .plan-settings-heading-copy .eyebrow {
+    color:#52776a;font-size:10px;letter-spacing:.1em;
+}
+#plan-settings-dialog .plan-settings-heading-copy h2 {
+    font-size:24px;line-height:1.2;margin:3px 0 5px;
+}
+#plan-settings-dialog .plan-settings-heading-copy > p:last-child {
+    font-size:12px;line-height:1.5;color:var(--muted);margin:0;
+}
+#plan-settings-dialog .plan-settings-heading > .icon-button {align-self:flex-start;}
+#plan-settings-dialog .plan-settings-body {
+    display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+    gap:25px;padding:23px 26px;min-height:0;
+    overflow:auto;align-items:stretch;
+}
+#plan-settings-dialog .plan-settings-fields {
+    display:flex;flex-direction:column;gap:21px;
+    padding:0 25px 0 0;border-right:1px solid #e0e9e2;
+    min-width:0;
+}
+#plan-settings-dialog .plan-settings-field {
+    display:grid;grid-template-columns:41px minmax(0,1fr);
+    align-items:start;gap:13px;min-width:0;
+}
+#plan-settings-dialog .plan-settings-field-icon {
+    display:grid;place-items:center;
+    width:41px;height:41px;border-radius:12px;
+    background:#edf5ef;color:#175944;
+}
+#plan-settings-dialog .plan-settings-field-icon svg {
+    width:21px;height:21px;
+}
+#plan-settings-dialog .plan-settings-field label {
+    display:grid;gap:8px;min-width:0;
+    color:#153a2e;font-size:12px;font-weight:800;
+}
+#plan-settings-dialog .plan-settings-optional {
+    display:inline;color:var(--muted);font-size:11px;font-weight:550;
+}
+#plan-settings-dialog .plan-settings-fields input,
+#plan-settings-dialog .plan-settings-fields textarea {
+    min-height:46px;width:100%;border:1px solid #cbd9d1;
+    background:white;border-radius:12px;font-size:13px;
+}
+#plan-settings-dialog .plan-settings-fields textarea {
+    min-height:110px;max-height:190px;resize:vertical;
+}
+#plan-settings-dialog .plan-settings-label-row {
+    display:inline-flex;align-items:center;gap:8px;
+}
+#plan-settings-dialog .plan-settings-info {
+    display:inline-grid;place-items:center;
+    width:17px;height:17px;border-radius:50%;
+    border:1px solid #91a69d;color:#5b7068;
+    font-size:10px;cursor:help;
+}
+#plan-settings-dialog .plan-settings-version-panel {
+    display:flex;flex-direction:column;justify-content:center;
+    min-width:0;gap:16px;padding:20px;
+    border:1px solid #dfebdf;border-radius:18px;
+    background:#f6faf5;
+}
+#plan-settings-dialog .plan-settings-version-heading {
+    display:flex;align-items:start;gap:12px;
+}
+#plan-settings-dialog .plan-settings-version-icon {
+    width:44px;height:44px;flex:0 0 44px;
+    display:grid;place-items:center;background:#e3f5c4;
+    border-radius:13px;color:#1c6e4b;
+}
+#plan-settings-dialog .plan-settings-version-icon svg {width:24px;height:24px;}
+#plan-settings-dialog .plan-settings-version-heading h3 {
+    color:#15382e;font-size:18px;margin:2px 0 7px;
+}
+#plan-settings-dialog .plan-settings-version-heading p {
+    margin:0;color:#60776c;font-size:11px;line-height:1.55;
+}
+#plan-settings-dialog .plan-version {
+    position:relative;display:grid;gap:5px;
+    margin:0;min-height:94px;padding:18px 19px;
+    background:var(--green);color:white;border-radius:15px;
+}
+#plan-settings-dialog .plan-version span:first-child {
+    font-size:10px;font-weight:800;letter-spacing:.075em;
+    color:#b7d4c8;
+}
+#plan-settings-dialog .plan-version strong {
+    font-size:22px;margin:0;line-height:1.3;
+    color:white;
+}
+#plan-settings-dialog .plan-version .plan-version-status {
+    position:absolute;top:25px;right:16px;
+    border-radius:999px;padding:7px 10px;
+    color:#163b2c;background:var(--lime);
+    font-size:10px;font-weight:900;
+}
+#plan-settings-dialog .plan-settings-version-note {
+    display:flex;gap:11px;align-items:flex-start;
+    background:#eaf4ec;border-radius:12px;padding:14px;
+}
+#plan-settings-dialog .plan-settings-version-note svg {
+    width:20px;height:20px;flex:0 0 20px;
+    color:#226549;
+}
+#plan-settings-dialog .plan-settings-version-note p {
+    margin:0;color:#315e49;font-size:11px;line-height:1.55;
+}
+#plan-settings-dialog .plan-settings-actions {
+    display:flex;align-items:center;justify-content:space-between;
+    gap:13px;flex-wrap:wrap;
+    padding:16px 26px;border-top:1px solid #e2eae4;
+}
+#plan-settings-dialog .plan-settings-reload {
+    display:inline-flex;align-items:center;justify-content:center;
+    gap:9px;white-space:nowrap;
+}
+#plan-settings-dialog .plan-settings-reload svg {width:18px;height:18px;}
+#plan-settings-dialog .plan-settings-save-actions {
+    display:flex;align-items:center;gap:10px;margin-left:auto;
+}
+#plan-settings-dialog .plan-settings-save-actions .button {width:auto;}
+@media (max-width:720px){
+    #plan-settings-dialog[open] {
+        width:calc(100vw - 18px);max-width:calc(100vw - 18px);
+        max-height:calc(100dvh - 18px);overflow:auto;
+    }
+    #plan-settings-dialog > form {max-height:none;}
+    #plan-settings-dialog .plan-settings-heading {padding:17px;gap:10px;}
+    #plan-settings-dialog .plan-settings-heading-icon {
+        width:40px;height:40px;flex-basis:40px;border-radius:11px;
+    }
+    #plan-settings-dialog .plan-settings-heading-copy h2 {font-size:21px;}
+    #plan-settings-dialog .plan-settings-heading-copy > p:last-child{font-size:11px;}
+    #plan-settings-dialog .plan-settings-body {
+        grid-template-columns:minmax(0,1fr);gap:20px;
+        padding:18px;
+    }
+    #plan-settings-dialog .plan-settings-fields {
+        border-right:0;padding:0;
+    }
+    #plan-settings-dialog .plan-settings-version-panel {padding:16px;}
+    #plan-settings-dialog .plan-settings-actions {padding:13px 18px;}
+    #plan-settings-dialog .plan-settings-reload {width:100%;}
+    #plan-settings-dialog .plan-settings-save-actions {width:100%;justify-content:flex-end;}
+}
+@media (max-width:440px){
+    #plan-settings-dialog .plan-settings-heading-icon {display:none;}
+    #plan-settings-dialog .plan-settings-actions .button {flex:1 1 auto;}
+    #plan-settings-dialog .plan-settings-save-actions .button {width:auto;}
+}
+
+/* Unified icons for muscular analysis metrics: clear silhouettes, even optical weight. */
+#plan-muscle-dialog .plan-muscle-stat {
+    gap:10px;
+    padding:9px;
+    border:1px solid #e5eee7;
+    background:#f6faf7;
+}
+#plan-muscle-dialog .plan-muscle-stat-icon {
+    display:grid;
+    place-items:center;
+    flex:0 0 36px;
+    width:36px;
+    height:36px;
+    border-radius:12px;
+    background:#e4f3e8;
+    color:#256a49;
+}
+#plan-muscle-dialog .plan-muscle-stat-icon > svg {
+    display:block;
+    width:20px;
+    height:20px;
+    stroke:currentColor;
+}
+#plan-muscle-dialog .plan-muscle-stat-copy {
+    display:grid;
+    min-width:0;
+    gap:4px;
+}
+#plan-muscle-dialog .plan-muscle-stat-copy strong {
+    font-size:22px;
+    line-height:1.05;
+    color:#153d2f;
+}
+#plan-muscle-dialog .plan-muscle-stat-copy small {
+    font-size:11px;
+    line-height:1.35;
+    color:#587268;
+}
+@media (max-width:560px) {
+    #plan-muscle-dialog .plan-muscle-stat {
+        /* Keep a compact fixed footprint in both day and week modes. */
+        flex:0 0 76px;
+        height:76px;min-height:76px;max-height:76px;
+        padding:7px 4px;
+        gap:5px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat-icon {
+        flex-basis:32px;
+        width:32px;
+        height:32px;
+        border-radius:9px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat-icon > svg {
+        width:18px;
+        height:18px;
+    }
+    #plan-muscle-dialog .plan-muscle-stat-copy strong {font-size:20px;}
+    #plan-muscle-dialog .plan-muscle-stat-copy small {font-size:9px;}
+}
+
+/* Keep the Day/Week toolbar footprint identical across both scopes.
+   The day picker is invisible in week mode but still reserves its slot. */
+#plan-muscle-dialog .plan-muscle-toolbar {
+    min-height:94px;
+}
+#plan-muscle-dialog #plan-muscle-day-picker.is-inactive {
+    visibility:hidden;
+    pointer-events:none;
+}
+@media (max-width:560px) {
+    #plan-muscle-dialog .plan-muscle-toolbar {
+        min-height:143px;
+    }
+}
+
+/* Professional training preparation. Session-running view still hides the sidebar. */
+#view-training:not(.session-running) .training-layout {
+    grid-template-columns:minmax(335px,380px) minmax(0,1fr);
+    gap:22px;
+}
+#view-training .session-preparation {padding:22px;display:grid;gap:15px;}
+#view-training .session-prepare-heading {display:flex;align-items:flex-start;gap:12px;}
+#view-training .session-prepare-icon {
+    flex:0 0 46px;width:46px;height:46px;
+    display:grid;place-items:center;border-radius:13px;
+    background:#e5f9b4;color:#174735;font-size:27px;
+}
+#view-training .session-prepare-heading h2 {
+    margin:4px 0 6px;font-size:19px;line-height:1.2;
+    letter-spacing:-.025em;color:var(--ink);
+}
+#view-training .session-prepare-heading p:not(.eyebrow) {
+    font-size:11px;line-height:1.5;color:var(--muted);margin:0;
+}
+#view-training .session-preparation > .status-pill{
+    display:none;
+}
+#view-training .session-preparation-modes,
+#view-training .session-classification-modes{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+#view-training .session-prepare-choice {
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:6px;
+    min-width:0;min-height:83px;padding:10px 8px;
+    border:1px solid #d9e4dc;border-radius:12px;
+    color:var(--green);background:#fff;cursor:pointer;
+}
+#view-training .session-prepare-choice:hover{
+    border-color:#9cdb5c;background:#f5fbed;
+}
+#view-training .session-prepare-choice.is-selected {
+    border:1.5px solid #8bd62e;
+    background:linear-gradient(145deg,#efffd6,#f8fce9);
+    box-shadow:inset 0 0 0 1px #cff09f;
+}
+#view-training .session-prepare-choice > svg {width:23px;height:23px;flex:none;}
+#view-training .session-prepare-choice strong{
+    font-size:11px;line-height:1.25;font-weight:850;
+}
+#view-training .session-prepare-choice small {
+    font-size:9px;color:#648076;line-height:1.3;
+}
+#view-training .session-source-details {
+    padding:12px;background:#f4f8f4;border:1px solid #dfe8e1;border-radius:13px;
+}
+#view-training .session-source-details[hidden],
+#view-training .session-auto-classification[hidden],
+#view-training .session-manual-classification[hidden]{display:none!important;}
+#view-training .session-source-details label,
+#view-training .session-prepare-date,
+#view-training .session-notes-label{
+    color:#244d3f;font-size:11px;font-weight:800;
+}
+#view-training .session-source-details select,
+#view-training .session-prepare-date input{
+    margin-top:7px;min-height:42px;
+}
+#view-training .session-plan-preview{
+    margin-top:9px;color:#416957;font-size:10px;line-height:1.5;
+}
+#view-training .session-classification-setup{
+    display:grid;gap:10px;padding-top:12px;
+    border-top:1px solid #e2ebe5;
+}
+#view-training .session-classification-header{
+    display:flex;gap:8px;align-items:center;
+    font-size:12px;color:var(--green);
+}
+#view-training .session-classification-info{
+    display:inline-grid;place-items:center;
+    width:17px;height:17px;flex:0 0 17px;
+    border:1px solid #9aaca2;border-radius:50%;
+    color:#668078;font-size:10px;cursor:help;
+}
+#view-training .session-auto-classification{
+    display:grid;gap:5px;padding:12px;border-radius:12px;
+    background:#edf7ee;color:var(--green);
+}
+#view-training .session-auto-classification strong{font-size:12px;}
+#view-training .session-auto-classification small{font-size:10px;line-height:1.5;color:#597565;}
+#view-training .session-manual-classification{
+    display:grid;gap:8px;min-width:0;
+}
+#view-training .session-manual-label{
+    font-size:11px;font-weight:800;color:var(--green);
+}
+#view-training .session-manual-types{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;
+}
+#view-training .session-manual-type{
+    position:relative;display:block;min-width:0;cursor:pointer;
+}
+#view-training .session-manual-type input{
+    position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;
+}
+#view-training .session-manual-type-body{
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;
+    min-height:55px;padding:6px 3px;
+    border:1px solid #dfe6e0;border-radius:10px;background:#fff;
+    text-align:center;color:#235845;
+}
+#view-training .session-manual-type-body svg{width:18px;height:18px;}
+#view-training .session-manual-type-body small{font-size:9px;font-weight:750;line-height:1.25;}
+#view-training .session-manual-type input:checked + .session-manual-type-body{
+    border-color:#8acb39;background:#effcda;
+    box-shadow:inset 0 0 0 1px #a9df63;
+}
+#view-training .session-manual-type input:focus-visible + .session-manual-type-body{
+    outline:3px solid #aee86d;outline-offset:2px;
+}
+#view-training .session-notes-label small{color:var(--muted);font-weight:550;}
+#view-training .session-notes-label textarea{
+    display:block;margin-top:6px;min-height:50px;padding:9px 11px;
+    font-size:11px;resize:vertical;
+}
+#view-training .session-actions{margin-top:0;}
+@media(max-width:1080px){
+    #view-training:not(.session-running) .training-layout{
+        grid-template-columns:minmax(280px,350px) minmax(0,1fr);
+        gap:14px;
+    }
+}
+@media(max-width:800px){
+    #view-training:not(.session-running) .training-layout{
+        grid-template-columns:minmax(0,1fr);
+    }
+    #view-training .session-preparation{position:static;}
+}
+
+/* Active-session settings uses the same compact choice grid as preparation. */
+#session-settings-dialog .session-settings-classification {
+    display:grid;gap:12px;padding:15px 0;border:0;margin:0;
+    border-top:1px solid #e3ebe5;border-bottom:1px solid #e3ebe5;
+}
+#session-settings-dialog .session-settings-classification legend {
+    padding-top:12px;font-size:12px;font-weight:850;color:#173e30;
+}
+#session-settings-dialog .session-settings-mode-label {
+    display:flex;align-items:center;gap:9px;font-size:12px;font-weight:750;
+}
+#session-settings-dialog .session-settings-mode-label input {
+    min-height:18px;width:18px;accent-color:#8ccc35;
+}
+#session-settings-dialog .session-manual-types {
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;
+}
+#session-settings-dialog .session-manual-types[hidden]{display:none!important;}
+#session-settings-dialog .session-manual-type {
+    position:relative;display:block;cursor:pointer;min-width:0;
+}
+#session-settings-dialog .session-manual-type > input {
+    position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;
+}
+#session-settings-dialog .session-manual-type-body {
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:5px;min-height:59px;padding:7px 3px;
+    border-radius:11px;border:1px solid #dfe6e0;
+    background:#fff;color:#225740;text-align:center;
+}
+#session-settings-dialog .session-manual-type-body svg {width:20px;height:20px;}
+#session-settings-dialog .session-manual-type-body small {
+    font-size:10px;font-weight:800;line-height:1.2;
+}
+#session-settings-dialog .session-manual-type > input:checked + .session-manual-type-body {
+    border-color:#91cf44;background:#eefad8;
+}
+#session-settings-dialog .session-manual-type > input:focus-visible + .session-manual-type-body {
+    outline:3px solid #b5e87d;outline-offset:2px;
+}
+
+/* Long-press time controls: feedback without browser text selection. */
+#view-plans .plan-time-stepper [data-step-field="durationSeconds"] {
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+}
+#view-plans .plan-time-stepper [data-step-field="durationSeconds"]:active {
+    background:var(--lime-soft);
+}
+
+/* Anatomical muscle picker: FitCore dark green + lime icon language. */
+#exercise-picker-dialog .picker-filters { position:relative; z-index:3; }
+#exercise-picker-dialog .muscle-filter-field { display:grid; align-content:start; gap:5px; min-width:0; }
+#exercise-picker-dialog .muscle-filter-field > label { margin:0; color:var(--muted); font-weight:800; font-size:11px; }
+.muscle-filter-anchor { position:relative; min-width:0; }
+.muscle-filter-native {
+    position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;
+    clip-path:inset(50%); overflow:hidden;
+}
+.muscle-filter-trigger {
+    display:flex; align-items:center; gap:8px;
+    width:100%; min-width:0; height:44px; padding:4px 10px 4px 5px;
+    border:1px solid #cddbd1; border-radius:11px;
+    background:#fff; color:#102f26; font-size:12px; font-weight:800;
+    text-align:left; cursor:pointer;
+}
+.muscle-filter-trigger:hover { border-color:#90bfa2; background:#fafdf9; }
+.muscle-filter-trigger:focus-visible,
+.muscle-filter-trigger[aria-expanded="true"] {
+    outline:2px solid #b9ee68; outline-offset:2px; border-color:#7cb94c;
+}
+.muscle-filter-trigger-icon,
+.muscle-filter-option-icon {
+    display:grid; place-items:center; flex:none;
+    width:34px; height:34px; border-radius:10px;
+    background:#eaf5ea; color:#143f31;
+}
+.muscle-filter-current { min-width:0; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.muscle-filter-chevron { flex:none; width:16px; height:16px; fill:none; stroke:#365e4b; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.muscle-filter-menu {
+    position:absolute; top:calc(100% + 8px); right:0; z-index:120;
+    width:min(365px,calc(100vw - 38px));
+    max-height:min(490px,calc(100dvh - 240px));
+    min-height:130px; padding:11px; overflow-y:auto; overscroll-behavior:contain;
+    border:1px solid #d5e1d9; border-radius:17px; background:#fff;
+    box-shadow:0 20px 54px rgba(8,49,36,.18);
+    scrollbar-width:thin;
+}
+.muscle-filter-menu[hidden] { display:none !important; }
+.muscle-filter-menu-heading {
+    padding:6px 7px 11px; color:#627d6e; font-size:10px; font-weight:850;
+    letter-spacing:.07em; text-transform:uppercase;
+}
+.muscle-filter-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.muscle-filter-option {
+    display:flex; align-items:center; gap:8px; position:relative;
+    min-width:0; min-height:57px; padding:6px;
+    border:1px solid #e0e8e1; border-radius:12px;
+    background:#fbfdfb; color:#143f31; cursor:pointer; text-align:left;
+}
+.muscle-filter-option-icon { width:43px; height:43px; border-radius:11px; background:#ecf5ec; }
+.muscle-filter-option-label { min-width:0; flex:1; font-size:11px; font-weight:800; line-height:1.2; overflow-wrap:anywhere; }
+.muscle-filter-option-check { display:none; position:absolute; top:3px; right:4px; width:13px; height:13px; fill:none; stroke:#164b31; stroke-width:3; }
+.muscle-filter-option:hover { border-color:#a5cd9e; background:#f0f8ef; }
+.muscle-filter-option[aria-selected="true"] { border-color:#91d746; background:#effcda; box-shadow:inset 0 0 0 1px #91d746; }
+.muscle-filter-option[aria-selected="true"] .muscle-filter-option-check { display:block; }
+.muscle-filter-option:focus-visible { outline:3px solid #b0e65c; outline-offset:1px; }
+.fitcore-muscle-icon { display:block; width:87%; height:87%; overflow:visible; }
+.fitcore-muscle-icon .mi-halo { fill:#f4f8ef; }
+.fitcore-muscle-icon .mi-active { fill:#a9ef4c; stroke:#508e3f; stroke-width:.7; stroke-linejoin:round; }
+.fitcore-muscle-icon .mi-outline { fill:none; stroke:#103f32; stroke-width:2.25; stroke-linecap:round; stroke-linejoin:round; }
+.fitcore-muscle-icon .mi-outline .mi-detail { stroke:#adc5af; stroke-width:1.4; }
+.fitcore-muscle-icon .mi-accent { fill:none; stroke:#a9ef4c; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+@media(max-width:640px) {
+    #exercise-picker-dialog .muscle-filter-menu {
+        width:min(365px,calc(100vw - 48px));
+        max-height:min(430px,calc(100dvh - 180px));
+    }
+}
+@media(max-width:390px) {
+    .muscle-filter-list { grid-template-columns:1fr; }
+}
+
+/* Premium muscle atlas — high-fidelity, art-directed illustrations (batch 1/3).
+   SVG sprites clip the shared atlas into one square portrait per muscle. */
+.muscle-filter-trigger-icon .fitcore-muscle-icon.mi-premium,
+.muscle-filter-option-icon .fitcore-muscle-icon.mi-premium {
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    border-radius:inherit;
+}
+.muscle-filter-option-icon:has(.mi-premium) {
+    width:51px;
+    height:51px;
+    border:1px solid #dfebdb;
+    background:#f4f9ed;
+    overflow:hidden;
+}
+.muscle-filter-trigger-icon:has(.mi-premium) {
+    border:1px solid #dfebdb;
+    overflow:hidden;
+}
+.muscle-filter-option:has(.mi-premium) {
+    min-height:67px;
 }

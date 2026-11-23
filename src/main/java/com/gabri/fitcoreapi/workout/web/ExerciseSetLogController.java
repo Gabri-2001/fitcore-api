@@ -18,8 +18,10 @@ public class ExerciseSetLogController {
     @PostMapping @ResponseStatus(HttpStatus.CREATED)
     public ExerciseSetLogResponse create(@PathVariable Long userId, @PathVariable Long sessionExerciseId,
             @Valid @RequestBody CreateExerciseSetLogRequest request) {
-        return ExerciseSetLogResponse.from(service.create(userId, sessionExerciseId, request.setNumber(), request.weight(),
-                request.reps(), request.rir(), request.rpe(), request.completed(), request.notes()));
+        return ExerciseSetLogResponse.from(service.createWithMetrics(userId, sessionExerciseId,
+                request.setNumber(), request.weight(), request.reps(), request.rir(),
+                request.rpe(), request.completed(), request.notes(), request.durationSeconds(),
+                request.distanceMeters(), request.addedWeightKg(), request.assistanceWeightKg(), request.loadMode()));
     }
 
     @GetMapping
@@ -30,9 +32,10 @@ public class ExerciseSetLogController {
     @PutMapping("/{setLogId}")
     public ExerciseSetLogResponse update(@PathVariable Long userId, @PathVariable Long sessionExerciseId,
             @PathVariable Long setLogId, @Valid @RequestBody UpdateExerciseSetLogRequest request) {
-        return ExerciseSetLogResponse.from(service.update(userId, sessionExerciseId, setLogId,
+        return ExerciseSetLogResponse.from(service.updateWithMetrics(userId, sessionExerciseId, setLogId,
                 request.setNumber(), request.weight(), request.reps(), request.rir(), request.rpe(),
-                request.completed(), request.notes()));
+                request.completed(), request.notes(), request.durationSeconds(), request.distanceMeters(),
+                request.addedWeightKg(), request.assistanceWeightKg(), request.loadMode()));
     }
 
     @DeleteMapping("/{setLogId}")

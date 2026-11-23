@@ -89,7 +89,9 @@ public class TrainingStatisticsService {
                 comparison,
                 records,
                 from,
-                to
+                to,
+                current.logs(),
+                previous.logs()
         );
 
         return new TrainingStatisticsResponse(from, to, current.stats(), comparison, distribution, goalProgress);
@@ -181,7 +183,9 @@ public class TrainingStatisticsService {
             TrainingComparisonResponse comparison,
             List<ProgressRecord> records,
             LocalDate from,
-            LocalDate to
+            LocalDate to,
+            List<ExerciseSetLog> currentLogs,
+            List<ExerciseSetLog> previousLogs
     ) {
         GoalProfile goal = goals.findByUserAndActiveTrue(user).orElse(null);
         if (goal == null) {
@@ -201,7 +205,9 @@ public class TrainingStatisticsService {
         if (adherence == null) limitations.add("ACTIVE_WORKOUT_PLAN_WITH_DAYS_REQUIRED");
 
         if (goal.getGoalType() == GoalType.PERFORMANCE) {
-            BigDecimal trend = firstNonNull(comparison.oneRepMaxChangePercent(), comparison.volumeChangePercent());
+            // Comparar la MISMA variante y modalidad en ambos periodos.
+            // El mejor 1RM de ejercicios distintos no es un indicador de progreso.
+            BigDecimal trend = comparablePerformanceTrend(currentLogs,previousLogs);
             signals.add(new GoalSignalResponse("PERFORMANCE_TREND", signalForPositiveTrend(trend), trend));
             if (trend == null) {
                 limitations.add("PREVIOUS_TRAINING_PERIOD_REQUIRED");
@@ -453,6 +459,60 @@ public class TrainingStatisticsService {
                 .divide(previous.abs(), 2, RoundingMode.HALF_UP);
     }
 
+
+    /**
+     * Comparable activity: same variant, same load mode and metric. Bodyweight
+     * reps, seconds and barbell 1RM are distinct dimensions. Assisted/weighted
+     * rep comparisons require identical extra load (no invented equivalence).
+     */
+    private BigDecimal comparablePerformanceTrend(
+            List<ExerciseSetLog> current, List<ExerciseSetLog> previous) {
+        Map<String, BigDecimal> currentBest=performanceByVariant(current);
+        Map<String, BigDecimal> previousBest=performanceByVariant(previous);
+        List<BigDecimal> changes=new ArrayList<>();
+        for(var entry:currentBest.entrySet()){
+            BigDecimal old=previousBest.get(entry.getKey());
+            if(old==null||old.signum()<=0)continue;
+            BigDecimal change=percentChange(entry.getValue(),old);
+            if(change!=null)changes.add(change);
+        }
+        if(changes.isEmpty())return null;
+        return changes.stream().reduce(BigDecimal.ZERO,BigDecimal::add)
+                .divide(BigDecimal.valueOf(changes.size()),2,RoundingMode.HALF_UP);
+    }
+
+    private Map<String,BigDecimal> performanceByVariant(List<ExerciseSetLog> logs) {
+        Map<String,BigDecimal> best=new HashMap<>();
+        for(ExerciseSetLog log:logs){
+            if(log.getWorkoutSessionExercise()==null ||
+                    log.getWorkoutSessionExercise().getExerciseVariant()==null)continue;
+            Long variantId=log.getWorkoutSessionExercise().getExerciseVariant().getId();
+            if(variantId==null)continue;
+            String mode=log.getLoadMode()==null?"EXTERNAL_LOAD":log.getLoadMode();
+            String extra="";
+            BigDecimal performance=null;
+            if(log.getDurationSeconds()!=null&&log.getDurationSeconds()>0){
+                performance=BigDecimal.valueOf(log.getDurationSeconds());
+                extra=":SECONDS";
+            }else if("EXTERNAL_LOAD".equals(mode)){
+                performance=log.estimatedOneRepMax();
+                extra=":ONE_RM";
+            }else if(log.getReps()!=null&&log.getReps()>0){
+                performance=BigDecimal.valueOf(log.getReps());
+                if("WEIGHTED".equals(mode)){
+                    if(log.getAddedWeightKg()==null)continue;
+                    extra=":ADDED:"+log.getAddedWeightKg().stripTrailingZeros();
+                }else if("ASSISTED".equals(mode)){
+                    if(log.getAssistanceWeightKg()==null)continue;
+                    extra=":ASSISTANCE:"+log.getAssistanceWeightKg().stripTrailingZeros();
+                }else extra=":BODY_REPS";
+            }
+            if(performance==null||performance.signum()<=0)continue;
+            best.merge(variantId+":"+mode+extra,performance,BigDecimal::max);
+        }
+        return best;
+    }
+
     private BigDecimal firstNonNull(BigDecimal first, BigDecimal second) {
         return first != null ? first : second;
     }
@@ -466,12 +526,7 @@ public class TrainingStatisticsService {
     }
 
     private BigDecimal volume(ExerciseSetLog log) {
-        if (log.getReps() == null) return BigDecimal.ZERO;
-        BigDecimal load = log.getWeight();
-        if (load == null && log.getWorkoutSessionExercise().getExerciseVariant().getEquipment() == Equipment.BODYWEIGHT) {
-            load = log.getWorkoutSessionExercise().getWorkoutSession().getUser().getWeightKg();
-        }
-        return load == null ? BigDecimal.ZERO : load.multiply(BigDecimal.valueOf(log.getReps()));
+        return com.gabri.fitcoreapi.workout.domain.WorkoutPerformanceMath.externalVolume(log);
     }
 
     private BigDecimal rounded(BigDecimal value) {

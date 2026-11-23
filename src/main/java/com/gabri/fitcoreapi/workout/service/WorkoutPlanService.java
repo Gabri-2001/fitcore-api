@@ -194,11 +194,13 @@ public class WorkoutPlanService {
                 .sorted(java.util.Comparator.comparing(WorkoutDay::getDayOrder))
                 .forEach(sourceDay -> {
                     WorkoutDay day = new WorkoutDay(sourceDay.getName(), sourceDay.getDayOrder(), sourceDay.getDayType());
+                    day.setDayTypeManual(sourceDay.isDayTypeManual());
                     sourceDay.getWorkoutExercises().stream()
                             .sorted(java.util.Comparator.comparing(WorkoutExercise::getExerciseOrder))
                             .forEach(sourceExercise -> day.addWorkoutExercise(new WorkoutExercise(
                                     sourceExercise.getExerciseVariant(), sourceExercise.getSets(), sourceExercise.getReps(),
-                                    sourceExercise.getRestSeconds(), sourceExercise.getExerciseOrder())));
+                                    sourceExercise.getRestSeconds(), sourceExercise.getExerciseOrder(),
+                                    sourceExercise.getTargetDurationSeconds(), sourceExercise.getTargetDistanceMeters())));
                     target.addWorkoutDay(day);
                 });
     }
@@ -210,6 +212,7 @@ public class WorkoutPlanService {
                 throw new BusinessRuleException("Workout day order must be unique within a plan");
             }
             WorkoutDay day = new WorkoutDay(dayRequest.getName(), dayRequest.getDayOrder(), dayRequest.getDayType());
+            day.setDayTypeManual(dayRequest.isDayTypeManual());
             var exerciseOrders = new HashSet<Integer>();
             for (var exerciseRequest : dayRequest.getExercises()) {
                 if (!exerciseOrders.add(exerciseRequest.getExerciseOrder())) {
@@ -218,9 +221,20 @@ public class WorkoutPlanService {
                 var variant = exerciseVariantRepository.findByCodeAndActiveTrue(exerciseRequest.getExerciseVariantCode())
                         .orElseThrow(() -> new ResourceNotFoundException(
                                 "Exercise variant not found with code: " + exerciseRequest.getExerciseVariantCode()));
+                String unit = variant.getExercise().getDefaultUnit();
+                if ("SECONDS".equals(unit)) {
+                    if (exerciseRequest.getTargetDurationSeconds() == null ||
+                            exerciseRequest.getTargetDurationSeconds() < 1 ||
+                            exerciseRequest.getReps() != null) {
+                        throw new BusinessRuleException("El ejercicio por tiempo requiere segundos y no repeticiones");
+                    }
+                } else if (exerciseRequest.getReps() == null || exerciseRequest.getReps() < 1) {
+                    throw new BusinessRuleException("El ejercicio requiere repeticiones");
+                }
                 day.addWorkoutExercise(new WorkoutExercise(
                         variant, exerciseRequest.getSets(), exerciseRequest.getReps(),
-                        exerciseRequest.getRestSeconds(), exerciseRequest.getExerciseOrder()
+                        exerciseRequest.getRestSeconds(), exerciseRequest.getExerciseOrder(),
+                        exerciseRequest.getTargetDurationSeconds(), exerciseRequest.getTargetDistanceMeters()
                 ));
             }
             plan.addWorkoutDay(day);

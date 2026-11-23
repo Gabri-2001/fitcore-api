@@ -9,5 +9,9 @@ public enum WorkoutDayType {
     FULL_BODY,
     CARDIO,
     MOBILITY,
-    REST
+    REST,
+    ARMS,
+    CORE,
+    MIXED,
+    CONDITIONING
 }

@@ -104,4 +104,27 @@ class WorkoutSessionExerciseServiceTest {
         exercise.setWorkoutSession(session);
         return exercise;
     }
+    @Test
+    void newFreeExerciseStartsWithRestTimerOffButExplicitRestIsKept() {
+        User user = mock(User.class);
+        WorkoutSession currentSession = session(22L, LocalDate.of(2026, 11, 13));
+        User sessionUser = mock(User.class);
+        ReflectionTestUtils.setField(currentSession, "user", sessionUser);
+        when(users.findById(7L)).thenReturn(Optional.of(user));
+        when(sessions.findById(22L)).thenReturn(Optional.of(currentSession));
+        when(user.getId()).thenReturn(7L);
+        when(sessionUser.getId()).thenReturn(7L);
+        when(variants.findByCodeAndActiveTrue("bench")).thenReturn(Optional.of(mock(ExerciseVariant.class)));
+        when(sessionExercises.save(org.mockito.ArgumentMatchers.any(WorkoutSessionExercise.class)))
+            .thenAnswer(call -> call.getArgument(0));
+
+        var off = service.addWorkoutSessionExercise(7L,22L,null,"bench",null,
+            false,null,null,null,null,null,null);
+        assertThat(off.getRestSeconds()).isZero();
+
+        var explicit = service.addWorkoutSessionExercise(7L,22L,null,"bench",90,
+            false,null,null,null,null,null,null);
+        assertThat(explicit.getRestSeconds()).isEqualTo(90);
+    }
+
 }

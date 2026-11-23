@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "codex/**"]
+    branches: [main, master, "fix/**", "codex/**"]
   pull_request:
 
 jobs:
@@ -15,5 +15,12 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Test
-        run: ./mvnw -B verify
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Check frontend JavaScript syntax
+        run: node --check src/main/resources/static/fitcore-lab/app.js
+      - name: Frontend regression tests
+        run: node --test src/test/js/*.test.cjs
+      - name: Test backend and database migrations
+        run: mvn -B verify

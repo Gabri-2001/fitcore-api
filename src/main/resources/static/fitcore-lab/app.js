@@ -4,13 +4,16 @@ const SESSION_STARTED_KEY = 'fitcore.lab.session.startedAt';
 const state = {
     auth: JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'),
     logs: [], exercises: [], variants: [], catalogExercises: [], selectedExercise: null,
+    catalogPage: 0, catalogTotalPages: 0, catalogRequestId: 0,
     selectedVariant: null, variantConfiguration: {}, activations: [], svg: null,
     activePlan: null, planDays: [], selectedPlanDayIndex: 0, currentSession: null,
     sessionExercises: [], sessionSets: new Map(), sessionStartedAt: Number(localStorage.getItem(SESSION_STARTED_KEY)) || null,
     sessionTimer: null, sessionPicker: {exercise:null, configuration:{}}, sessionActivations: new Map(),
     pickerMode: 'session', planPickerDayIndex: null, planPickerAction: 'add',
     planPickerExerciseIndex: null, planPickerExerciseCode: null,
-    planAdvancedConfig: null,
+    planAdvancedConfig: null, pickerConfigOpen: false, pickerConfigMoreOpen: false,
+    pickerDraft: null, pickerGroupCodes: null,
+    exerciseProgress: null, exerciseProgressRequest: 0,
     sessionPrevious: new Map(), restEditorExerciseId: null, rpeTarget: null,
     restTimer: {exerciseId:null, exerciseName:'', remaining:0, total:0, running:false, interval:null}
 };
@@ -59,7 +62,7 @@ const muscleSvgMap = {
 const enums = {
     equipment: ['BARBELL','DUMBBELL','EZ_BAR','CABLE','MACHINE_SELECTORISED','MACHINE_PLATE_LOADED','SMITH_MACHINE','BODYWEIGHT','TRAP_BAR','KETTLEBELL','WEIGHT_PLATE','BENCH','BAND','MEDICINE_BALL','AB_WHEEL','WRIST_ROLLER','NONE'],
     muscles: ['CHEST','BACK','SHOULDERS','SCAPULAR','ROTATOR_CUFF','BICEPS','TRICEPS','FOREARMS','QUADRICEPS','HAMSTRINGS','GLUTES','ADDUCTORS','CALVES','CORE','NECK','FULL_BODY'],
-    dayTypes: ['PUSH','PULL','LEGS','UPPER','LOWER','FULL_BODY','CARDIO','MOBILITY','REST']
+    dayTypes: ['PUSH','PULL','LEGS','UPPER','LOWER','FULL_BODY','CARDIO','MOBILITY','REST','ARMS','CORE','MIXED','CONDITIONING']
 };
 
 const labels = {
@@ -78,9 +81,9 @@ const labels = {
     COMMON:'Común', UNCOMMON:'Poco común', MACHINE_DEPENDENT:'Depende de la máquina', TECHNIQUE_DEPENDENT:'Depende de la técnica', NOT_RECOMMENDED:'No recomendado',
     DIRECT_EMG:'EMG directo', INDIRECT_EMG_FROM_SIMILAR_EXERCISE:'EMG indirecto de ejercicio similar', BIOMECHANICAL_INFERENCE:'Inferencia biomecánica', ANATOMICAL_CONSENSUS:'Consenso anatómico', VISUAL_APPROXIMATION:'Aproximación visual', REVIEW_REQUIRED:'Pendiente de revisión',
     PEER_REVIEWED:'Revisión científica', ANATOMICAL_REFERENCE:'Referencia anatómica', PROFESSIONAL_REFERENCE:'Referencia profesional', LEGACY_SEED:'Dato heredado', REVIEW:'En revisión', HIGH:'Alta', LOW_MEDIUM:'Baja-media', LOW:'Baja',
-    BACK_WIDTH:'Amplitud de espalda', BACK_THICKNESS:'Densidad de espalda', LAT_BIAS:'Énfasis dorsal', UPPER_BACK_BIAS:'Énfasis en espalda alta', SCAPULAR_CONTROL:'Control escapular', BICEPS_BIAS:'Énfasis en bíceps', BRACHIALIS_BRACHIORADIALIS_BIAS:'Énfasis en braquial y braquiorradial', GRIP_STRENGTH:'Fuerza de agarre', CHEST_STERNAL_BIAS:'Énfasis en pecho medio', CHEST_CLAVICULAR_BIAS:'Énfasis en pecho superior', CHEST_LOWER_BIAS:'Énfasis en pecho inferior', TRICEPS_BIAS:'Énfasis en tríceps', SHOULDER_STRENGTH:'Fuerza de hombro', SIDE_DELTS_BIAS:'Énfasis en deltoides lateral', REAR_DELTS_BIAS:'Énfasis en deltoides posterior', QUAD_BIAS:'Énfasis en cuádriceps', GLUTE_BIAS:'Énfasis en glúteo', HAMSTRING_BIAS:'Énfasis en isquiotibiales', ADDUCTOR_BIAS:'Énfasis en aductores', HIP_ABDUCTION_BIAS:'Énfasis en abductores', CALF_GASTROCNEMIUS_BIAS:'Énfasis en gastrocnemio', CALF_SOLEUS_BIAS:'Énfasis en sóleo', CORE_FLEXION:'Flexión del abdomen', CORE_ANTI_EXTENSION:'Antiextensión del abdomen', CORE_ANTI_ROTATION:'Antirrotación del abdomen', CORE_LATERAL_STABILITY:'Estabilidad lateral', POSTERIOR_CHAIN:'Cadena posterior', GENERAL_STRENGTH:'Fuerza general', MACHINE_STABILITY:'Estabilidad guiada', UNILATERAL_STABILITY:'Estabilidad unilateral',
+    BACK_WIDTH:'Amplitud de espalda', BACK_THICKNESS:'Densidad de espalda', LAT_BIAS:'Énfasis dorsal', UPPER_BACK_BIAS:'Énfasis en espalda alta', SCAPULAR_CONTROL:'Control escapular', ROTATOR_CUFF_EXTERNAL_ROTATION:'Rotación externa del manguito', ROTATOR_CUFF_INTERNAL_ROTATION:'Rotación interna del manguito', BICEPS_BIAS:'Énfasis en bíceps', BRACHIALIS_BRACHIORADIALIS_BIAS:'Énfasis en braquial y braquiorradial', GRIP_STRENGTH:'Fuerza de agarre', WRIST_FLEXORS_BIAS:'Énfasis en flexores de muñeca', WRIST_EXTENSORS_BIAS:'Énfasis en extensores de muñeca', FOREARM_PRONATION:'Pronación de antebrazo', FOREARM_SUPINATION:'Supinación de antebrazo', CHEST_STERNAL_BIAS:'Énfasis en pecho medio', CHEST_CLAVICULAR_BIAS:'Énfasis en pecho superior', CHEST_LOWER_BIAS:'Énfasis en pecho inferior', TRICEPS_BIAS:'Énfasis en tríceps', SHOULDER_STRENGTH:'Fuerza de hombro', SIDE_DELTS_BIAS:'Énfasis en deltoides lateral', REAR_DELTS_BIAS:'Énfasis en deltoides posterior', QUAD_BIAS:'Énfasis en cuádriceps', GLUTE_BIAS:'Énfasis en glúteo', HAMSTRING_BIAS:'Énfasis en isquiotibiales', ADDUCTOR_BIAS:'Énfasis en aductores', HIP_ABDUCTION_BIAS:'Énfasis en abductores', CALF_GASTROCNEMIUS_BIAS:'Énfasis en gastrocnemio', CALF_SOLEUS_BIAS:'Énfasis en sóleo', CORE_FLEXION:'Flexión del abdomen', CORE_ANTI_EXTENSION:'Antiextensión del abdomen', CORE_ANTI_ROTATION:'Antirrotación del abdomen', CORE_LATERAL_STABILITY:'Estabilidad lateral', POSTERIOR_CHAIN:'Cadena posterior', GENERAL_STRENGTH:'Fuerza general', MACHINE_STABILITY:'Estabilidad guiada', UNILATERAL_STABILITY:'Estabilidad unilateral',
     STRENGTH:'Fuerza', CARDIO:'Cardio', MOBILITY:'Movilidad', SPORT_SPECIFIC:'Específico del deporte', HYPERTROPHY:'Hipertrofia', ENDURANCE:'Resistencia', MODERATE:'Moderada', VERY_HIGH:'Muy alta',
-    HORIZONTAL_PUSH:'Empuje horizontal', VERTICAL_PUSH:'Empuje vertical', HORIZONTAL_PULL:'Tirón horizontal', VERTICAL_PULL:'Tirón vertical', SQUAT:'Sentadilla', HIP_HINGE:'Bisagra de cadera', LUNGE:'Zancada', HIP_EXTENSION:'Extensión de cadera', HIP_ABDUCTION:'Abducción de cadera', HIP_ADDUCTION:'Aducción de cadera', KNEE_EXTENSION:'Extensión de rodilla', KNEE_FLEXION:'Flexión de rodilla', ELBOW_FLEXION:'Flexión de codo', ELBOW_EXTENSION:'Extensión de codo', SHOULDER_ABDUCTION:'Abducción de hombro', SHOULDER_FLEXION:'Flexión de hombro', SHOULDER_HORIZONTAL_ABDUCTION:'Abducción horizontal de hombro', SHOULDER_EXTERNAL_ROTATION:'Rotación externa de hombro', SCAPULAR_ELEVATION:'Elevación escapular', SCAPULAR_RETRACTION_DEPRESSION:'Retracción y depresión escapular', ANKLE_PLANTAR_FLEXION:'Flexión plantar', ANKLE_DORSIFLEXION:'Flexión dorsal del tobillo', TRUNK_FLEXION:'Flexión del tronco', HIP_TRUNK_FLEXION:'Flexión de cadera y tronco', TRUNK_ROTATION:'Rotación del tronco', ANTI_EXTENSION:'Antiextensión', ANTI_ROTATION:'Antirrotación', ANTI_LATERAL_FLEXION:'Antiflexión lateral', CARRY:'Transporte de carga', ISOLATION:'Aislamiento',
+    HORIZONTAL_PUSH:'Empuje horizontal', VERTICAL_PUSH:'Empuje vertical', HORIZONTAL_PULL:'Tirón horizontal', VERTICAL_PULL:'Tirón vertical', SQUAT:'Sentadilla', HIP_HINGE:'Bisagra de cadera', LUNGE:'Zancada', HIP_EXTENSION:'Extensión de cadera', HIP_ABDUCTION:'Abducción de cadera', HIP_ADDUCTION:'Aducción de cadera', KNEE_EXTENSION:'Extensión de rodilla', KNEE_FLEXION:'Flexión de rodilla', ELBOW_FLEXION:'Flexión de codo', ELBOW_EXTENSION:'Extensión de codo', SHOULDER_ABDUCTION:'Abducción de hombro', SHOULDER_FLEXION:'Flexión de hombro', SHOULDER_HORIZONTAL_ABDUCTION:'Abducción horizontal de hombro', SHOULDER_EXTERNAL_ROTATION:'Rotación externa de hombro', SCAPULAR_ELEVATION:'Elevación escapular', SCAPULAR_RETRACTION_DEPRESSION:'Retracción y depresión escapular', SCAPULAR_PROTRACTION:'Protracción escapular', SCAPULAR_UPWARD_ROTATION:'Rotación ascendente de escápula', SHOULDER_INTERNAL_ROTATION:'Rotación interna de hombro', ANKLE_PLANTAR_FLEXION:'Flexión plantar', ANKLE_DORSIFLEXION:'Flexión dorsal del tobillo', TRUNK_FLEXION:'Flexión del tronco', HIP_TRUNK_FLEXION:'Flexión de cadera y tronco', TRUNK_ROTATION:'Rotación del tronco', ANTI_EXTENSION:'Antiextensión', ANTI_ROTATION:'Antirrotación', ANTI_LATERAL_FLEXION:'Antiflexión lateral', CARRY:'Transporte de carga', ISOLATION:'Aislamiento', WRIST_FLEXION:'Flexión de muñeca', WRIST_EXTENSION:'Extensión de muñeca', FOREARM_ROTATION:'Rotación de antebrazo', WRIST_FLEXION_EXTENSION:'Flexoextensión de muñeca', GRIP_ISOMETRIC:'Agarre isométrico',
     BILATERAL:'Bilateral', UNILATERAL:'Unilateral', ALTERNATING:'Alterna', ISO_LATERAL:'Iso-lateral',
     PUSH:'Empuje', PULL:'Tirón', LEGS:'Piernas', UPPER:'Tren superior', LOWER:'Tren inferior', REST:'Descanso',
     IN_PROGRESS:'En curso', COMPLETED:'Completada', CANCELLED:'Cancelada', PENDING:'Pendiente', ACCEPTED:'Aceptada', REJECTED:'Rechazada', EXPIRED:'Caducada',
@@ -102,6 +105,13 @@ const today = () => new Date().toISOString().slice(0, 10);
 const daysAgo = days => new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
 const friendly = value => value == null ? '—' : (labels[value] || String(value).toLowerCase().replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()));
 const variantValue = (key, value) => {
+    if (key === 'requiredFacility') return ({
+        NONE:'Sin requisito especial',WALL:'Necesita pared',
+        PULL_UP_BAR:'Barra de dominadas',PARALLEL_BARS:'Paralelas',
+        BENCH:'Banco',CAPTAINS_CHAIR:'Silla romana',
+        ANKLE_ANCHOR:'Anclaje de tobillos'
+    })[value] || friendly(value);
+    if (key === 'benchAngle') return FitCoreVariantUI.angleLabel(value);
     if (key === 'gripType' && value === 'NEUTRAL') return 'Neutro';
     if (key === 'gripWidth') return {NARROW:'Cerrada', MEDIUM:'Media', WIDE:'Abierta'}[value] || friendly(value);
     return friendly(value);
@@ -227,6 +237,7 @@ function navigate(view) {
         void renderPlanMusclePreview();
     }
     if (view === 'recommendations' && state.auth) loadRecommendations();
+    if (view === 'endurance' && state.auth) void loadEnduranceActivities();
 }
 
 async function healthCheck() {
@@ -275,6 +286,7 @@ const variantConfigFields = [
     {key:'bodyPosition', label:'Posición corporal', empty:['NOT_APPLICABLE']},
     {key:'trajectory', label:'Trayectoria', empty:['NOT_APPLICABLE']},
     {key:'supportType', label:'Tipo de apoyo', empty:['NOT_APPLICABLE']},
+    {key:'requiredFacility', label:'Superficie o instalación necesaria', empty:[]},
     {key:'stanceType', label:'Colocación de los pies', empty:['NOT_APPLICABLE']},
     {key:'footPlacement', label:'Posición de los pies', empty:['NOT_APPLICABLE']},
     {key:'kneePosition', label:'Posición de las rodillas', empty:['NOT_APPLICABLE']},
@@ -283,26 +295,60 @@ const variantConfigFields = [
     {key:'laterality', label:'Ejecución', empty:['NOT_APPLICABLE']}
 ];
 
-async function searchCatalog() {
+async function searchCatalog(page = 0) {
     if (!requireAuth()) return;
-    const params = new URLSearchParams({page:'0', size:'100'});
-    const q = $('catalog-query').value.trim(), equipment = $('catalog-equipment').value, muscleGroup = $('catalog-muscle').value;
-    if (q) params.set('q', q); if (equipment) params.append('equipment', equipment); if (muscleGroup) params.append('muscleGroup', muscleGroup);
+    // La API pagina variantes, no ejercicios. La navegación permite ver todas
+    // las coincidencias sin truncar el catálogo a los primeros 100 resultados.
+    const requestId = ++state.catalogRequestId;
+    const safePage = Math.max(0, Number(page) || 0);
+    const params = new URLSearchParams({page: String(safePage), size: '50'});
+    const q = $('catalog-query').value.trim();
+    const equipment = $('catalog-equipment').value;
+    const muscleGroup = $('catalog-muscle').value;
+    if (q) params.set('q', q);
+    if (equipment) params.append('equipment', equipment);
+    if (muscleGroup) params.append('muscleGroup', muscleGroup);
     params.set('includeStabilizers', String($('catalog-stabilizers').checked));
+
     try {
         if (!state.exercises.length || !state.variants.length) {
-            [state.exercises, state.variants] = await Promise.all([api('/api/exercises'), api('/api/exercise-variants')]);
+            [state.exercises, state.variants] = await Promise.all([
+                api('/api/exercises'), api('/api/exercise-variants')
+            ]);
             updateVariantDatalist();
+            if ($('exercise-progress-family')) refreshExerciseProgressOptions();
         }
         const result = await api(`/api/exercise-variants/search?${params}`);
+        if (requestId !== state.catalogRequestId) return;
+
         const matchingVariants = result.content || [];
         const allowedExerciseCodes = new Set(matchingVariants.map(variant => variant.exerciseCode));
-        state.catalogVariantCounts = matchingVariants.reduce((counts, variant) => counts.set(variant.exerciseCode, (counts.get(variant.exerciseCode) || 0) + 1), new Map());
+        state.catalogVariantCounts = matchingVariants.reduce(
+            (counts, variant) => counts.set(variant.exerciseCode, (counts.get(variant.exerciseCode) || 0) + 1),
+            new Map()
+        );
         state.catalogExercises = state.exercises.filter(exercise => allowedExerciseCodes.has(exercise.code));
-        $('catalog-count').textContent = `${state.catalogExercises.length} ejercicio${state.catalogExercises.length === 1 ? '':'s'}`;
-        $('catalog-page').textContent = `${matchingVariants.length} configuraciones disponibles`;
-        renderCatalog(); if (state.currentSession) renderSession(); $('metric-exercises').textContent = state.exercises.length;
-    } catch (error) { toast(error.message, true); }
+        state.catalogPage = result.page ?? safePage;
+        state.catalogTotalPages = result.totalPages ?? 0;
+        const totalVariants = result.totalElements ?? matchingVariants.length;
+        $('catalog-count').textContent = `${state.catalogExercises.length} ejercicios en esta página`;
+        $('catalog-page').textContent = `${totalVariants} configuraciones coincidentes`;
+        renderCatalog();
+        renderCatalogPagination();
+        if (state.currentSession) renderSession();
+        $('metric-exercises').textContent = state.exercises.length;
+    } catch (error) {
+        if (requestId === state.catalogRequestId) toast(error.message, true);
+    }
+}
+
+function renderCatalogPagination() {
+    const pager = $('catalog-pagination');
+    const total = state.catalogTotalPages;
+    pager.hidden = total <= 1;
+    $('catalog-page-indicator').textContent = `Página ${state.catalogPage + 1} de ${Math.max(1, total)}`;
+    $('catalog-prev').disabled = state.catalogPage <= 0;
+    $('catalog-next').disabled = state.catalogPage >= total - 1;
 }
 
 function renderCatalog() {
@@ -320,14 +366,16 @@ function renderCatalog() {
 
 async function selectExercise(code) {
     state.selectedExercise = state.exercises.find(exercise => exercise.code === code);
-    state.variantConfiguration = {};
+    state.variantConfiguration = configurationFromVariant(
+        defaultVariantForExercise(state.selectedExercise)
+    );
     state.activations = [];
     renderCatalog();
     await previewConfiguredVariant();
 }
 
-function resolveVariantForExercise(exercise, configuration) {
-    const variants = orderedVariantsForExercise(exercise);
+function resolveVariantForExercise(exercise, configuration, allowedVariants = null) {
+    const variants = allowedVariants || orderedVariantsForExercise(exercise);
     let candidates = variants;
     const controls = [];
     variantConfigFields.forEach(field => {
@@ -426,68 +474,177 @@ function variantName(code) {
 function addPlanDay(source = null) {
     syncPlanEditor();
     state.planDays.push(source ? {
-        id: source.id, name:source.name, dayType:source.dayType, exercises:(source.exercises || []).map(x => ({id:x.id, exerciseVariantCode:x.exerciseVariantCode, sets:x.sets, reps:x.reps, restSeconds:x.restSeconds}))
-    } : {name:'Nueva sesión', dayType:'FULL_BODY', exercises:[]});
+        id: source.id, name:source.name, dayType:source.dayType, dayTypeManual:source.dayTypeManual ?? true, exercises:(source.exercises || []).map(x => ({id:x.id, exerciseVariantCode:x.exerciseVariantCode, sets:x.sets, reps:x.reps, targetDurationSeconds:x.targetDurationSeconds, targetDistanceMeters:x.targetDistanceMeters, restSeconds:x.restSeconds}))
+    } : {name:'Nueva sesión', dayType:'FULL_BODY', dayTypeManual:false, exercises:[]});
     state.selectedPlanDayIndex = state.planDays.length - 1;
     renderPlanMode();
 }
 
 
-function openPlanNewDayDialog() {
+function planDayTypeOptions(inputName, selectedType='FULL_BODY'){
+    return enums.dayTypes.map(type=>`
+        <label class="plan-edit-type-card">
+            <input type="radio" name="${inputName}" value="${type}"
+                ${type===selectedType?'checked':''}>
+            <span class="plan-edit-type-content">
+                <span class="plan-edit-type-symbol">${planDayIcon(type)}</span>
+                <span>${escapeHtml(friendly(type))}</span>
+            </span>
+        </label>
+    `).join('');
+}
+
+function updatePlanNewDayTypeMode(){
+    const automatic=$('plan-new-day-auto').checked;
+    $('plan-new-day-dialog').dataset.classificationMode=automatic?'auto':'manual';
+    $('plan-new-auto-panel').hidden=!automatic;
+    $('plan-new-manual-panel').hidden=automatic;
+    $('plan-new-day-dialog').querySelectorAll('[data-plan-new-mode]').forEach(button=>{
+        const selected=button.dataset.planNewMode===(automatic?'auto':'manual');
+        button.setAttribute('aria-pressed',String(selected));
+        button.classList.toggle('is-selected',selected);
+    });
+    $('plan-new-day-types').querySelectorAll('input[type="radio"]')
+        .forEach(input=>{input.disabled=automatic;});
+}
+
+function openPlanNewDayDialog(){
     syncPlanEditor();
-
-    $('plan-new-day-name').value =
-        `Día ${state.planDays.length + 1}`;
-
-    $('plan-new-day-type').value = 'FULL_BODY';
-
+    $('plan-new-day-name').value=`Día ${state.planDays.length+1}`;
+    $('plan-new-day-auto').checked=true;
+    $('plan-new-day-types').innerHTML=planDayTypeOptions('plan-new-day-type','FULL_BODY');
+    updatePlanNewDayTypeMode();
     $('plan-new-day-dialog').showModal();
     $('plan-new-day-name').focus();
 }
 
-function submitPlanNewDay(event) {
+function submitPlanNewDay(event){
     event.preventDefault();
-
-    const name =
-        $('plan-new-day-name').value.trim();
-
-    const dayType =
-        $('plan-new-day-type').value;
-
-    if (!name || !enums.dayTypes.includes(dayType)) {
-        return toast(
-            'Indica un nombre y un tipo de día válido.',
-            true
-        );
+    const name=$('plan-new-day-name').value.trim();
+    const automatic=$('plan-new-day-auto').checked;
+    const selected=$('plan-new-day-types')
+        .querySelector('input[name="plan-new-day-type"]:checked');
+    const dayType=automatic?'FULL_BODY':selected?.value;
+    if(!name||!enums.dayTypes.includes(dayType)){
+        toast('Indica un nombre y selecciona un tipo de día válido.',true);
+        return;
     }
-
-    addPlanDay({
-        name,
-        dayType,
-        exercises: []
-    });
-
+    addPlanDay({name,dayType,dayTypeManual:!automatic,exercises:[]});
     $('plan-new-day-dialog').close();
-
-    toast(
-        `Día «${name}» añadido al plan. Recuerda guardar el plan.`
-    );
+    toast(`Día «${name}» añadido al plan. Recuerda guardar el plan.`);
 }
 
 
+function consolidatedDayBadge(day){
+    if(day.dayTypeManual!==false||!day.classification||
+       day.classification.provisional||!day.classification.structure)return '';
+    const label=FitCoreDayClassifier.STRUCTURE[day.classification.structure]
+        ||friendly(day.classification.structure);
+    return '<span class="plan-day-type-badge" title="Clasificación automática consolidada">'+
+        planDayIcon(day.classification.structure)+' '+escapeHtml(label)+'</span>';
+}
+
+function planDayLabel(day){
+    if(day.dayTypeManual!==false)return FitCoreDayClassifier.STRUCTURE[day.dayType]||friendly(day.dayType);
+    if(!day.classification)return day.exercises.length?'Analizando día…':'Pendiente de ejercicios';
+    return FitCoreDayClassifier.describe(day.classification)+
+        (day.classification.provisional?' · provisional':'');
+}
+
+function updatePlanClassificationVisuals(){
+    const day=state.planDays[state.selectedPlanDayIndex];
+    const el=$('plan-day-classification');
+    if(!day||!el)return;
+    const outcome=day.classification;
+    const manual=day.dayTypeManual!==false;
+    const suggested=outcome?FitCoreDayClassifier.describe(outcome):'Sin datos suficientes';
+    const title=manual
+        ? (FitCoreDayClassifier.STRUCTURE[day.dayType]||friendly(day.dayType))
+        : (outcome?FitCoreDayClassifier.describe(outcome):'Pendiente de ejercicios');
+    const confidence={high:'alta',medium:'media',low:'baja'};
+    const status=manual?'Elegida manualmente'
+        :outcome?(outcome.provisional?'Provisional':'Consolidada')+
+            ' · Confianza '+(confidence[outcome.confidence]||'baja')
+        :'Añade ejercicios para obtener una sugerencia';
+    // The summary is the only visible location for the day classification.
+    // Avoid repeating focus, status or the full type in the tabs and title.
+    const reason=!manual&&outcome?.provisional&&outcome.reasons.length
+        ? outcome.reasons[0] : '';
+    el.innerHTML='<span class="plan-classification-eyebrow">'+
+        (manual?'CLASIFICACIÓN MANUAL':'CLASIFICACIÓN AUTOMÁTICA')+'</span>'+
+        '<strong>'+escapeHtml(title)+'</strong>'+
+        '<small>'+escapeHtml(status)+'</small>'+
+        (reason?'<small class="plan-classification-reason">'+escapeHtml(reason)+'</small>':'');
+    const badgeHost=document.querySelector('.plan-day-type-slot');
+    if(badgeHost)badgeHost.innerHTML=consolidatedDayBadge(day);
+    const hint=$('plan-edit-classification-preview');
+    if(hint&&$('plan-edit-day-dialog').open){
+        hint.textContent='Sugerencia: '+suggested+
+            (outcome?.provisional?' (provisional)':'')+
+            (outcome?.missingEvidence?' · datos anatómicos parciales':'');
+    }
+}
+
+async function refreshPlanDayClassification(dayIndex,updateUI=true){
+    const day=state.planDays[dayIndex];
+    if(!day)return null;
+    // Catalog and plan data load concurrently. Never cache a result based on
+    // temporarily missing variant metadata during the initial bootstrap.
+    if(day.exercises.length&&(!state.variants.length||!state.exercises.length)){
+        if(updateUI&&dayIndex===state.selectedPlanDayIndex)updatePlanClassificationVisuals();
+        return null;
+    }
+    const signature=JSON.stringify((day.exercises||[]).map(e=>[e.exerciseVariantCode,e.sets]));
+    if(day._classificationSignature===signature&&day.classification){
+        if(updateUI&&dayIndex===state.selectedPlanDayIndex)updatePlanClassificationVisuals();
+        return day.classification;
+    }
+    const inputs=await Promise.all((day.exercises||[]).map(async item=>{
+        const variant=state.variants.find(v=>v.code===item.exerciseVariantCode);
+        const exercise=state.exercises.find(e=>e.code===variant?.exerciseCode);
+        if(!variant||!exercise)return {code:item.exerciseVariantCode,sets:item.sets};
+        const response=await getPlanVariantActivations(item.exerciseVariantCode);
+        return {code:item.exerciseVariantCode,sets:item.sets,group:exercise.mainMuscleGroup,
+            pattern:exercise.movementPattern,family:exercise.code,
+            activations:response.failed?null:response.rows};
+    }));
+    if(state.planDays[dayIndex]!==day||
+        JSON.stringify((day.exercises||[]).map(e=>[e.exerciseVariantCode,e.sets]))!==signature)return null;
+    const outcome=FitCoreDayClassifier.classify(inputs);
+    day.classification=outcome;
+    day._classificationSignature=signature;
+    if(day.dayTypeManual===false&&!outcome.provisional&&
+        enums.dayTypes.includes(outcome.structure))day.dayType=outcome.structure;
+    if(updateUI&&dayIndex===state.selectedPlanDayIndex){
+        renderPlanDayTabs();
+        updatePlanClassificationVisuals();
+    }
+    return outcome;
+}
+
+// Matching 24×24 stroke icons across the manual selector, day tabs and badge.
+// Path geometry from Lucide (ISC); LOWER is an original anatomical pictogram.
 function planDayIcon(dayType) {
     const paths = {
-        PUSH:'<path d="M4 9v6m16-6v6M7 7v10m10-10v10M7 12h10"/>',
-        PULL:'<path d="M5 8h11m0 0-3-3m3 3-3 3M19 16H8m0 0 3-3m-3 3 3 3"/>',
-        LEGS:'<path d="M8 3h5l-1 7 4 8-3 3-5-8-2 6H3l2-9Z"/>',
-        LOWER:'<path d="M8 3h5l-1 7 4 8-3 3-5-8-2 6H3l2-9Z"/>',
-        UPPER:'<path d="M5 7 9 4h6l4 3 2 6-3 1-2-4v10H8V10l-2 4-3-1Z"/>',
-        FULL_BODY:'<path d="M12 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm-4 7 4-2 4 2 3 5-2 1-2-3v8h-2v-6h-2v6H9v-8l-2 3-2-1Z"/>',
-        CARDIO:'<path d="M3 13h4l2-5 4 10 2-5h6"/>',
-        MOBILITY:'<path d="M5 15c3-8 11-8 14 0M8 18h8M12 4v4"/>',
-        REST:'<path d="M6 18h12M8 18V9h8v9M9 6h6"/>'
+        PUSH:'<path d="M3 5v14"/><path d="M21 12H7"/><path d="m15 18 6-6-6-6"/>',
+        PULL:'<path d="M3 19V5"/><path d="m13 6-6 6 6 6"/><path d="M7 12h14"/>',
+        LEGS:'<path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/>',
+        UPPER:'<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>',
+        LOWER:'<path d="M8 3h8l2 7-3 11h-3l-1-9-1 9H7L6 10Z"/><path d="M8 8h8"/>',
+        FULL_BODY:'<circle cx="12" cy="5" r="1"/><path d="m9 20 3-6 3 6"/><path d="m6 8 6 2 6-2"/><path d="M12 10v4"/>',
+        CARDIO:'<path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/><path d="M3.22 13H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>',
+        MOBILITY:'<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>',
+        REST:'<path d="M18 5h4"/><path d="M20 3v4"/><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>',
+        ARMS:'<path d="M12.409 13.017A5 5 0 0 1 22 15c0 3.866-4 7-9 7-4.077 0-8.153-.82-10.371-2.462-.426-.316-.631-.832-.62-1.362C2.118 12.723 2.627 2 10 2a3 3 0 0 1 3 3 2 2 0 0 1-2 2c-1.105 0-1.64-.444-2-1"/><path d="M15 14a5 5 0 0 0-7.584 2"/><path d="M9.964 6.825C8.019 7.977 9.5 13 8 15"/>',
+        CORE:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+        MIXED:'<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>',
+        CONDITIONING:'<path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"/>'
     };
-    return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[dayType] || paths.FULL_BODY}</svg>`;
+    return '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" '+
+        'fill="none" stroke="currentColor" stroke-width="1.85" '+
+        'stroke-linecap="round" stroke-linejoin="round" '+
+        'aria-hidden="true" focusable="false" class="plan-training-type-icon">'+
+        (paths[dayType] || paths.FULL_BODY)+'</svg>';
 }
 
 function renderPlanHeader() {
@@ -504,7 +661,11 @@ function renderPlanHeader() {
 function renderPlanDayTabs() {
     const container = $('plan-day-tabs');
 
+    const counter=$('plan-days-count');
+    if(counter)counter.textContent=state.planDays.length+
+        (state.planDays.length===1?' sesión':' sesiones');
     container.innerHTML = state.planDays.map((day, index) => `
+        <div class="plan-day-tab-shell" data-plan-day-index="${index}">
         <button
             type="button"
             class="plan-day-tab ${index === state.selectedPlanDayIndex ? 'is-selected' : ''}"
@@ -532,6 +693,10 @@ function renderPlanDayTabs() {
                 ⠿
             </span>
         </button>
+        <button type="button" class="plan-day-actions-trigger"
+                data-plan-day-actions="${index}" aria-label="Opciones del día"
+                aria-haspopup="menu" aria-expanded="false" title="Opciones del día">⋯</button>
+        </div>
     `).join('') + `
         <button
             class="plan-day-add"
@@ -540,118 +705,146 @@ function renderPlanDayTabs() {
             <span>＋</span>
             <strong>Añadir día</strong>
         </button>
+        <div id="plan-day-actions-menu" class="plan-day-actions-menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-day-menu-action="duplicate">Duplicar día</button>
+            <button type="button" role="menuitem" class="danger" data-day-menu-action="delete">Eliminar día</button>
+        </div>
     `;
 }
 
 
+
+function refreshPlanSessionSummary() {
+    const day=state.planDays[state.selectedPlanDayIndex];
+    if(!day || !$('plan-session-exercise-count'))return;
+    const result=FitCorePlanSummary.summarize(day.exercises,exerciseDefaultUnit,{
+        restCategoryFor:variantCode=>{
+            const variant=state.variants.find(v=>v.code===variantCode);
+            const exercise=state.exercises.find(e=>e.code===variant?.exerciseCode);
+            const compound=new Set(['HORIZONTAL_PUSH','VERTICAL_PUSH','HORIZONTAL_PULL',
+                'VERTICAL_PULL','SQUAT','HIP_HINGE','LUNGE','HIP_EXTENSION','CARRY']);
+            const isolation=new Set(['ELBOW_FLEXION','ELBOW_EXTENSION','KNEE_EXTENSION',
+                'KNEE_FLEXION','HIP_ABDUCTION','HIP_ADDUCTION','ANKLE_PLANTAR_FLEXION',
+                'ANKLE_DORSIFLEXION','SHOULDER_ABDUCTION','SHOULDER_FLEXION',
+                'SHOULDER_HORIZONTAL_ABDUCTION','WRIST_FLEXION','WRIST_EXTENSION',
+                'FOREARM_ROTATION','WRIST_FLEXION_EXTENSION','TRUNK_FLEXION',
+                'HIP_TRUNK_FLEXION','ANTI_EXTENSION','ANTI_ROTATION',
+                'ANTI_LATERAL_FLEXION','GRIP_ISOMETRIC','ISOLATION']);
+            if(compound.has(exercise?.movementPattern))return 'COMPOUND';
+            if(isolation.has(exercise?.movementPattern))return 'ISOLATION';
+            return 'GENERAL';
+        }
+    });
+    $('plan-session-exercise-count').textContent=String(result.exerciseCount);
+    $('plan-session-series-count').textContent=String(result.plannedSets);
+    $('plan-session-duration').textContent=result.durationLabel;
+    $('plan-session-duration').title=result.assumptions;
+
+    const notice=$('plan-session-context');
+    if(!notice)return;
+    const message=result.missingTargets
+        ? 'Estimación parcial: faltan objetivos o hay datos inválidos en algún ejercicio.'
+        : result.hasAssumedRest
+            ? 'Duración orientativa: se estiman pausas entre series con el temporizador apagado. No incluye calentamiento.'
+            : result.hasTimedExercise
+                ? 'Los ejercicios isométricos se planifican por tiempo, no por repeticiones.'
+                : '';
+    notice.hidden=!message;
+    notice.textContent=message;
+}
+
 function renderPlanDays() {
-    const container = $('plan-days');
-    if (!state.planDays.length) {
-        container.innerHTML = '<div class="empty-state large plan-empty"><strong>Tu plan todavía no tiene días</strong><span>Añade el primero para empezar a organizar tu rutina.</span><button class="button button-primary" data-empty-add-day>+ Añadir día</button></div>';
+    const container=$('plan-days');
+    if(!state.planDays.length) {
+        container.innerHTML='<div class="empty-state large plan-empty"><strong>Tu plan todavía no tiene días</strong><span>Añade el primero para empezar a organizar tu rutina.</span><button class="button button-primary" data-empty-add-day>+ Añadir día</button></div>';
         renderPlanDayTabs();
         renderPlanHeader();
         return;
     }
-    state.selectedPlanDayIndex = Math.min(Math.max(0, state.selectedPlanDayIndex), state.planDays.length - 1);
-    const dayIndex = state.selectedPlanDayIndex;
-    const day = state.planDays[dayIndex];
-    const totalSets = day.exercises.reduce((total, exercise) => total + (Number(exercise.sets) || 0), 0);
-    container.innerHTML = `<article class="plan-day-editor" data-day="${dayIndex}">
-        <header class="plan-day-editor-head">
 
-<div class="plan-day-title">
+    state.selectedPlanDayIndex=Math.min(Math.max(0,state.selectedPlanDayIndex),state.planDays.length-1);
+    const dayIndex=state.selectedPlanDayIndex;
+    const day=state.planDays[dayIndex];
 
-    <span>Día ${dayIndex + 1}</span>
+    // Conservar las filas, steppers, identificadores, menús y puntos de
+    // delegación de eventos existentes: solo cambia la composición visual.
+    container.innerHTML=`
+        <div class="plan-editor-layout">
+            <article class="plan-day-editor" data-day="${dayIndex}">
+                <header class="plan-day-editor-head">
+                    <div class="plan-day-title">
+                        <span class="plan-day-eyebrow">SESIÓN SELECCIONADA · DÍA ${dayIndex+1}</span>
+                        <div class="plan-day-heading-line">
+                            <h3>${escapeHtml(day.name || friendly(day.dayType))}</h3>
+                            <span class="plan-day-type-slot">${consolidatedDayBadge(day)}</span>
+                        </div>
+                    </div>
+                    <div class="plan-day-controls">
+                        <button type="button" class="button button-secondary" data-configure-plan-day>
+                            ⚙ Configurar día
+                        </button>
+                        <button type="button" class="button button-primary" data-add-plan-exercise>
+                            ＋ Añadir ejercicio
+                        </button>
+                    </div>
+                </header>
+                <div class="plan-exercise-table">
+                    <div class="plan-exercise-columns" aria-hidden="true">
+                        <span>Ejercicio</span><span>Series</span>
+                        <span>Reps / Objetivo</span><span>Descanso</span><span>Acciones</span>
+                    </div>
+                    <div class="day-exercises">${day.exercises.length
+                        ? day.exercises.map((exercise,index)=>exerciseEditor(exercise,index)).join('')
+                        : '<div class="plan-day-no-exercises"><strong>Aún no hay ejercicios en este día</strong><span>Añade un ejercicio y ajusta después su configuración técnica si lo necesitas.</span></div>'}</div>
+                </div>
+            </article>
 
-    <h3>
-        ${escapeHtml(day.name || friendly(day.dayType))}
-    </h3>
+            <aside class="plan-session-summary" aria-labelledby="plan-session-summary-title">
+                <header class="plan-session-summary-heading">
+                    <span aria-hidden="true" class="plan-session-summary-mark">◈</span>
+                    <h3 id="plan-session-summary-title">Resumen de la sesión</h3>
+                </header>
+                <div id="plan-day-classification" class="plan-day-classification" aria-live="polite"></div>
+                <div class="plan-day-muscle-area">
+                    <button type="button" class="plan-day-muscle-button" id="plan-day-muscle-open"
+                            aria-label="Ampliar análisis muscular del día"
+                            aria-haspopup="dialog" aria-controls="plan-muscle-dialog">
+                        <span id="plan-day-muscle-mini" class="plan-day-muscle-mini" aria-hidden="true">◉</span>
+                        <span class="plan-day-muscle-copy">
+                            <strong class="plan-day-muscle-title">Músculos trabajados</strong>
+                            <span id="plan-day-muscle-list" class="plan-day-muscle-list">
+                                <span class="plan-day-muscle-empty">Calculando músculos…</span>
+                            </span>
+                            <small id="plan-day-muscle-caption">Mapa del día seleccionado</small>
+                        </span>
+                    </button>
+                </div>
 
-    <span class="plan-day-type-badge">
-        ${planDayIcon(day.dayType)}
-        ${escapeHtml(friendly(day.dayType))}
-    </span>
+                <div class="plan-session-metrics" aria-label="Estadísticas planificadas" aria-live="polite">
+                    <div class="plan-session-metric">
+                        <strong id="plan-session-exercise-count">0</strong>
+                        <span>Ejercicios</span>
+                    </div>
+                    <div class="plan-session-metric">
+                        <strong id="plan-session-series-count">0</strong>
+                        <span>Series</span>
+                    </div>
+                    <div class="plan-session-metric">
+                        <strong id="plan-session-duration">—</strong>
+                        <span>Duración estimada</span>
+                    </div>
+                </div>
+                <p id="plan-session-context" class="plan-session-context" hidden></p>
+            </aside>
+        </div>`;
 
-</div>
-
-
-<!-- MAPA MUSCULAR HORIZONTAL -->
-<div class="plan-day-muscle-area">
-
-    <button
-        type="button"
-        class="plan-day-muscle-button"
-        id="plan-day-muscle-open"
-        aria-label="Ver análisis muscular del día"
-        aria-haspopup="dialog"
-        aria-controls="plan-muscle-dialog">
-
-        <!-- IZQUIERDA: CUERPOS ANATÓMICOS -->
-        <span
-            id="plan-day-muscle-mini"
-            class="plan-day-muscle-mini"
-            aria-hidden="true">
-            ◉
-        </span>
-
-        <!-- DERECHA: MÚSCULOS TRABAJADOS -->
-        <span class="plan-day-muscle-copy">
-
-            <strong class="plan-day-muscle-title">
-                Músculos trabajados
-            </strong>
-
-            <span
-                id="plan-day-muscle-list"
-                class="plan-day-muscle-list"
-                aria-hidden="true">
-                <span class="plan-day-muscle-empty">
-                    Sin ejercicios
-                </span>
-            </span>
-
-            <small id="plan-day-muscle-caption">
-                0 músculos previstos
-            </small>
-
-        </span>
-
-    </button>
-
-</div>
-
-<!-- BOTONES A LA DERECHA -->
-<div class="plan-day-controls">
-
-    <button
-        type="button"
-        class="button button-secondary"
-        data-configure-plan-day>
-        ⚙ Configurar día
-    </button>
-
-    <button
-        type="button"
-        class="button button-primary"
-        data-add-plan-exercise>
-        ＋ Añadir ejercicio
-    </button>
-
-</div>
-
-
-        </header>
-        <div class="plan-exercise-table">
-            <div class="plan-exercise-columns" aria-hidden="true"><span>Ejercicio</span><span>Series</span><span>Reps</span><span>Descanso</span><span>Acciones</span></div>
-            <div class="day-exercises">${day.exercises.length ? day.exercises.map((exercise,index) => exerciseEditor(exercise,index)).join('') : '<div class="plan-day-no-exercises"><strong>Aún no hay ejercicios en este día</strong><span>Añade un ejercicio y ajusta después su configuración técnica si lo necesitas.</span></div>'}</div>
-        </div>
-        <footer class="plan-day-summary"><span>${planDayIcon(day.dayType)}<strong>Resumen del día</strong></span><b>${day.exercises.length} ejercicio${day.exercises.length === 1 ? '' : 's'} / ${totalSets} series planificadas</b></footer>
-    </article>`;
     renderPlanDayTabs();
     renderPlanHeader();
+    refreshPlanSessionSummary();
+    updatePlanClassificationVisuals();
+    void refreshPlanDayClassification(dayIndex);
     void renderPlanMusclePreview();
 }
-
 
 /* =============================================
    FITCORE - DRAG AND DROP DE PLANES
@@ -680,7 +873,7 @@ function startPlanDrag(event) {
     );
 
     const item = grip.closest(
-        isDay ? '.plan-day-tab' : '.exercise-editor'
+        isDay ? '.plan-day-tab-shell' : '.exercise-editor'
     );
 
     const list = item?.parentElement;
@@ -801,7 +994,7 @@ function movePlanDrag(event) {
 
     // Localizar el elemento sobre el que soltaremos
     const selector = drag.isDay
-        ? '.plan-day-tab'
+        ? '.plan-day-tab-shell'
         : '.exercise-editor';
 
     const over = document.elementFromPoint(
@@ -880,11 +1073,11 @@ function finishPlanDrag(event) {
 
     // Obtener el orden nuevo desde el DOM
     const selector = drag.isDay
-        ? '.plan-day-tab'
+        ? '.plan-day-tab-shell'
         : '.exercise-editor';
 
     const attribute = drag.isDay
-        ? 'selectPlanDay'
+        ? 'planDayIndex'
         : 'exercise';
 
     const order = [
@@ -960,7 +1153,7 @@ function suppressClickAfterPlanDrag(event) {
     ) return;
 
     if (!event.target.closest(
-        '.plan-day-tab, .exercise-editor'
+        '.plan-day-tab-shell, .exercise-editor'
     )) return;
 
     event.preventDefault();
@@ -970,15 +1163,163 @@ function suppressClickAfterPlanDrag(event) {
 }
 
 
+// Delegate to the same mask in the plan editor and the add-exercise dialog.
+function bindPlanDurationMask() {
+    const selector='[data-exercise-durationSeconds], #plan-picker-duration';
+    const matches=event=>event.target?.matches?.(selector);
+    function notify(input) {
+        const valid=FitCoreDurationInput.isValidGoal(FitCoreDurationInput.parse(input.value));
+        input.setCustomValidity(valid ? '' :
+            'Introduce un tiempo válido entre 00:00:01 y 99:59:59.');
+        if(input.matches('[data-exercise-durationSeconds]')){
+            syncPlanEditor();
+            if(valid)refreshPlanSessionSummary();
+        }
+    }
+    document.addEventListener('focusin',event=>{
+        if(matches(event))FitCoreDurationInput.beginEdit(event.target);
+    });
+    document.addEventListener('focusout',event=>{
+        if(matches(event))FitCoreDurationInput.endEdit(event.target);
+    });
+    document.addEventListener('beforeinput',event=>{
+        if(!matches(event))return;
+        const input=event.target;
+        if(event.inputType==='insertFromPaste')return; // handled by paste
+        if(event.inputType==='insertText' && event.data){
+            event.preventDefault();
+            if(input.selectionStart===0&&input.selectionEnd===input.value.length)
+                FitCoreDurationInput.edit(input,'clear');
+            FitCoreDurationInput.edit(input,'insert',event.data);
+            notify(input);
+        }else if(event.inputType?.startsWith('deleteContent')){
+            event.preventDefault();
+            FitCoreDurationInput.edit(input,'delete');
+            notify(input);
+        }
+    });
+    document.addEventListener('paste',event=>{
+        if(!matches(event))return;
+        event.preventDefault();
+        const input=event.target;
+        const raw=event.clipboardData?.getData('text')??'';
+        if(input.selectionStart===0&&input.selectionEnd===input.value.length)
+            FitCoreDurationInput.edit(input,'clear');
+        FitCoreDurationInput.edit(input,'insert',raw);
+        notify(input);
+    });
+    // Fallback for input methods without a cancellable beforeinput event.
+    document.addEventListener('input',event=>{
+        if(!matches(event))return;
+        const input=event.target;
+        const raw=input.value;
+        FitCoreDurationInput.edit(input,'clear');
+        FitCoreDurationInput.edit(input,'insert',raw);
+        notify(input);
+    });
+}
+// Step without rebuilding the row: holding the button must preserve focus and
+// keep the edited value/summaries synchronized with the plan draft.
+function stepPlanDuration(button) {
+    if(!button?.isConnected)return false;
+    const row=button.closest('.exercise-editor');
+    const input=row?.querySelector('[data-exercise-durationSeconds]');
+    if(!input)return false;
+    const next=FitCoreDurationInput.step(input.value,Number(button.dataset.step));
+    if(next===null){
+        input.setCustomValidity('Introduce un tiempo válido en formato HH:MM:SS.');
+        input.reportValidity();
+        return false;
+    }
+    if(next===input.value)return false; // 00:00:01 and 99:59:59 are hard stops.
+    input.value=next;
+    FitCoreDurationInput.endEdit(input);
+    input.setCustomValidity('');
+    syncPlanEditor();
+    refreshPlanSessionSummary();
+    return true;
+}
+// The picker uses the same +/- interaction as the day editor. Its inputs
+// remain authoritative so the existing validation and save payload stay intact.
+function stepPlanPickerGoal(button) {
+    if(!button?.isConnected || !$('exercise-picker-dialog').open ||
+       state.pickerMode!=='plan' || state.planPickerAction!=='add')return false;
+    const field=button.dataset.pickerStep;
+    const input=$(field==='duration' ? 'plan-picker-duration' :
+        field==='sets' ? 'plan-picker-sets' : field==='reps' ? 'plan-picker-reps' : '');
+    if(!input)return false;
+    const delta=Number(button.dataset.step);
+    if(delta!==1&&delta!==-1)return false;
+    if(field==='duration'){
+        const next=FitCoreDurationInput.step(input.value,delta);
+        if(next===null){
+            input.setCustomValidity('Introduce un tiempo válido entre 00:00:01 y 99:59:59.');
+            input.reportValidity();
+            return false;
+        }
+        if(next===input.value)return false;
+        input.value=next;
+        FitCoreDurationInput.endEdit(input);
+    }else{
+        const current=Number(input.value);
+        const min=Number(input.min),max=Number(input.max);
+        if(!Number.isSafeInteger(current)||current<min||current>max){
+            input.reportValidity();return false;
+        }
+        const next=Math.min(max,Math.max(min,current+delta));
+        if(next===current)return false;
+        input.value=String(next);
+    }
+    input.setCustomValidity('');
+    return true;
+}
+function planTimedStepper(seconds) {
+    const formatted=FitCoreDurationInput.format(Number(seconds)||45)||'00:00:45';
+    return '<div class="plan-stepper plan-time-stepper" data-plan-stepper>'+
+        '<button type="button" data-step-field="durationSeconds" data-step="-1" '+
+        'aria-label="Restar un segundo a la duración">−</button>'+
+        '<input data-exercise-durationSeconds type="text" inputmode="numeric" '+
+        'autocomplete="off" maxlength="8" pattern="[0-9]{2}:[0-9]{2}:[0-9]{2}" '+
+        'placeholder="00:00:00" value="'+formatted+'" '+
+        'aria-label="Duración por serie en horas, minutos y segundos" '+
+        'title="Formato HH:MM:SS" required>'+
+        '<button type="button" data-step-field="durationSeconds" data-step="1" '+
+        'aria-label="Añadir un segundo a la duración">＋</button></div>';
+}
+
 function planStepper(field, value, min, suffix, label) {
     return `<div class="plan-stepper" data-plan-stepper><button type="button" data-step-field="${field}" data-step="-1" aria-label="Reducir ${label}">−</button><input data-exercise-${field} type="number" min="${min}" value="${Number(value)}" aria-label="${label}"><span>${suffix}</span><button type="button" data-step-field="${field}" data-step="1" aria-label="Aumentar ${label}">＋</button></div>`;
 }
 
+function planRestPicker(seconds) {
+    const duration=Math.max(0,Number(seconds)||0);
+    return '<div class="plan-rest-cell">' +
+        '<input data-exercise-rest type="hidden" value="' + duration + '">' +
+        '<button type="button" class="plan-rest-trigger" data-edit-plan-rest ' +
+        'aria-haspopup="dialog" aria-controls="rest-settings-dialog" ' +
+        'aria-label="Configurar descanso: ' + FitCoreRestWheel.label(duration) + '">' +
+        FitCoreRestWheel.label(duration) + '</button></div>';
+}
+
+function exerciseDefaultUnit(variantCode) {
+    const variant=state.variants.find(v=>v.code===variantCode);
+    return state.exercises.find(e=>e.code===variant?.exerciseCode)?.defaultUnit || 'REPETITIONS';
+}
+function syncPickerGoalFields(variant) {
+    const timed=exerciseDefaultUnit(variant?.code)==='SECONDS';
+    const reps=$('plan-picker-reps-label'), seconds=$('plan-picker-duration-label');
+    if(!reps||!seconds)return;
+    reps.hidden=timed;seconds.hidden=!timed;
+    $('plan-picker-reps').required=!timed;
+    $('plan-picker-duration').required=timed;
+}
 function exerciseEditor(exercise, index) {
     const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
     const base = state.exercises.find(item => item.code === variant?.exerciseCode);
-    const title = variant?.name || 'Selecciona un ejercicio';
-    const details = variant ? variantConfigurationChips(variant).slice(0, 3).join(' · ') : 'Elige una configuración del catálogo';
+    const title = variant ? FitCoreVariantUI.variantTitle(base, variant) : base?.name || 'Selecciona un ejercicio';
+    const details = variant
+        ? variantConfigurationChips(variant).slice(0, 4).join(' · ')
+        : 'Elige una configuración del catálogo';
     const thumb = base ? exerciseThumb(base, 'plan-exercise-thumb') : '<span class="plan-exercise-thumb thumb-placeholder">FC</span>';
     const menuId = `plan-exercise-actions-${state.selectedPlanDayIndex}-${index}`;
     return `<div class="exercise-editor" data-exercise="${index}">
@@ -993,8 +1334,10 @@ function exerciseEditor(exercise, index) {
 <button type="button" data-move="-1" aria-label="Subir ejercicio">↑</button><button type="button" data-move="1" aria-label="Bajar ejercicio">↓</button></div>
         <div class="plan-exercise-identity">${thumb}<div><input data-exercise-code type="hidden" value="${escapeHtml(exercise.exerciseVariantCode || '')}"><strong class="plan-exercise-name">${escapeHtml(title)}</strong><small>${escapeHtml(details)}</small></div></div>
         ${planStepper('sets', exercise.sets || 3, 1, '', 'series')}
-        ${planStepper('reps', exercise.reps || 10, 1, '', 'repeticiones')}
-        ${planStepper('rest', exercise.restSeconds ?? 90, 0, 's', 'segundos de descanso')}
+        ${exerciseDefaultUnit(exercise.exerciseVariantCode)==='SECONDS'
+            ? planTimedStepper(exercise.targetDurationSeconds??45)
+            : planStepper('reps',exercise.reps||10,1,'','repeticiones')}
+        ${planRestPicker(exercise.restSeconds ?? 0)}
         <div class="plan-row-menu">
             <button class="plan-row-actions" type="button" data-plan-row-menu-toggle aria-haspopup="menu" aria-expanded="false" aria-controls="${menuId}" aria-label="Acciones para ${escapeHtml(title)}">•••</button>
             <div class="plan-row-action-menu" id="${menuId}" role="menu" hidden>
@@ -1078,7 +1421,14 @@ function syncPlanEditor() {
         if (!exercise) return;
         exercise.exerciseVariantCode = row.querySelector('[data-exercise-code]').value.trim();
         exercise.sets = Number(row.querySelector('[data-exercise-sets]').value);
-        exercise.reps = Number(row.querySelector('[data-exercise-reps]').value);
+        exercise.reps = row.querySelector('[data-exercise-reps]') ? Number(row.querySelector('[data-exercise-reps]').value) : null;
+        const durationField=row.querySelector('[data-exercise-durationSeconds]');
+        if(durationField){
+            const seconds=FitCoreDurationInput.parse(durationField.value);
+            durationField.setCustomValidity(FitCoreDurationInput.isValidGoal(seconds)
+                ? '' : 'Introduce un tiempo válido entre 00:00:01 y 99:59:59.');
+            if(FitCoreDurationInput.isValidGoal(seconds))exercise.targetDurationSeconds=seconds;
+        }else exercise.targetDurationSeconds=null;
         exercise.restSeconds = Number(row.querySelector('[data-exercise-rest]').value);
     });
 }
@@ -1101,42 +1451,37 @@ function openPlanEditDayDialog() {
         `DÍA ${state.selectedPlanDayIndex + 1}`;
 
     $('plan-edit-day-name').value = day.name || '';
+    $('plan-edit-day-auto').checked=day.dayTypeManual===false;
 
-    // Crear las opciones visuales con sus iconos SVG
-    $('plan-edit-day-types').innerHTML =
-        enums.dayTypes.map(type => `
+    $('plan-edit-day-types').innerHTML=planDayTypeOptions('plan-edit-day-type',day.dayType);
 
-            <label class="plan-edit-type-card">
-
-                <input
-                    type="radio"
-                    name="plan-edit-day-type"
-                    value="${type}"
-                    ${day.dayType === type ? 'checked' : ''}>
-
-                <span class="plan-edit-type-content">
-                    ${planDayIcon(type)}
-
-                    <span>
-                        ${escapeHtml(friendly(type))}
-                    </span>
-                </span>
-
-            </label>
-
-        `).join('');
-
-    // Deshabilitar movimientos imposibles
-    $('plan-edit-move-up').disabled =
-        state.selectedPlanDayIndex === 0;
-
-    $('plan-edit-move-down').disabled =
-        state.selectedPlanDayIndex ===
-        state.planDays.length - 1;
-
+    updatePlanEditTypeMode();
     $('plan-edit-day-dialog').showModal();
 }
 
+
+function updatePlanEditTypeMode(){
+    const automatic=$('plan-edit-day-auto').checked;
+    $('plan-edit-day-dialog').dataset.classificationMode=automatic?'auto':'manual';
+    $('plan-edit-auto-panel').hidden=!automatic;
+    $('plan-edit-manual-panel').hidden=automatic;
+    document.querySelectorAll('[data-plan-edit-mode]').forEach(button=>{
+        const selected=button.dataset.planEditMode===(automatic?'auto':'manual');
+        button.setAttribute('aria-pressed',String(selected));
+        button.classList.toggle('is-selected',selected);
+    });
+    $('plan-edit-day-types').querySelectorAll('input[type="radio"]')
+        .forEach(input=>{input.disabled=automatic;});
+    const day=state.planDays[state.selectedPlanDayIndex];
+    const outcome=day?.classification;
+    const preview=$('plan-edit-classification-preview');
+    const descriptor=outcome?FitCoreDayClassifier.describe(outcome):'Pendiente de ejercicios';
+    const status=outcome?(outcome.provisional?'Provisional':'Consolidada'):'Sin clasificar';
+    const focus=outcome?.focus?.map(code=>FitCoreDayClassifier.NAMES[code]||code).join(' y ')||'';
+    preview.innerHTML='<span class="plan-edit-preview-icon" aria-hidden="true">✧</span>'+
+        '<span class="plan-edit-preview-text"><strong>'+escapeHtml(descriptor)+'</strong>'+
+        '<small>'+escapeHtml(status)+(focus?' · '+escapeHtml(focus):'')+'</small></span>';
+}
 
 // Aplicar los valores al borrador del plan
 function applyPlanEditDraft() {
@@ -1162,10 +1507,8 @@ function applyPlanEditDraft() {
         return false;
     }
 
-    if (
-        !typeInput ||
-        !enums.dayTypes.includes(typeInput.value)
-    ) {
+    const automatic=$('plan-edit-day-auto').checked;
+    if (!automatic&&(!typeInput||!enums.dayTypes.includes(typeInput.value))) {
         toast(
             'Selecciona el tipo de entrenamiento.',
             true
@@ -1174,7 +1517,10 @@ function applyPlanEditDraft() {
     }
 
     day.name = nameInput.value.trim();
-    day.dayType = typeInput.value;
+    day.dayTypeManual=!automatic;
+    if(!automatic)day.dayType=typeInput.value;
+    else if(day.classification&&!day.classification.provisional&&
+        enums.dayTypes.includes(day.classification.structure))day.dayType=day.classification.structure;
 
     return true;
 }
@@ -1197,16 +1543,45 @@ function savePlanEditDay(event) {
 }
 
 
-// Duplicar el día seleccionado
-function duplicateSelectedPlanDay() {
-    if (!applyPlanEditDraft()) return;
+function duplicateDayFromSettings(){
+    if(!applyPlanEditDraft())return;
+    const index=state.selectedPlanDayIndex;
+    $('plan-edit-day-dialog').close();
+    duplicateSelectedPlanDay(index);
+}
 
-    const day =
-        state.planDays[state.selectedPlanDayIndex];
+async function deleteDayFromSettings(){
+    const index=state.selectedPlanDayIndex;
+    const day=state.planDays[index];
+    if(!day)return;
+    // Confirm while settings stay open; cancellation retains editable form values.
+    const confirmed=await confirmAction(
+        'Eliminar día',
+        `¿Eliminar «${day.name}» y sus ${day.exercises.length} ejercicios del borrador del plan?`
+    );
+    if(!confirmed)return;
+    $('plan-edit-day-dialog').close();
+    removePlanDayAt(index);
+}
+
+function removePlanDayAt(index){
+    if(index<0||index>=state.planDays.length)return;
+    state.planDays.splice(index,1);
+    state.selectedPlanDayIndex=Math.max(0,Math.min(index,state.planDays.length-1));
+    renderPlanMode();
+    toast('Día eliminado del borrador. Guarda el plan para conservar el cambio.');
+}
+
+// Duplicar un día desde el menú de tarjeta o desde Configurar día.
+function duplicateSelectedPlanDay(index=state.selectedPlanDayIndex) {
+    syncPlanEditor();
+    const day=state.planDays[index];
+    if(!day)return;
 
     const copy = {
         name: `${day.name} (copia)`,
         dayType: day.dayType,
+        dayTypeManual: day.dayTypeManual ?? true,
 
         // Copiar los ejercicios sin reutilizar
         // los identificadores de base de datos
@@ -1216,14 +1591,12 @@ function duplicateSelectedPlanDay() {
 
             sets: exercise.sets,
             reps: exercise.reps,
+            targetDurationSeconds: exercise.targetDurationSeconds,
+            targetDistanceMeters: exercise.targetDistanceMeters,
             restSeconds: exercise.restSeconds
         }))
     };
 
-    $('plan-edit-day-dialog').close();
-
-    // La función existente selecciona
-    // automáticamente el nuevo día
     addPlanDay(copy);
 
     toast(
@@ -1259,47 +1632,36 @@ function moveSelectedPlanDay(direction) {
 
 
 // Eliminar un día con confirmación
-async function deleteSelectedPlanDay() {
-    const index = state.selectedPlanDayIndex;
-    const day = state.planDays[index];
-
-    if (!day) return;
-
-    $('plan-edit-day-dialog').close();
-
-    const confirmed = await confirmAction(
+async function deleteSelectedPlanDay(index=state.selectedPlanDayIndex){
+    syncPlanEditor();
+    const day=state.planDays[index];
+    if(!day)return;
+    const confirmed=await confirmAction(
         'Eliminar día',
-        `¿Eliminar «${day.name}» y sus ` +
-        `${day.exercises.length} ejercicios ` +
-        `del borrador del plan?`
+        `¿Eliminar «${day.name}» y sus ${day.exercises.length} ejercicios del borrador del plan?`
     );
-
-    if (!confirmed) return;
-
-    state.planDays.splice(index, 1);
-
-    state.selectedPlanDayIndex = Math.max(
-        0,
-        Math.min(index, state.planDays.length - 1)
-    );
-
-    renderPlanMode();
-
-    toast(
-        'Día eliminado del borrador. ' +
-        'Guarda el plan para conservar el cambio.'
-    );
+    if(confirmed)removePlanDayAt(index);
 }
 
 
 function planPayload() {
     syncPlanEditor();
-    return {name:$('plan-name').value.trim(), description:$('plan-description').value.trim() || null, days:state.planDays.map((day,di) => ({name:day.name, dayOrder:di+1, dayType:day.dayType, exercises:day.exercises.map((e,ei) => ({exerciseVariantCode:e.exerciseVariantCode, sets:e.sets, reps:e.reps, restSeconds:e.restSeconds, exerciseOrder:ei+1}))}))};
+    return {name:$('plan-name').value.trim(), description:$('plan-description').value.trim() || null, days:state.planDays.map((day,di) => ({name:day.name, dayOrder:di+1, dayType:day.dayType, dayTypeManual:day.dayTypeManual !== false, exercises:day.exercises.map((e,ei) => ({exerciseVariantCode:e.exerciseVariantCode, sets:e.sets, reps:e.reps, targetDurationSeconds:e.targetDurationSeconds, targetDistanceMeters:e.targetDistanceMeters, restSeconds:e.restSeconds, exerciseOrder:ei+1}))}))};
 }
 
 async function savePlan() {
-    if (!requireAuth()) return; const payload = planPayload();
-    if (!payload.name || !payload.days.length || payload.days.some(d => !d.name || d.exercises.some(e => !e.exerciseVariantCode || e.sets < 1 || e.reps < 1))) return toast('Completa el nombre, los días y todos los ejercicios.', true);
+    if (!requireAuth()) return;
+    syncPlanEditor();
+    const invalidDuration=document.querySelector('.plan-day-editor [data-exercise-durationSeconds]:invalid');
+    if(invalidDuration){
+        invalidDuration.focus();
+        return toast('Introduce una duración válida (HH:MM:SS) antes de guardar.',true);
+    }
+    await Promise.all(state.planDays.map((day,index)=>refreshPlanDayClassification(index,false)));
+    const payload = planPayload();
+    if (!payload.name || !payload.days.length || payload.days.some(d => !d.name || d.exercises.some(e => !e.exerciseVariantCode || e.sets < 1 ||
+                (exerciseDefaultUnit(e.exerciseVariantCode)==='SECONDS'
+                    ? !(e.targetDurationSeconds>=1) : !(e.reps>=1))))) return toast('Completa el nombre, los días y todos los ejercicios.', true);
     try {
         const body = state.activePlan ? {...payload, effectiveDate:$('plan-date').value} : {...payload, startDate:$('plan-date').value};
         const path = state.activePlan ? `/api/users/${state.auth.userId}/workout-plans/${state.activePlan.id}` : `/api/users/${state.auth.userId}/workout-plans`;
@@ -1310,7 +1672,7 @@ async function savePlan() {
 }
 
 async function loadActivePlan(silent = false) {
-    if (!state.auth) return;
+    if (!state.auth) return false;
     try {
         const summary = await api(`/api/users/${state.auth.userId}/workout-plans/active`);
         const plan = await api(`/api/users/${state.auth.userId}/workout-plans/${summary.id}/detail`);
@@ -1326,6 +1688,7 @@ async function loadActivePlan(silent = false) {
                 id: day.id,
                 name: day.name,
                 dayType: day.dayType,
+                dayTypeManual:day.dayTypeManual ?? true,
 
                 exercises: [...(day.exercises || [])]
                     .sort(
@@ -1341,15 +1704,19 @@ async function loadActivePlan(silent = false) {
 
                         sets: exercise.sets,
                         reps: exercise.reps,
+                        targetDurationSeconds: exercise.targetDurationSeconds,
+                        targetDistanceMeters: exercise.targetDistanceMeters,
                         restSeconds: exercise.restSeconds
                     }))
             }));
 
         state.selectedPlanDayIndex = 0; renderPlanMode(); fillSessionDays(); $('metric-plan').textContent = `v${plan.version}`;
         if (!silent) toast('Plan activo cargado.');
+        return true;
     } catch (error) {
         if (error.status === 404) { state.activePlan = null; state.planDays = []; addPlanDay(); renderPlanMode(); fillSessionDays(); $('metric-plan').textContent = 'Ninguno'; if (!silent) toast('Aún no existe un plan activo.'); }
         else if (!silent) toast(error.message, true);
+        return false;
     }
 }
 
@@ -1829,22 +2196,29 @@ async function renderPlanMusclePreview() {
                 // 1. Encuadrar y centrar el cuerpo
                 fitPlanDayMuscleSvg(svg, stage);
 
-                // 2. Redondear el fondo interno
-                roundPlanMuscleBackground(svg);
+                // Vista anatómica original sin añadir marcos ni recortes
+                // internos; la proporción queda controlada por viewBox/meet.
             }
         });
     }
 
 
 
-    // Mostrar los 3 músculos más relevantes
-    const topMuscles = result.data.slice(0, 3);
+    // Mostrar solo los músculos principales cuando existen, o secundarios
+    // como alternativa. Cada punto representa una activación real del día.
+    const topMuscles = (result.data.some(item=>item.primarySets>0)
+        ? result.data.filter(item=>item.primarySets>0)
+        : result.data).slice(0, 6);
+    const maxMuscleSets=Math.max(1,...result.data.map(item=>item.estimatedSets));
 
     list.innerHTML = topMuscles.length
         ? topMuscles.map(muscle => `
             <span class="plan-day-muscle-row">
                 <i
-                    class="plan-day-muscle-dot"
+                    class="plan-day-muscle-dot ${muscle.estimatedSets/maxMuscleSets>=0.67
+                        ? 'is-high'
+                        : muscle.estimatedSets/maxMuscleSets>=0.34
+                            ? 'is-medium' : 'is-low'}"
                     aria-hidden="true">
                 </i>
 
@@ -1924,8 +2298,14 @@ async function renderPlanMuscleDialog() {
         );
     });
 
-    $('plan-muscle-day-picker').hidden =
-        scope === 'week';
+    // The day selector keeps its layout space in both scopes.
+    // Only its visibility and accessibility change: switching Day/Week
+    // must not resize the toolbar, anatomical SVG or distribution panel.
+    const dayPicker = $('plan-muscle-day-picker');
+    const isWeek = scope === 'week';
+    dayPicker.classList.toggle('is-inactive', isWeek);
+    dayPicker.setAttribute('aria-hidden', String(isWeek));
+    $('plan-muscle-day-select').disabled = isWeek;
 
     $('plan-muscle-analysis-title').textContent =
         scope === 'week'
@@ -1954,13 +2334,13 @@ async function renderPlanMuscleDialog() {
             'No se pudo cargar el mapa anatómico.';
     }
 
+    // Separate the summary metrics from the muscle-specific equivalent-set list.
+    $('plan-muscle-stat-exercises').textContent=String(result.exerciseCount);
+    $('plan-muscle-stat-sets').textContent=String(result.plannedSets);
+    $('plan-muscle-stat-muscles').textContent=String(result.data.length);
     $('plan-muscle-analysis-summary').textContent =
-        `${result.exerciseCount} ejercicios · ` +
-        `${result.plannedSets} series programadas · ` +
-        `${result.data.length} músculos identificados` +
-        (result.failed
-            ? ` · ${result.failed} ejercicios sin datos`
-            : '');
+        'Series equivalentes por músculo, ordenadas de mayor a menor.' +
+        (result.failed ? ` Datos parciales: ${result.failed} ejercicio(s) sin activaciones.` : '');
 
     $('plan-muscle-legend').innerHTML =
         scope === 'week'
@@ -1998,7 +2378,8 @@ async function renderPlanMuscleDialog() {
                 </span>
             </div>
 
-            <div class="plan-muscle-track">
+            <div class="plan-muscle-track" role="img"
+                 aria-label="${escapeHtml(item.name)}: ${formatNumber(item.estimatedSets)} series equivalentes; barra relativa al músculo con mayor valor">
                 <i style="width:${
         Math.round(
             item.estimatedSets / max * 100
@@ -2018,11 +2399,83 @@ async function renderPlanMuscleDialog() {
 
 
 function renderPlanMode() {
-    const box = $('plan-version'); if (!box) return;
-    box.innerHTML = state.activePlan ? `<span>Modo revisión</span><strong>Versión ${state.activePlan.version}</strong><small>Al guardar se creará la versión ${state.activePlan.version + 1}</small>` : '<span>Modo</span><strong>Nuevo plan</strong><small>Se creará la versión 1</small>';
+    const box=$('plan-version');
+    if(!box)return;
+    const version=Number(state.activePlan?.version);
+    const saved=Number.isInteger(version)&&version>=1;
+    const next=saved?version+1:1;
+    box.innerHTML=saved
+        ? '<span>VERSIÓN ACTUAL</span><strong>Versión '+version+'</strong>'+
+          '<span class="plan-version-status">Activa</span>'
+        : '<span>PLAN SIN GUARDAR</span><strong>Nuevo plan</strong>'+
+          '<span class="plan-version-status">Borrador</span>';
+    const note=$('plan-settings-version-note');
+    if(note)note.textContent=saved
+        ? 'Al guardar el plan se creará la versión '+next+
+          '. Aplicar cambios solo actualiza el borrador.'
+        : 'La versión 1 se creará cuando guardes el plan.';
     renderPlanDays();
 }
 
+
+// Training preparation uses the same muscle-day taxonomy as Plans, except REST.
+let sessionSourceMode='free';
+let sessionClassificationMode='auto';
+let sessionClassificationSyncing=false;
+
+function availableTrainingTypes(){
+    return enums.dayTypes.filter(type=>type!=='REST');
+}
+
+function renderTrainingTypeOptions(target,name,selected='FULL_BODY'){
+    $(target).innerHTML=availableTrainingTypes().map(type=>
+        '<label class="session-manual-type">'+
+        '<input type="radio" name="'+name+'" value="'+type+'" '+(type===selected?'checked':'')+'>'+
+        '<span class="session-manual-type-body">'+planDayIcon(type)+
+        '<small>'+escapeHtml(FitCoreDayClassifier.STRUCTURE[type]||friendly(type))+'</small></span></label>'
+    ).join('');
+}
+
+function chosenSessionType(target){
+    return $(target)?.querySelector('input[type="radio"]:checked')?.value||null;
+}
+
+function updateTrainingPreparation(){
+    const fromPlan=sessionSourceMode==='plan';
+    $('session-source-details').hidden=!fromPlan;
+    document.querySelectorAll('[data-session-source]').forEach(button=>{
+        const selected=button.dataset.sessionSource===sessionSourceMode;
+        button.setAttribute('aria-pressed',String(selected));
+        button.classList.toggle('is-selected',selected);
+    });
+    const manual=sessionClassificationMode==='manual';
+    $('session-manual-classification').hidden=!manual;
+    $('session-auto-classification').hidden=manual;
+    document.querySelectorAll('[data-session-classification]').forEach(button=>{
+        const selected=button.dataset.sessionClassification===sessionClassificationMode;
+        button.setAttribute('aria-pressed',String(selected));
+        button.classList.toggle('is-selected',selected);
+    });
+    $('session-manual-types').querySelectorAll('input[type="radio"]').forEach(input=>{
+        input.disabled=!manual;
+    });
+    const selected=Number($('session-day').value);
+    const day=fromPlan?(state.activePlan?.days||[]).find(d=>d.id===selected):null;
+    if(fromPlan){
+        $('session-plan-preview').textContent=day
+            ? day.name+' · '+(day.exercises||[]).length+' ejercicios · '+
+              (day.exercises||[]).reduce((sum,exercise)=>sum+(Number(exercise.sets)||0),0)+' series'
+            : 'Elige un día para cargar sus ejercicios y series al iniciar.';
+    }
+    const type=day?.dayType&&day.dayType!=='REST'?day.dayType:null;
+    $('session-auto-classification').innerHTML=
+        '<strong>'+escapeHtml(type?FitCoreDayClassifier.STRUCTURE[type]||friendly(type):
+            'Pendiente de ejercicios')+'</strong>'+
+        '<small>'+(type?'Clasificación del día seleccionado. Se ajustará según las series registradas.':
+            'FitCore clasificará la sesión al registrar ejercicios y series.')+'</small>';
+    const valid=!(fromPlan&&!day);
+    $('session-start').disabled=!valid;
+}
 
 function fillSessionDays() {
     const select = $('session-day');
@@ -2032,9 +2485,9 @@ function fillSessionDays() {
         ?? select.value;
 
     select.innerHTML =
-        '<option value="">Sesión libre</option>';
+        '<option value="">Selecciona un día</option>';
 
-    (state.activePlan?.days || []).forEach(day => {
+    (state.activePlan?.days || []).filter(day=>day.dayType!=='REST').forEach(day => {
         select.add(
             new Option(
                 `${day.dayOrder}. ${day.name}`,
@@ -2052,11 +2505,8 @@ function fillSessionDays() {
         select.value = String(chosen);
     }
 
-    if (
-        state.currentSession?.status === 'IN_PROGRESS'
-    ) {
-        syncSessionHeader();
-    }
+    updateTrainingPreparation();
+    if(state.currentSession?.status==='IN_PROGRESS')syncSessionHeader();
 }
 
 
@@ -2079,10 +2529,30 @@ function currentSessionDayLabel() {
 
 async function startSession() {
     if (!requireAuth()) return;
-    const body = {workoutDayId:optionalNumber($('session-day').value), sessionDate:$('session-date').value, sessionCategory:$('session-category').value, sessionIntensity:$('session-intensity').value, durationMinutes:null, notes:$('session-notes').value.trim() || null, estimatedTotalCaloriesBurned:null};
+    const fromPlan=sessionSourceMode==='plan';
+    const dayId=fromPlan?optionalNumber($('session-day').value):null;
+    const linkedDay=(state.activePlan?.days||[]).find(day=>day.id===dayId);
+    if(fromPlan&&!linkedDay)return toast('Selecciona un día de tu plan antes de iniciar.',true);
+    if(fromPlan&&linkedDay.dayType==='REST')return toast('Un día de descanso no se puede iniciar como entrenamiento.',true);
+    const manual=sessionClassificationMode==='manual';
+    const type=manual?chosenSessionType('session-manual-types'):
+        (fromPlan&&linkedDay?.dayType!=='REST'?linkedDay?.dayType:null);
+    if(manual&&(!type||type==='REST'))return toast('Elige un tipo de entrenamiento válido.',true);
+    // The legacy API still stores goal/intensity; no unsupported global effort is inferred.
+    // RIR and RPE are recorded independently on each performed set.
+    const legacyCategory=type==='CARDIO'?'CARDIO':type==='MOBILITY'?'MOBILITY':'MIXED';
+    const body={
+        workoutDayId:dayId,sessionDate:$('session-date').value,
+        sessionCategory:legacyCategory,sessionIntensity:'MODERATE',
+        trainingDayType:type||null,trainingDayTypeManual:manual,
+        durationMinutes:null,notes:$('session-notes').value.trim()||null,
+        estimatedTotalCaloriesBurned:null
+    };
     try {
         state.currentSession = await api(`/api/users/${state.auth.userId}/workout-sessions`, {method:'POST', body:JSON.stringify(body)});
         state.currentSession.workoutDayId ??= body.workoutDayId;
+        state.currentSession.trainingDayType ??= body.trainingDayType;
+        state.currentSession.trainingDayTypeManual ??= body.trainingDayTypeManual;
         state.sessionStartedAt = Date.now();
         localStorage.setItem('fitcore.lab.currentSession', state.currentSession.id);
         localStorage.setItem(SESSION_STARTED_KEY, state.sessionStartedAt);
@@ -2168,6 +2638,7 @@ async function addSessionExercise() {
 
         let sets;
         let reps;
+        let targetDurationSeconds;
         let restSeconds;
 
         try {
@@ -2175,9 +2646,17 @@ async function addSessionExercise() {
                 'plan-picker-sets', 1
             );
 
-            reps = readPositiveInteger(
-                'plan-picker-reps', 1
-            );
+            if (exerciseDefaultUnit(selectedVariant.code)==='SECONDS') {
+                reps=null;
+                const seconds=FitCoreDurationInput.parse($('plan-picker-duration').value);
+                if(!FitCoreDurationInput.isValidGoal(seconds)){
+                    throw new Error('Introduce un tiempo válido entre 00:00:01 y 99:59:59.');
+                }
+                targetDurationSeconds=seconds;
+            } else {
+                reps=readPositiveInteger('plan-picker-reps',1);
+                targetDurationSeconds=null;
+            }
 
             restSeconds = readPositiveInteger(
                 'plan-picker-rest', 0
@@ -2192,6 +2671,7 @@ async function addSessionExercise() {
             exerciseVariantCode: selectedVariant.code,
             sets,
             reps,
+            targetDurationSeconds,
             restSeconds
         });
 
@@ -2274,17 +2754,11 @@ function currentSessionMetaLabel() {
             ? dateValue.split('-').reverse().join('/')
             : 'Sin fecha';
 
-    const category = friendly(
-        session.sessionCategory ||
-        $('session-category').value
-    );
-
-    const intensity = friendly(
-        session.sessionIntensity ||
-        $('session-intensity').value
-    );
-
-    return `${dateLabel} · ${category} · ${intensity}`;
+    const type=session.trainingDayType;
+    const typeLabel=type
+        ? (FitCoreDayClassifier.STRUCTURE[type]||friendly(type))
+        : 'Sin clasificar';
+    return `${dateLabel} · ${typeLabel}`;
 }
 
 
@@ -2303,6 +2777,14 @@ function syncSessionHeader() {
     $('session-meta-summary').hidden = !active;
 }
 
+
+function toggleSessionEditManualTypes(){
+    const manual=!$('session-edit-auto').checked;
+    $('session-edit-manual-types').hidden=!manual;
+    $('session-edit-manual-types').querySelectorAll('input').forEach(input=>{
+        input.disabled=!manual;
+    });
+}
 
 function openSessionSettings() {
     const session = state.currentSession;
@@ -2337,7 +2819,12 @@ function openSessionSettings() {
     $('session-edit-day').value =
         currentSessionDayLabel();
 
-    // Mostrar ventana modal
+    // The classification is independent from the legacy goal and intensity.
+    renderTrainingTypeOptions('session-edit-manual-types','session-edit-type',
+        session.trainingDayType&&session.trainingDayType!=='REST'
+            ?session.trainingDayType:'FULL_BODY');
+    $('session-edit-auto').checked=!session.trainingDayTypeManual;
+    toggleSessionEditManualTypes();
     $('session-settings-dialog').showModal();
 }
 
@@ -2357,9 +2844,15 @@ async function saveSessionSettings(event) {
         return;
     }
 
-    // Datos actualizados
+    const manual=!$('session-edit-auto').checked;
+    const selectedType=manual?chosenSessionType('session-edit-manual-types'):null;
+    if(manual&&(!selectedType||selectedType==='REST')){
+        return toast('Selecciona un tipo de entrenamiento manual válido.',true);
+    }
     const updated = {
         sessionDate: $('session-edit-date').value,
+        trainingDayTypeManual:manual,
+        trainingDayType:manual?selectedType:null,
 
         sessionCategory:
         $('session-edit-category').value,
@@ -2416,7 +2909,9 @@ async function saveSessionSettings(event) {
 
             notes:
                 server.notes ??
-                updated.notes
+                updated.notes,
+            trainingDayType:server.trainingDayType??updated.trainingDayType,
+            trainingDayTypeManual:server.trainingDayTypeManual??updated.trainingDayTypeManual
         };
 
         // Sincronizar formulario original
@@ -2432,8 +2927,9 @@ async function saveSessionSettings(event) {
         $('session-notes').value =
             state.currentSession.notes ?? '';
 
-        // Actualizar el resumen superior
+        // Refrescar la sugerencia si se ha vuelto al modo automático.
         syncSessionHeader();
+        if(!manual)void refreshAutomaticSessionClassification();
 
         // Cerrar configuración
         $('session-settings-dialog').close();
@@ -2510,6 +3006,10 @@ async function openExercisePicker(mode = 'session', options = {}) {
             : null;
 
         state.planPickerExerciseCode = null;
+        state.pickerConfigOpen = false;
+        state.pickerConfigMoreOpen = false;
+        state.pickerDraft = null;
+        state.pickerGroupCodes = null;
 
         state.sessionPicker = {
             exercise: action === 'add' ? null : currentExercise || null,
@@ -2520,6 +3020,9 @@ async function openExercisePicker(mode = 'session', options = {}) {
         $('session-exercise-query').value = '';
         $('session-exercise-equipment').value = '';
         $('session-exercise-muscle').value = '';
+        // The visual picker shares the native filter value, including when
+        // reopening after a previous muscle was selected.
+        $('session-exercise-muscle').dispatchEvent(new Event('change',{bubbles:true}));
 
         // Adaptar la ventana
         const pickerCopy = mode !== 'plan'
@@ -2533,13 +3036,13 @@ async function openExercisePicker(mode = 'session', options = {}) {
                 ? {
                     eyebrow: 'INTERCAMBIAR EJERCICIO',
                     title: 'Elige el sustituto',
-                    description: 'Selecciona otro ejercicio. FitCore aplicará una configuración válida y conservará las series, repeticiones y el descanso.',
+                    description: 'Selecciona un ejercicio o busca una variante concreta. Podrás ajustarla en Configurar y conservar las series, repeticiones y el descanso.',
                     action: 'Intercambiar ejercicio'
                 }
                 : {
                         eyebrow: 'AÑADIR AL PLAN',
                         title: 'Elige un ejercicio',
-                        description: 'Elige el ejercicio y sus objetivos. Después podrás ajustar su configuración técnica desde el menú de acciones.',
+                        description: 'Elige un ejercicio y ajusta su configuración. Si buscas una variante concreta, quedará preseleccionada.',
                         action: 'Añadir al día'
                     };
 
@@ -2555,7 +3058,9 @@ async function openExercisePicker(mode = 'session', options = {}) {
         // Valores iniciales de planificación
         $('plan-picker-sets').value = '3';
         $('plan-picker-reps').value = '10';
-        $('plan-picker-rest').value = '90';
+        $('plan-picker-duration').value = '00:00:45';
+        $('plan-picker-rest').value = '0';
+        $('plan-picker-rest-button').textContent = FitCoreRestWheel.label(0);
 
         renderSessionExerciseResults();
         renderSessionExerciseConfig();
@@ -2569,15 +3074,128 @@ async function openExercisePicker(mode = 'session', options = {}) {
 }
 
 
+// Normaliza tildes y signos para que las búsquedas sean tolerantes a variaciones.
+function normalizeExerciseSearchText(value) {
+    return String(value ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('es')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+const equipmentSearchAliases = {
+    SMITH_MACHINE: 'smith multipower maquina guiada',
+    MACHINE_SELECTORISED: 'maquina selectorizada placas',
+    MACHINE_PLATE_LOADED: 'maquina discos',
+    DUMBBELL: 'mancuerna mancuernas',
+    BARBELL: 'barra olimpica',
+    CABLE: 'polea cable'
+};
+
+function matchesExerciseSearch(text, tokens) {
+    const normalized = normalizeExerciseSearchText(text);
+    return tokens.every(token => normalized.includes(token));
+}
+
+// Illustrated muscle filter, with the original select kept as the source of truth.
+// Options use the exact muscle codes already accepted by the exercise search.
+function initializeMuscleFilter() {
+    const native=$('session-exercise-muscle');
+    const trigger=$('session-muscle-filter-button');
+    const menu=$('session-muscle-filter-menu');
+    const list=$('session-muscle-filter-list');
+    if(!native||!trigger||!menu||!list||!window.FitCoreMuscleIcons)return;
+    const choices=[{code:'',label:'Todos los músculos'},...enums.muscles.map(code=>({code,label:friendly(code)}))];
+    const display=()=>{
+        const code=native.value;
+        const choice=choices.find(item=>item.code===code)||choices[0];
+        $('session-muscle-filter-current').textContent=choice.label;
+        $('session-muscle-filter-icon').innerHTML=FitCoreMuscleIcons.icon(code);
+        list.querySelectorAll('[role="option"]').forEach(option=>{
+            const selected=option.dataset.muscleCode===code;
+            option.setAttribute('aria-selected',String(selected));
+            option.classList.toggle('is-selected',selected);
+        });
+    };
+    const close=(restoreFocus=false)=>{
+        if(menu.hidden)return;
+        menu.hidden=true;
+        trigger.setAttribute('aria-expanded','false');
+        if(restoreFocus)trigger.focus();
+    };
+    const open=()=>{
+        menu.hidden=false;
+        trigger.setAttribute('aria-expanded','true');
+        const current=list.querySelector('[aria-selected="true"]')||list.querySelector('[role="option"]');
+        current?.focus({preventScroll:true});
+        current?.scrollIntoView({block:'nearest'});
+    };
+    const choose=code=>{
+        if(!choices.some(item=>item.code===code))return;
+        const changed=native.value!==code;
+        native.value=code;
+        display();
+        close(true);
+        if(changed)native.dispatchEvent(new Event('change',{bubbles:true}));
+    };
+    list.innerHTML=choices.map(({code,label})=>
+        '<button type="button" role="option" tabindex="-1" class="muscle-filter-option" '+
+        'data-muscle-code="'+escapeHtml(code)+'" aria-selected="false">'+
+        '<span class="muscle-filter-option-icon" aria-hidden="true">'+FitCoreMuscleIcons.icon(code)+'</span>'+
+        '<span class="muscle-filter-option-label">'+escapeHtml(label)+'</span>'+
+        '<svg class="muscle-filter-option-check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L19 7"/></svg>'+
+        '</button>').join('');
+    display();
+    trigger.addEventListener('click',()=>menu.hidden?open():close());
+    list.addEventListener('click',event=>{
+        const option=event.target.closest('[data-muscle-code]');
+        if(option)choose(option.dataset.muscleCode);
+    });
+    list.addEventListener('keydown',event=>{
+        const options=[...list.querySelectorAll('[role="option"]')];
+        const active=options.indexOf(document.activeElement);
+        let next=active;
+        if(event.key==='ArrowDown')next=(active+1)%options.length;
+        else if(event.key==='ArrowUp')next=(active+options.length-1)%options.length;
+        else if(event.key==='Home')next=0;
+        else if(event.key==='End')next=options.length-1;
+        else if(event.key==='Enter'||event.key===' '){
+            event.preventDefault();
+            const option=options[active];
+            if(option)choose(option.dataset.muscleCode);
+            return;
+        }else if(event.key==='Escape'){event.preventDefault();close(true);return;}
+        else if(event.key==='Tab'){close();return;}
+        else return;
+        event.preventDefault();
+        options[next]?.focus();
+        options[next]?.scrollIntoView({block:'nearest'});
+    });
+    trigger.addEventListener('keydown',event=>{
+        if(['ArrowDown','ArrowUp','Enter',' '].includes(event.key) && menu.hidden){
+            event.preventDefault();
+            open();
+        }else if(event.key==='Escape'){close(true);}
+    });
+    document.addEventListener('pointerdown',event=>{
+        if(!menu.hidden && !event.target.closest('#session-muscle-filter-anchor'))close();
+    });
+    document.addEventListener('keydown',event=>{
+        if(event.key==='Escape'&&!menu.hidden)close(true);
+    });
+    native.addEventListener('change',display);
+    $('exercise-picker-dialog').addEventListener('close',()=>close());
+}
+
 function filteredSessionExercises() {
-    const query = $('session-exercise-query')?.value.trim().toLocaleLowerCase('es') || '';
-    const equipment = $('session-exercise-equipment')?.value || '';
-    const muscle = $('session-exercise-muscle')?.value || '';
-    return state.exercises.filter(exercise => {
-        const variants = state.variants.filter(variant => variant.exerciseCode === exercise.code);
-        return (!query || `${exercise.name} ${exercise.description || ''}`.toLocaleLowerCase('es').includes(query))
-            && (!equipment || variants.some(variant => variant.equipment === equipment))
-            && (!muscle || exercise.mainMuscleGroup === muscle);
+    return FitCoreExerciseSearch.search({
+        exercises: state.exercises,
+        variants: state.variants,
+        query: $('session-exercise-query')?.value || '',
+        equipment: $('session-exercise-equipment')?.value || '',
+        muscle: $('session-exercise-muscle')?.value || '',
+        friendly
     });
 }
 
@@ -2589,19 +3207,86 @@ function exerciseThumb(exercise, cssClass = 'exercise-thumb') {
 }
 
 function renderSessionExerciseResults() {
-    const container = $('session-exercise-results'); if (!container) return;
-    const exercises = filteredSessionExercises();
-    $('session-exercise-count').textContent = `${exercises.length} ejercicio${exercises.length === 1 ? '' : 's'}`;
-    container.innerHTML = exercises.length ? exercises.map(exercise => {
-        const variants = orderedVariantsForExercise(exercise);
-        const representative = defaultVariantForExercise(exercise);
-        const detail = state.pickerMode === 'plan'
-            ? `${friendly(exercise.mainMuscleGroup)} · ${friendly(representative?.equipment)}`
-            : `${friendly(exercise.mainMuscleGroup)} · ${variants.length} configuraci${variants.length === 1 ? 'ón':'ones'}`;
-        return `<button class="picker-exercise ${state.sessionPicker.exercise?.code === exercise.code ? 'is-selected':''}" data-session-exercise-code="${escapeHtml(exercise.code)}">${exerciseThumb(exercise)}<span><strong>${escapeHtml(exercise.name)}</strong><small>${escapeHtml(detail)}</small></span><i>›</i></button>`;
-    }).join('') : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
+    const preserveConfiguredSelection = arguments[0] === true;
+    const container = $('session-exercise-results');
+    if (!container) return;
+    const results = filteredSessionExercises();
+    const currentExerciseCode = state.sessionPicker.exercise?.code;
+    const currentVariantCode = state.sessionPicker.configuration?.variantCode;
+
+    // Si cambian los filtros y la elección ya no coincide, no permitimos
+    // registrar una variante de otra búsqueda por accidente.
+    const selectionVisible = !currentExerciseCode ||
+        results.some(({exercise, matchingCodes, variantCodes}) =>
+            exercise.code === currentExerciseCode &&
+            (!currentVariantCode || (preserveConfiguredSelection
+                ? variantCodes : (matchingCodes || variantCodes)).includes(currentVariantCode))
+        );
+    if (!selectionVisible) {
+        state.sessionPicker = {exercise: null, configuration: {}};
+        state.pickerConfigOpen = false;
+        state.pickerConfigMoreOpen = false;
+        state.pickerDraft = null;
+        state.pickerGroupCodes = null;
+        renderSessionExerciseConfig();
+    }
+
+    $('session-exercise-count').textContent =
+        `${results.length} resultado${results.length === 1 ? '' : 's'}`;
+    container.innerHTML = results.length
+        ? results.map(({exercise, variant, variantCodes, title, detail}) => {
+            const selected = state.sessionPicker.exercise?.code === exercise.code &&
+                (!state.sessionPicker.configuration?.variantCode ||
+                 variantCodes.includes(state.sessionPicker.configuration.variantCode));
+            const chosen = variant
+                ? ` data-session-variant-code="${escapeHtml(variant.code)}"`
+                : '';
+            return `<button type="button" class="picker-exercise ${selected ? 'is-selected' : ''}"
+                aria-pressed="${selected ? 'true' : 'false'}"
+                data-session-exercise-code="${escapeHtml(exercise.code)}"${chosen}>
+                ${exerciseThumb(exercise)}
+                <span><strong>${escapeHtml(title || exercise.name)}</strong>
+                <small>${escapeHtml(detail || friendly(exercise.mainMuscleGroup))}</small></span>
+                <i aria-hidden="true">›</i></button>`;
+        }).join('')
+        : '<div class="empty-state">No hay ejercicios con estos filtros.</div>';
 }
 
+function requestedPickerPosition() {
+    const q = normalizeExerciseSearchText($('session-exercise-query')?.value || '');
+    if (/\bde pie\b/.test(q)) return 'STANDING';
+    if (/\bsentad[oa]s?\b/.test(q)) return 'SEATED';
+    return 'UNSPECIFIED';
+}
+
+function pickerPositionOptions(exercise, variants, configuration, attribute) {
+    if (!FitCoreVariantUI.hasOptionalPosition(exercise, variants)) return '';
+    const chosen = configuration._positionPreference || 'UNSPECIFIED';
+    return `<label>Posición corporal
+        <select ${attribute} aria-label="Posición corporal">
+            <option value="UNSPECIFIED" ${chosen === 'UNSPECIFIED' ? 'selected' : ''}>Sin especificar</option>
+            <option value="STANDING" ${chosen === 'STANDING' ? 'selected' : ''}>De pie</option>
+            <option value="SEATED" ${chosen === 'SEATED' ? 'selected' : ''}>Sentado</option>
+        </select></label>`;
+}
+
+// Preferencia de interfaz: nunca se crea una variante ni posición física ficticia.
+function selectPickerPosition(exercise, variants, configuration, preference) {
+    if (!['UNSPECIFIED','STANDING','SEATED'].includes(preference)) return configuration;
+    if (preference === 'UNSPECIFIED') return {...configuration, _positionPreference:preference};
+    const current = variants.find(v => v.code === configuration.variantCode);
+    const candidates = variants.filter(v => v.bodyPosition === preference);
+    if (!candidates.length) return configuration;
+    const sameEquipment = candidates.filter(v => v.equipment === current?.equipment);
+    const next = FitCoreExerciseSearch.preferred(sameEquipment.length ? sameEquipment : candidates);
+    return {...configurationFromVariant(next), _positionPreference:preference};
+}
+
+function pickerVariantTitle(exercise, variant, configuration = {}) {
+    return FitCoreVariantUI.variantTitle(exercise, variant, {
+        showPosition: ['STANDING','SEATED'].includes(configuration._positionPreference)
+    });
+}
 function renderSessionExerciseConfig() {
     const container = $('session-exercise-config'); const exercise = state.sessionPicker.exercise;
     if (!exercise) {
@@ -2619,29 +3304,252 @@ function renderSessionExerciseConfig() {
     }
 
     const {controls, selectedVariant} = resolveVariantForExercise(exercise, state.sessionPicker.configuration);
-    const visibleControls = controls.filter(control => control.values.length > 1 || ['equipment','attachmentType'].includes(control.key));
+    const optionalPositionField = pickerPositionOptions(exercise,
+        availablePickerVariants(exercise), state.sessionPicker.configuration, 'data-session-position');
+    const pickerTitle = pickerVariantTitle(exercise, selectedVariant, state.sessionPicker.configuration);
+    const visibleControls = controls.filter(control =>
+        !(optionalPositionField && control.key === 'bodyPosition') &&
+        (control.values.length > 1 || ['equipment','attachmentType'].includes(control.key)));
     const fields = visibleControls.map(control => `<label>${control.label}<select data-session-variant-config="${control.key}" ${control.values.length === 1 ? 'disabled':''}>${control.values.map(value => `<option value="${value}" ${value === control.selected ? 'selected':''}>${variantValue(control.key, value)}</option>`).join('')}</select></label>`).join('');
-    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(exercise.name)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(selectedVariant.name)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
+    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">CONFIGURACIÓN</p><h3>${escapeHtml(pickerTitle)}</h3><small>${escapeHtml(exercise.description || 'Concreta la ejecución para esta sesión.')}</small></div></div><div class="picker-variant-fields">${optionalPositionField}${fields}</div>${selectedVariant ? `<div class="resolved-variant"><span>Variante que se registrará</span><strong>${escapeHtml(pickerTitle)}</strong><small>${escapeHtml(localizeText(selectedVariant.focusDescription || 'Configuración válida para este ejercicio.'))}</small></div>` : ''}`;
     $('session-add-exercise').disabled = !selectedVariant;
 }
 
+// Mismos campos y misma resolución de variantes antes y después de añadir.
+// Las opciones se derivan de variantes reales; no se fabrican combinaciones.
+function renderVariantConfiguratorFields(controls, candidates, selectedVariant, options = {}) {
+    const {
+        fieldAttribute = 'data-picker-variant-field',
+        exactAttribute = 'data-picker-variant-code',
+        moreAttribute = 'data-picker-more',
+        moreOpen = false,
+        allVariants = null,
+        extraTechnicalFields = []
+    } = options;
+    const editable = controls.filter(control =>
+        !(options.hideBodyPosition && control.key === 'bodyPosition') &&
+        control.values.filter(value => !(control.empty || []).includes(value)).length >= 2
+    );
+    const primary = editable.filter(control => planPrimaryVariantKeys.has(control.key));
+    const additional = editable.filter(control => !planPrimaryVariantKeys.has(control.key));
+    // Ajustes específicos del UI (p. ej. «Sin especificar / De pie /
+    // Sentado») también pertenecen al desplegable técnico.
+    const extraFields = extraTechnicalFields.filter(Boolean);
+    const additionalCount = additional.length + extraFields.length;
+    // Algunas variantes (p. ej. fondos inclinados/verticales) no difieren
+    // por campos configurables. Mostrar entonces la elección por ejecución,
+    // aunque el resolvedor haya reducido candidates a una sola variante.
+    const needsExecutionChoice = !editable.length && Array.isArray(allVariants) && allVariants.length > 1;
+    const variantChoices = needsExecutionChoice ? allVariants : candidates;
+    const fieldHtml = control => `<label>${escapeHtml(control.label)}
+        <select ${fieldAttribute}="${escapeHtml(control.key)}" aria-label="${escapeHtml(control.label)}">
+            ${control.values.map(value => `<option value="${escapeHtml(value)}"
+                ${value === control.selected ? 'selected' : ''}>${escapeHtml(variantValue(control.key, value))}</option>`).join('')}
+        </select></label>`;
+    return `
+        ${primary.length ? primary.map(fieldHtml).join('') : ''}
+        ${additionalCount ? `<details class="plan-advanced-more" ${moreAttribute} ${moreOpen ? 'open' : ''}>
+            <summary>Más ajustes técnicos <small>(${additionalCount})</small></summary>
+            <p>Opciones adicionales disponibles en el catálogo.</p>
+            <div class="plan-advanced-extra-fields">${extraFields.join('')}${additional.map(fieldHtml).join('')}</div>
+        </details>` : ''}
+        ${variantChoices.length > 1 ? `<label class="plan-advanced-exact-choice">${needsExecutionChoice ? 'Tipo de ejecución' : 'Variante concreta'}
+            <select ${exactAttribute} aria-label="${needsExecutionChoice ? 'Tipo de ejecución' : 'Variante concreta'}">
+                ${variantChoices.map(variant => `<option value="${escapeHtml(variant.code)}"
+                    ${variant.code === selectedVariant?.code ? 'selected' : ''}>${escapeHtml(variant.name)}</option>`).join('')}
+            </select></label>` : ''}
+    `;
+}
+
+function availablePickerVariants(exercise) {
+    const all = orderedVariantsForExercise(exercise).filter(variant => variant.active !== false);
+    return all;
+}
+
 function renderPlanSimpleExerciseConfig(container, exercise) {
-    const variants = orderedVariantsForExercise(exercise);
-    const requestedCode = state.sessionPicker.configuration?.variantCode;
-    const selectedVariant = variants.find(variant => variant.code === requestedCode)
-        || defaultVariantForExercise(exercise);
+    const variants = availablePickerVariants(exercise);
+    const requested = state.sessionPicker.configuration?.variantCode;
+    const selected = variants.find(variant => variant.code === requested)
+        || variants.find(variant => variant.isDefault || variant.defaultVariant || variant.default)
+        || variants[0];
+    if (!selected) {
+        container.innerHTML = '<div class="empty-state">Este ejercicio no tiene configuraciones disponibles.</div>';
+        $('session-add-exercise').disabled = true;
+        return;
+    }
+    const preference = state.sessionPicker.configuration?._positionPreference || 'UNSPECIFIED';
+    state.sessionPicker.configuration = {...configurationFromVariant(selected), _positionPreference:preference};
+    const title = pickerVariantTitle(exercise, selected, state.sessionPicker.configuration);
+    const chips = variantConfigurationChips(selected, {
+        hideBodyPosition: preference === 'UNSPECIFIED' &&
+            FitCoreVariantUI.optionalPosition(exercise, selected)
+    }).slice(0, 4);
+    // La posición se ajusta exclusivamente desde «Configurar».
+    const canConfigure = variants.length > 1;
+    const button = canConfigure ? `<button type="button" class="picker-config-toggle"
+        data-picker-toggle-config aria-haspopup="dialog" aria-controls="picker-variant-dialog"
+        aria-label="Configurar variante de ${escapeHtml(exercise.name)}">
+        <span aria-hidden="true">⚙</span><span>Configurar</span>
+    </button>` : '';
+    container.innerHTML = `<div class="picker-selected picker-selected-configurable">
+        ${exerciseThumb(exercise, 'picker-selected-thumb')}
+        <div class="picker-selected-copy"><p class="eyebrow">EJERCICIO SELECCIONADO</p>
+            <h3>${escapeHtml(title)}</h3>
+            <small>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</small>
+        </div>
+        ${button}
+    </div>
+    <div class="plan-simple-selection">
+        <span class="plan-simple-label">Configuración seleccionada</span>
+        <strong>${escapeHtml(title)}</strong>
+        ${chips.length ? `<div class="configuration-chips">${chips.map(chip =>
+            `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
+        ${canConfigure ? '<p>Puedes añadir esta variante directamente o pulsar Configurar para cambiarla antes de añadir.</p>' : ''}
+    </div>`;
+    $('session-add-exercise').disabled = false;
+    syncPickerGoalFields(selected);
+}
 
-    state.sessionPicker.configuration = configurationFromVariant(selectedVariant);
-    const chips = selectedVariant ? variantConfigurationChips(selectedVariant).slice(0, 4) : [];
+// Medir la altura REAL de la variante más exigente de ESTE ejercicio, con
+// «Más ajustes técnicos» abierto. No usar mínimos globales ni contar opciones
+// que en realidad no se muestran para una combinación determinada.
+function measurePickerVariantHeight(exercise, variants) {
+    const modal = $('picker-variant-dialog');
+    const shell = modal.querySelector('.picker-variant-modal-shell');
+    const body = $('picker-variant-dialog-body');
+    const heading = modal.querySelector('.picker-variant-heading');
+    const actions = modal.querySelector('.picker-variant-dialog-actions');
+    const draft = state.pickerDraft;
+    if (!draft || !variants.length) return;
 
-    container.innerHTML = `<div class="picker-selected">${exerciseThumb(exercise, 'picker-selected-thumb')}<div><p class="eyebrow">EJERCICIO SELECCIONADO</p><h3>${escapeHtml(exercise.name)}</h3><small>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</small></div></div>
-        <div class="plan-simple-selection">
-            <span class="plan-simple-label">Configuración inicial</span>
-            <strong>${escapeHtml(selectedVariant?.name || 'Sin configuración disponible')}</strong>
-            ${chips.length ? `<div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
-            <p>Se aplicará automáticamente una combinación válida. Podrás cambiar agarre, apertura, material y demás opciones desde <b>Acciones → Modificar configuración</b>.</p>
-        </div>`;
-    $('session-add-exercise').disabled = !selectedVariant;
+    const before = {
+        configuration: {...draft.configuration}, moreOpen: draft.moreOpen,
+        height: modal.style.height, maxHeight: modal.style.maxHeight,
+        shellHeight: shell.style.height, shellMaxHeight: shell.style.maxHeight,
+        bodyOverflow: body.style.overflowY
+    };
+    // Ocultar solo durante la medición evita saltos visuales. Dejamos que la
+    // cuadrícula crezca libremente para obtener una altura natural fiable.
+    modal.style.visibility = 'hidden';
+    modal.style.height = 'auto';
+    modal.style.maxHeight = 'none';
+    shell.style.height = 'auto';
+    shell.style.maxHeight = 'none';
+    body.style.overflowY = 'visible';
+    let maximum = 0;
+    try {
+        for (const variant of variants) {
+            draft.configuration = {
+                ...configurationFromVariant(variant),
+                _positionPreference: before.configuration._positionPreference || 'UNSPECIFIED'
+            };
+            draft.moreOpen = true;
+            renderPickerVariantDialog();
+            const details = $('picker-variant-dialog-fields')
+                .querySelector('.plan-advanced-more');
+            if (details) details.open = true;
+            const naturalHeight = heading.getBoundingClientRect().height +
+                body.scrollHeight + actions.getBoundingClientRect().height + 2;
+            maximum = Math.max(maximum, Math.ceil(naturalHeight));
+        }
+    } finally {
+        draft.configuration = before.configuration;
+        draft.moreOpen = before.moreOpen;
+        modal.style.height = before.height;
+        modal.style.maxHeight = before.maxHeight;
+        shell.style.height = before.shellHeight;
+        shell.style.maxHeight = before.shellMaxHeight;
+        body.style.overflowY = before.bodyOverflow;
+        renderPickerVariantDialog();
+        // Se calcula UNA VEZ al abrir. Los cambios de controles posteriores
+        // no modifican el tamaño; el contenido central permite scroll.
+        if (maximum > 0) {
+            modal.style.setProperty('--picker-variant-height', maximum + 'px');
+        }
+        modal.style.visibility = '';
+    }
+}
+
+function openPickerVariantDialog() {
+    if (state.pickerMode !== 'plan') return;
+    const exercise = state.sessionPicker.exercise;
+    if (!exercise) return;
+    const variants = availablePickerVariants(exercise);
+    if (variants.length < 2) return;
+    const selected = variants.find(v => v.code === state.sessionPicker.configuration?.variantCode)
+        || variants.find(v => v.isDefault || v.defaultVariant || v.default)
+        || variants[0];
+    state.pickerDraft = {exerciseCode: exercise.code,
+        configuration: {...configurationFromVariant(selected),
+            _positionPreference:state.sessionPicker.configuration?._positionPreference || 'UNSPECIFIED'},
+        moreOpen:false};
+    renderPickerVariantDialog();
+    const modal = $('picker-variant-dialog');
+    // Empezamos oculto, medimos dentro del top layer y mostramos una sola
+    // geometría. CSS limita la altura al viewport cuando sea necesario.
+    modal.style.visibility = 'hidden';
+    modal.showModal();
+    measurePickerVariantHeight(exercise, variants);
+    $('picker-variant-dialog-body').querySelector('select:not(:disabled)')?.focus();
+}
+
+function renderPickerVariantDialog() {
+    const draft = state.pickerDraft;
+    const exercise = state.sessionPicker.exercise;
+    if (!draft || !exercise || draft.exerciseCode !== exercise.code) return;
+    const variants = availablePickerVariants(exercise);
+    const {controls, candidates, selectedVariant} =
+        resolveVariantForExercise(exercise, draft.configuration, variants);
+    $('picker-variant-title').textContent = `Configurar ${exercise.name}`;
+    $('picker-variant-identity').innerHTML = `${exerciseThumb(exercise, 'picker-variant-thumb')}
+        <div><p class="eyebrow">EJERCICIO SELECCIONADO</p>
+        <h3>${escapeHtml(exercise.name)}</h3>
+        <p>${escapeHtml(exercise.description || friendly(exercise.mainMuscleGroup))}</p></div>`;
+    const optionalPosition = FitCoreVariantUI.hasOptionalPosition(exercise, variants);
+    $('picker-variant-dialog-fields').innerHTML =
+        renderVariantConfiguratorFields(controls, candidates, selectedVariant, {
+            fieldAttribute:'data-picker-dialog-field',
+            exactAttribute:'data-picker-dialog-variant-code',
+            moreAttribute:'data-picker-dialog-more',
+            moreOpen:!!draft.moreOpen,
+            hideBodyPosition:optionalPosition,
+            extraTechnicalFields: optionalPosition
+                ? [pickerPositionOptions(exercise, variants, draft.configuration,
+                    'data-picker-dialog-position')] : [],
+            allVariants: variants
+        });
+    const chips = selectedVariant ? variantConfigurationChips(selectedVariant, {
+        hideBodyPosition: draft.configuration._positionPreference === 'UNSPECIFIED' &&
+            FitCoreVariantUI.optionalPosition(exercise, selectedVariant)
+    }).slice(0,4) : [];
+    $('picker-variant-dialog-result').innerHTML = selectedVariant
+        ? `<span>Configuración resultante</span>
+            <strong>${escapeHtml(pickerVariantTitle(exercise, selectedVariant, draft.configuration))}</strong>
+            ${chips.length ? `<div class="configuration-chips">${chips.map(chip =>
+                `<span>${escapeHtml(chip)}</span>`).join('')}</div>` : ''}
+            <small>Solo se pueden aplicar variantes existentes en el catálogo.</small>`
+        : `<span>Configuración resultante</span><strong>Sin combinación válida</strong>`;
+    $('picker-variant-apply').disabled = !selectedVariant;
+}
+
+function closePickerVariantDialog() {
+    const dialog = $('picker-variant-dialog');
+    if (dialog.open) dialog.close();
+    state.pickerDraft = null;
+}
+
+function applyPickerVariantDialog() {
+    const draft = state.pickerDraft;
+    const exercise = state.sessionPicker.exercise;
+    if (!draft || !exercise || draft.exerciseCode !== exercise.code) return;
+    const variants = availablePickerVariants(exercise);
+    const {selectedVariant} = resolveVariantForExercise(exercise, draft.configuration, variants);
+    if (!selectedVariant || !variants.some(v => v.code === selectedVariant.code)) return;
+    state.sessionPicker.configuration = {...configurationFromVariant(selectedVariant),
+        _positionPreference:draft.configuration._positionPreference || 'UNSPECIFIED'};
+    closePickerVariantDialog();
+    renderSessionExerciseConfig();
+    renderSessionExerciseResults(true);
 }
 
 async function openPlanAdvancedConfigDialog(dayIndex, exerciseIndex) {
@@ -2738,98 +3646,12 @@ function renderPlanAdvancedConfig() {
         </div>
     `;
 
-    // Solo mostrar controles con dos o más
-    // valores significativos disponibles
-    const editable = controls.filter(control => {
-        const meaningfulValues = control.values.filter(
-            value => !(control.empty || []).includes(value)
-        );
-
-        return meaningfulValues.length >= 2;
+    fieldsContainer.innerHTML = renderVariantConfiguratorFields(controls, candidates, selectedVariant, {
+        fieldAttribute: 'data-plan-advanced-field',
+        exactAttribute: 'data-plan-advanced-variant-code',
+        moreAttribute: 'data-plan-advanced-more',
+        moreOpen: !!draft.moreOpen
     });
-
-    const primary = editable.filter(
-        control => planPrimaryVariantKeys.has(control.key)
-    );
-
-    const additional = editable.filter(
-        control => !planPrimaryVariantKeys.has(control.key)
-    );
-
-    // Reutilizar el mismo generador de campos
-    const fieldHtml = control => `
-        <label>
-            ${escapeHtml(control.label)}
-
-            <select
-                data-plan-advanced-field="${escapeHtml(control.key)}">
-
-                ${control.values.map(value => `
-                    <option
-                        value="${escapeHtml(value)}"
-                        ${value === control.selected ? 'selected' : ''}>
-                        ${escapeHtml(
-        variantValue(control.key, value)
-    )}
-                    </option>
-                `).join('')}
-
-            </select>
-        </label>
-    `;
-
-    fieldsContainer.innerHTML = `
-
-        ${primary.length
-        ? primary.map(fieldHtml).join('')
-        : `
-                <p class="plan-advanced-no-fields">
-                    Este ejercicio no tiene ajustes
-                    principales alternativos.
-                </p>
-            `
-    }
-
-        ${additional.length ? `
-            <details
-                class="plan-advanced-more"
-                ${draft.moreOpen ? 'open' : ''}>
-
-                <summary>
-                    Más ajustes técnicos
-                    <small>(${additional.length})</small>
-                </summary>
-
-                <p>
-                    Opciones menos habituales que permiten
-                    identificar otras variantes válidas.
-                </p>
-
-                <div class="plan-advanced-extra-fields">
-                    ${additional.map(fieldHtml).join('')}
-                </div>
-
-            </details>
-        ` : ''}
-
-        ${candidates.length > 1 ? `
-            <label class="plan-advanced-exact-choice">
-                Variante concreta
-
-                <select data-plan-advanced-variant-code>
-                    ${candidates.map(variant => `
-                        <option
-                            value="${escapeHtml(variant.code)}"
-                            ${variant.code === selectedVariant?.code
-        ? 'selected'
-        : ''}>
-                            ${escapeHtml(variant.name)}
-                        </option>
-                    `).join('')}
-                </select>
-            </label>
-        ` : ''}
-    `;
 
     // Resumen de la variante resultante
     resultContainer.innerHTML = selectedVariant
@@ -2882,6 +3704,58 @@ function savePlanAdvancedConfig(event) {
     toast('Configuración actualizada. Se han conservado las series, repeticiones, descanso y orden. Guarda el plan para conservar el cambio.');
 }
 
+async function recoverPlannedSessionExercises() {
+    if(!state.currentSession || state.sessionExercises.length) return;
+    try {
+        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/import-planned-exercises`,
+            {method:'POST'});
+        await loadSessionExercises();
+        toast('Ejercicios del plan cargados en la sesión.');
+    } catch(error) {
+        toast(error.message,true);
+    }
+}
+
+// Auto-classification is descriptive and uses the same canonical exercise catalog.
+// Never replaces a manual choice, and never manufactures a type for incomplete logs.
+async function refreshAutomaticSessionClassification(){
+    const session=state.currentSession;
+    if(!session||session.status!=='IN_PROGRESS'||
+       session.trainingDayTypeManual||sessionClassificationSyncing||
+       !state.variants.length||!state.exercises.length)return;
+    const inputs=await Promise.all(state.sessionExercises.map(async item=>{
+        const variant=state.variants.find(v=>v.code===item.exerciseVariantCode);
+        const exercise=state.exercises.find(e=>e.code===variant?.exerciseCode);
+        const sets=(state.sessionSets.get(item.id)||[]).length;
+        if(!exercise||!variant)return {code:item.exerciseVariantCode,sets};
+        const response=await getPlanVariantActivations(item.exerciseVariantCode);
+        return {code:item.exerciseVariantCode,sets,group:exercise.mainMuscleGroup,
+            pattern:exercise.movementPattern,family:exercise.code,
+            activations:response.failed?null:response.rows};
+    }));
+    // Another exercise may have been added while loading metadata.
+    if(session!==state.currentSession||session.trainingDayTypeManual)return;
+    const result=FitCoreDayClassifier.classify(inputs);
+    if(result.provisional||!result.structure||result.structure==='REST'
+        ||result.structure===session.trainingDayType)return;
+    sessionClassificationSyncing=true;
+    try{
+        const changed=await api(`/api/users/${state.auth.userId}/workout-sessions/${session.id}`,{
+            method:'PATCH',body:JSON.stringify({
+                trainingDayType:result.structure,trainingDayTypeManual:false
+            })
+        });
+        if(session===state.currentSession){
+            state.currentSession={...session,...changed};
+            syncSessionHeader();
+        }
+    }catch(error){
+        console.warn('No se pudo actualizar la clasificación de sesión:',error);
+    }finally{
+        sessionClassificationSyncing=false;
+    }
+}
+
 async function loadSessionExercises() {
     if (!state.currentSession) return renderSession();
     try {
@@ -2897,7 +3771,33 @@ async function loadSessionExercises() {
         state.sessionPrevious = new Map(details.map(item => [item.id, item.previous]));
         renderSession();
         await renderSessionMiniMap();
+        void refreshAutomaticSessionClassification();
     } catch (error) { toast(error.message, true); }
+}
+
+function sessionBodyweightLoadCell(variant,set,number) {
+    // Weight recorded before explicit lastre existed must stay unclassified.
+    const legacy=set?.loadMode==='EXTERNAL_LOAD' && set?.weight!=null;
+    const mode=legacy?'EXTERNAL_LOAD':
+        ['BODYWEIGHT','WEIGHTED','ASSISTED'].includes(set?.loadMode)
+        ? set.loadMode:'BODYWEIGHT';
+    const kg=mode==='WEIGHTED'?set?.addedWeightKg:
+        mode==='ASSISTED'?set?.assistanceWeightKg:null;
+    return `<div class="set-bodyweight-load">
+        <select data-set-load-mode aria-label="Modo de carga de la serie ${number}">
+            <option value="BODYWEIGHT" ${mode==='BODYWEIGHT'?'selected':''}>Peso corporal</option>
+            ${variant.allowsAddedWeight?`<option value="WEIGHTED" ${mode==='WEIGHTED'?'selected':''}>Lastrada</option>`:''}
+            ${variant.allowsAssistance?`<option value="ASSISTED" ${mode==='ASSISTED'?'selected':''}>Asistida</option>`:''}
+            ${legacy?`<option value="EXTERNAL_LOAD" selected>Registro histórico (kg sin clasificar)</option>`:''}
+        </select>
+        ${legacy?`<input data-set-weight data-numeric-mode="decimal" type="number"
+            inputmode="decimal" min="0" step="0.25" value="${set.weight}"
+            aria-label="Peso histórico sin clasificar" ${mode==='EXTERNAL_LOAD'?'':'hidden'}>`:''}
+        <input data-set-extra-weight type="number" data-numeric-mode="decimal"
+            inputmode="decimal" min="0" step="0.25" placeholder="kg adicionales"
+            value="${kg ?? ''}" aria-label="Kg de lastre o asistencia"
+            ${mode==='WEIGHTED'||mode==='ASSISTED'?'':'hidden'}>
+    </div>`;
 }
 
 function renderSession() {
@@ -2950,7 +3850,17 @@ function renderSession() {
     // Actualizar métricas y temporizador
     renderSessionSummary();
     manageSessionTimer(active);
-    const container = $('session-exercises'); if (!state.sessionExercises.length) { container.innerHTML = `<div class="empty-state large">${active ? 'Añade el primer ejercicio de la sesión.':'Inicia una sesión para registrar ejercicios y series.'}</div>`; void renderSessionMiniMap(); return; }
+    const container = $('session-exercises');
+    if (!state.sessionExercises.length) {
+        const planned = active && state.currentSession?.workoutDayId != null;
+        container.innerHTML = planned
+            ? '<div class="empty-state large">Este día del plan no tiene ejercicios cargados en la sesión.'+
+              '<button type="button" class="button button-secondary" data-recover-plan-exercises>'+
+              'Cargar ejercicios del plan</button></div>'
+            : `<div class="empty-state large">${active ? 'Añade el primer ejercicio de la sesión.':'Inicia una sesión para registrar ejercicios y series.'}</div>`;
+        void renderSessionMiniMap();
+        return;
+    }
     container.innerHTML = state.sessionExercises.map(exercise => {
         const sets = state.sessionSets.get(exercise.id) || [];
         const previous = state.sessionPrevious.get(exercise.id) || {sessionDate:null, sets:[]};
@@ -2958,7 +3868,10 @@ function renderSession() {
         const next = sets.length ? Math.max(...sets.map(set => set.setNumber)) + 1 : 1;
         const variant = state.variants.find(item => item.code === exercise.exerciseVariantCode);
         const base = state.exercises.find(item => item.code === variant?.exerciseCode);
-        const exerciseName = base?.name || variantName(exercise.exerciseVariantCode);
+        const durationBased = base?.defaultUnit === 'SECONDS';
+        const isCarry = base?.code === 'farmerCarry';
+        const bodyweight = variant?.resistanceSource === 'BODYWEIGHT';
+        const exerciseName = variant ? FitCoreVariantUI.variantTitle(base, variant) : base?.name || variantName(exercise.exerciseVariantCode);
         const completed = sets.length > 0 && sets.every(set => set.completed);
         const rest = sessionRestSeconds(exercise);
         const chips = variantConfigurationChips(variant);
@@ -2973,9 +3886,12 @@ function renderSession() {
             return `<tr data-set-row="${set.id}" class="${set.completed ? 'is-complete':''}">
                 <td><span class="set-number">${set.setNumber}</span><input data-set-number type="hidden" value="${set.setNumber}"></td>
                 <td class="previous-performance">${previousSetLabel(prior)}</td>
-                <td><input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="${set.weight ?? ''}" aria-label="Peso de la serie ${set.setNumber}"></td>
-                <td><input data-set-reps data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${set.reps ?? ''}" aria-label="Repeticiones de la serie ${set.setNumber}"></td>
-                <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}"></td>
+                <td>${bodyweight ? sessionBodyweightLoadCell(variant,set,set.setNumber) : '<input data-set-weight data-numeric-mode="decimal" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" min="0" step="0.25" value="' + (set.weight ?? '') + '" aria-label="Peso externo">'}</td>
+                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next" min="0" step="1" value="${durationBased ? (set.durationSeconds ?? '') : (set.reps ?? '')}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'} de la serie ${set.setNumber}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='text' inputmode='decimal' autocomplete='off' enterkeyhint='next' min='0' step='0.1' placeholder='Distancia (m)' value='${set.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
+                <td>${durationBased ? '<span title="No aplicable a isométricos">—</span>' :
+                    `<input data-set-rir data-numeric-mode="integer" data-numeric-max="10"
+                        type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next" min="0" max="10" step="1"
+                        value="${set.rir ?? ''}" aria-label="RIR de la serie ${set.setNumber}">`}</td>
                 <td>${rpeControl(effectiveRpe, `RPE de la serie ${set.setNumber}`, set.rpe == null && effectiveRpe != null)}</td>
                 <td><label class="complete-check"><input data-set-complete type="checkbox" ${set.completed ? 'checked':''}><span>✓</span></label></td>
                 <td><button class="text-button" data-save-set="${set.id}">Guardar</button><button class="text-button danger" data-delete-set="${set.id}" aria-label="Eliminar serie ${set.setNumber}">×</button></td>
@@ -2983,12 +3899,12 @@ function renderSession() {
         }).join('');
         return `<article class="session-card" data-session-exercise="${exercise.id}" data-exercise-name="${escapeHtml(exerciseName)}">
             <div class="session-card-head"><div class="session-exercise-identity">${base ? exerciseThumb(base, 'session-exercise-thumb') : '<span class="session-exercise-thumb thumb-placeholder">FC</span>'}<div><div class="session-title-line"><h3>${escapeHtml(exerciseName)}</h3><span class="status-pill" data-state="${completed?'COMPLETED':''}">${completed?'Completado':'En curso'}</span></div><div class="configuration-chips">${chips.map(chip => `<span>${escapeHtml(chip)}</span>`).join('')}</div><small>${escapeHtml(variant?.name || variantName(exercise.exerciseVariantCode))}</small></div></div><button class="icon-button danger" data-remove-session-exercise aria-label="Quitar ejercicio">×</button></div>
-            <div class="exercise-tools"><button class="rest-setting" data-edit-rest><span>⏱ Descanso</span><strong>${formatDuration(rest)}</strong><small>Modificar</small></button><span>Series registradas: <strong>${sets.length}</strong></span><span>Anterior: <strong>${previous.sessionDate ? new Date(`${previous.sessionDate}T00:00:00`).toLocaleDateString('es-ES') : 'Sin registros'}</strong></span></div>
+            <div class="exercise-tools"><button class="rest-setting" data-edit-rest><span>⏱ Descanso</span><strong>${FitCoreRestWheel.label(rest)}</strong><small>Elegir tiempo</small></button><span>Series registradas: <strong>${sets.length}</strong></span><span>Anterior: <strong>${previous.sessionDate ? new Date(`${previous.sessionDate}T00:00:00`).toLocaleDateString('es-ES') : 'Sin registros'}</strong></span></div>
             <div class="set-table-wrap"><table class="set-table"><thead><tr><th>Serie</th><th>Anterior</th>
 
 <th>
     <span class="set-help-label">
-        Peso (kg)
+        ${bodyweight ? 'Carga' : 'Peso (kg)'}
         <button type="button"
                 class="set-help-icon"
                 data-training-help="weight"
@@ -2998,7 +3914,7 @@ function renderSession() {
     </span>
 </th>
 
-<th>Reps</th>
+<th>${durationBased ? 'Tiempo (s)' : 'Reps'}</th>
 
 <th>
     <span class="set-help-label">
@@ -3027,9 +3943,12 @@ function renderSession() {
             <th>Hecha</th><th>Acciones</th></tr></thead><tbody>${setRows}<tr class="new-set">
                 <td><span class="set-number">${next}</span><input data-set-number type="hidden" value="${next}"></td>
                 <td class="previous-performance">${previousSetLabel(previousByNumber.get(next))}</td>
-                <td><input data-set-weight data-numeric-mode="decimal" type="number" inputmode="decimal" min="0" step="0.25" value="${suggestedWeight}" aria-label="Peso de la nueva serie"></td>
-                <td><input data-set-reps data-numeric-mode="integer" type="number" inputmode="numeric" min="0" step="1" value="${suggestedReps}" aria-label="Repeticiones de la nueva serie"></td>
-                <td><input data-set-rir data-numeric-mode="integer" data-numeric-max="10" type="number" inputmode="numeric" min="0" max="10" step="1" value="${suggestedRir}" aria-label="RIR de la nueva serie"></td>
+                <td>${bodyweight ? sessionBodyweightLoadCell(variant,lastSet?.loadMode==='EXTERNAL_LOAD' ? {loadMode:'BODYWEIGHT'} : lastSet,next) : '<input data-set-weight data-numeric-mode="decimal" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next" min="0" step="0.25" value="' + suggestedWeight + '" aria-label="Peso externo">'}</td>
+                <td><input ${durationBased ? 'data-set-duration' : 'data-set-reps'} data-numeric-mode="integer" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next" min="0" step="1" value="${durationBased ? (lastSet?.durationSeconds ?? firstSuggestion?.durationSeconds ?? '') : suggestedReps}" aria-label="${durationBased ? 'Segundos' : 'Repeticiones'}">${isCarry ? `<input data-set-distance data-numeric-mode='decimal' type='text' inputmode='decimal' autocomplete='off' enterkeyhint='next' min='0' step='0.1' placeholder='Distancia (m)' value='${lastSet?.distanceMeters ?? ''}' aria-label='Distancia en metros'>` : ''}</td>
+                <td>${durationBased ? '—' : `<input data-set-rir data-numeric-mode="integer"
+                    data-numeric-max="10" type="text" inputmode="numeric" autocomplete="off" enterkeyhint="next"
+                    min="0" max="10" step="1" value="${suggestedRir}"
+                    aria-label="RIR de la nueva serie">`}</td>
                 <td>${rpeControl(null, 'RPE de la nueva serie', false)}</td><td><span class="pending-set" title="La serie se crea sin completar">Pendiente</span></td>
                 <td><button class="button button-primary add-set-button" data-add-set>+ Añadir serie</button></td>
             </tr></tbody></table></div><div class="session-card-foot"><small>Al marcar una serie como hecha se guardará y comenzará el descanso.</small><strong>${sets.filter(set => set.completed).length}/${sets.length || 0} series completadas</strong></div>
@@ -3038,9 +3957,19 @@ function renderSession() {
 }
 
 function previousSetLabel(set) {
-    if (!set || (set.weight == null && set.reps == null)) return '<span aria-label="Sin registro anterior">—</span>';
-    const weight = set.weight == null ? '—' : `${formatNumber(set.weight)} kg`;
+    if (!set || (set.weight == null && set.reps == null && set.durationSeconds == null))
+        return '<span aria-label="Sin registro anterior">—</span>';
+    if(set.durationSeconds != null) {
+        const extra=set.addedWeightKg!=null ? ' · +'+formatNumber(set.addedWeightKg)+' kg' :
+            set.assistanceWeightKg!=null ? ' · asistencia '+formatNumber(set.assistanceWeightKg)+' kg' : '';
+        return `<strong>${set.durationSeconds} s${extra}</strong>`;
+    }
     const reps = set.reps == null ? '—' : set.reps;
+    const mode = set.loadMode || 'EXTERNAL_LOAD';
+    if(mode==='WEIGHTED')return `<strong>${reps} reps · +${formatNumber(set.addedWeightKg)} kg</strong>`;
+    if(mode==='ASSISTED')return `<strong>${reps} reps · ayuda ${formatNumber(set.assistanceWeightKg)} kg</strong>`;
+    if(mode==='BODYWEIGHT')return `<strong>${reps} reps · peso corporal</strong>`;
+    const weight = set.weight == null ? '—' : `${formatNumber(set.weight)} kg`;
     return `<strong>${weight} × ${reps}</strong>`;
 }
 
@@ -3159,13 +4088,18 @@ function syncRpeFromRir(input) {
     button.title = value == null ? 'Seleccionar RPE manualmente' : 'RPE automático desde RIR';
 }
 
-function variantConfigurationChips(variant) {
+function variantConfigurationChips(variant, options = {}) {
     if (!variant) return [];
-    return [friendly(variant.equipment), ...variantConfigFields.slice(1).filter(field => variant[field.key] && !(field.empty || []).includes(variant[field.key])).slice(0,3).map(field => variantValue(field.key, variant[field.key]))];
+    return [friendly(variant.equipment),
+        ...variantConfigFields.slice(1)
+            .filter(field =>
+                !(options.hideBodyPosition && field.key === 'bodyPosition') &&
+                variant[field.key] && !(field.empty || []).includes(variant[field.key]))
+            .slice(0, 3).map(field => variantValue(field.key, variant[field.key]))];
 }
 
 function sessionRestSeconds(exercise) {
-    return exercise.restSeconds ?? 90;
+    return exercise.restSeconds ?? 0;
 }
 
 function formatDuration(seconds) { const value = Math.max(0, Number(seconds) || 0); return `${Math.floor(value / 60)}:${String(value % 60).padStart(2,'0')}`; }
@@ -3178,110 +4112,54 @@ function sessionElapsedSeconds() { return state.sessionStartedAt ? Math.max(0, M
    ======================================== */
 
 function calculateSessionVolume() {
-    let volumeGrams = 0;
-    let totalReps = 0;
-    let completedSets = 0;
-    let setsWithoutVolume = 0;
-
-    // Recorrer TODOS los ejercicios de la sesión
-    for (const sets of state.sessionSets.values()) {
-
-        for (const set of sets || []) {
-
-            // Solo cuentan las series completadas
-            if (set.completed !== true) continue;
-
+    let volumeGrams=0,totalReps=0,totalTimedSeconds=0,totalDistanceMeters=0;
+    let completedSets=0,setsWithoutVolume=0,bodyweightSets=0;
+    for(const [exerciseId,sets] of state.sessionSets) {
+        const sessionExercise=state.sessionExercises.find(e=>e.id===Number(exerciseId));
+        const variant=state.variants.find(v=>v.code===sessionExercise?.exerciseVariantCode);
+        const bodyweightVariant=variant?.resistanceSource==='BODYWEIGHT';
+        for(const set of sets||[]) {
+            if(set.completed!==true)continue;
             completedSets++;
-
-            const reps =
-                set.reps == null || set.reps === ''
-                    ? null
-                    : Number(set.reps);
-
-            const weight =
-                set.weight == null || set.weight === ''
-                    ? null
-                    : Number(set.weight);
-
-            const validReps =
-                reps !== null &&
-                Number.isSafeInteger(reps) &&
-                reps >= 0;
-
-            const validWeight =
-                weight !== null &&
-                Number.isFinite(weight) &&
-                weight >= 0;
-
-            // Contar repeticiones completadas
-            if (validReps) {
-                totalReps += reps;
+            const mode=set.loadMode||'EXTERNAL_LOAD';
+            const reps=set.reps==null?null:Number(set.reps);
+            const weight=set.weight==null?null:Number(set.weight);
+            const seconds=set.durationSeconds==null?null:Number(set.durationSeconds);
+            const distance=set.distanceMeters==null?null:Number(set.distanceMeters);
+            const validReps=Number.isSafeInteger(reps)&&reps>=0;
+            if(validReps)totalReps+=reps;
+            if(Number.isSafeInteger(seconds)&&seconds>0)totalTimedSeconds+=seconds;
+            if(Number.isFinite(distance)&&distance>0)totalDistanceMeters+=distance;
+            if(bodyweightVariant || mode==='BODYWEIGHT'||mode==='WEIGHTED'||mode==='ASSISTED'){
+                bodyweightSets++;
+                continue;
             }
-
-            // Calcular el volumen de la serie
-            if (validReps && validWeight) {
-
-                // Convertir a gramos para evitar
-                // errores de precisión decimal
-                const weightGrams = Math.round(
-                    weight * 1000
-                );
-
-                volumeGrams += weightGrams * reps;
-
-            } else {
-                // Serie completada sin datos
-                // suficientes para calcular volumen
+            // Solo el peso externo real entra en kg × repeticiones.
+            if(validReps && Number.isFinite(weight)&&weight>=0) {
+                volumeGrams+=Math.round(weight*1000)*reps;
+            } else if(validReps && reps>0) {
                 setsWithoutVolume++;
             }
         }
     }
-
     return {
-        volumeKg: volumeGrams / 1000,
-        totalReps,
-        completedSets,
-        setsWithoutVolume
+        volumeKg:volumeGrams/1000,totalReps,totalTimedSeconds,
+        totalDistanceMeters,completedSets,setsWithoutVolume,bodyweightSets
     };
 }
 
-
 /* ACTUALIZAR EL PANEL DE ENTRENAMIENTO */
-
 function renderSessionSummary() {
-
-    const result = calculateSessionVolume();
-
-    // Duración
-    $('session-duration').textContent =
-        formatDuration(sessionElapsedSeconds());
-
-    // Volumen total en kg
-    $('session-volume').textContent =
-        `${result.volumeKg.toLocaleString('es-ES', {
-            maximumFractionDigits: 2
-        })} kg`;
-
-    // Número de series completadas
-    $('session-series').textContent =
-        result.completedSets;
-
-    // Repeticiones totales
-    const repsElement = $('session-volume-reps');
-
-    if (repsElement) {
-        repsElement.textContent =
-            `${result.totalReps} reps` +
-            (result.setsWithoutVolume
-                ? ' · parcial'
-                : '');
-    }
-
-    // Avisar si hay series sin datos de carga
-    $('session-volume').title =
-        result.setsWithoutVolume > 0
-            ? `Volumen parcial: ${result.setsWithoutVolume} serie(s) completada(s) sin peso o repeticiones registrados.`
-            : 'Volumen de carga: suma de peso × repeticiones de todas las series completadas.';
+    const result=calculateSessionVolume();
+    $('session-duration').textContent=formatDuration(sessionElapsedSeconds());
+    $('session-volume').textContent=result.volumeKg.toLocaleString('es-ES',{
+        maximumFractionDigits:2
+    })+' kg';
+    $('session-series').textContent=result.completedSets;
+    $('session-volume').title=result.setsWithoutVolume>0
+        ? 'Volumen externo parcial: '+result.setsWithoutVolume+
+            ' serie(s) con repeticiones y sin peso externo registrado.'
+        : 'Suma de peso externo registrado × repeticiones. Lastre, asistencia y peso corporal no se mezclan.';
 }
 
 
@@ -3431,13 +4309,28 @@ async function updateSet(
 }
 
 
+function requiredExtraWeight(container,label) {
+    const value=validatedNumericValue(container.querySelector('[data-set-extra-weight]'),
+        label,false,0);
+    if(value==null||value<=0)throw new Error(label+' debe ser mayor que cero.');
+    return value;
+}
+
 function setBody(container) {
     const completion = container.querySelector('[data-set-complete]');
     return {
         setNumber:requiredInteger(container.querySelector('[data-set-number]').value, 'El número de serie', 1),
-        weight:validatedNumericValue(container.querySelector('[data-set-weight]'), 'El peso', false, 0),
-        reps:validatedNumericValue(container.querySelector('[data-set-reps]'), 'Las repeticiones', true, 0),
-        rir:validatedNumericValue(container.querySelector('[data-set-rir]'), 'El RIR', true, 0, 10),
+        weight:container.querySelector('[data-set-weight]') && !container.querySelector('[data-set-weight]').hidden ? validatedNumericValue(container.querySelector('[data-set-weight]'), 'El peso', false, 0) : null,
+        reps:container.querySelector('[data-set-reps]') ? validatedNumericValue(container.querySelector('[data-set-reps]'), 'Las repeticiones', true, 0) : null,
+        durationSeconds:container.querySelector('[data-set-duration]') ? validatedNumericValue(container.querySelector('[data-set-duration]'), 'El tiempo en segundos', true, 0) : null,
+        distanceMeters:container.querySelector('[data-set-distance]') ? validatedNumericValue(container.querySelector('[data-set-distance]'), 'La distancia en metros',false,0) : null,
+        loadMode:container.querySelector('[data-set-load-mode]')?.value ||
+            (container.querySelector('[data-set-weight]') ? 'EXTERNAL_LOAD' : 'BODYWEIGHT'),
+        addedWeightKg:container.querySelector('[data-set-load-mode]')?.value === 'WEIGHTED'
+            ? requiredExtraWeight(container,'El lastre') : null,
+        assistanceWeightKg:container.querySelector('[data-set-load-mode]')?.value === 'ASSISTED'
+            ? requiredExtraWeight(container,'La asistencia') : null,
+        rir:container.querySelector('[data-set-rir]') ? validatedNumericValue(container.querySelector('[data-set-rir]'), 'El RIR', true, 0, 10) : null,
         rpe:optionalNumber(container.querySelector('[data-set-rpe]').value),
         completed:completion ? completion.checked : false,
         notes:null
@@ -3452,7 +4345,7 @@ function requiredInteger(rawValue, label, minimum) {
 }
 
 function validatedNumericValue(input, label, integer, minimum, maximum = null) {
-    const rawValue = input.value.trim();
+    const rawValue = input.value.trim().replace(',', '.');
     if (rawValue === '') return null;
     const pattern = integer ? /^\d+$/ : /^\d+(?:\.\d+)?$/;
     if (!pattern.test(rawValue)) throw new Error(`${label} solo admite ${integer ? 'números enteros' : 'números'}.`);
@@ -3469,14 +4362,15 @@ function blockInvalidNumericKey(event) {
     if (!input || event.ctrlKey || event.metaKey || event.altKey) return;
     const allowedControlKeys = ['Backspace','Delete','Tab','Enter','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
     if (allowedControlKeys.includes(event.key) || /^\d$/.test(event.key)) return;
-    if (input.dataset.numericMode === 'decimal' && event.key === '.' && !input.value.includes('.')) return;
+    if (input.dataset.numericMode === 'decimal' && (event.key === '.' || event.key === ',')
+        && !/[.,]/.test(input.value)) return;
     event.preventDefault();
 }
 
 function blockInvalidNumericInsert(event) {
     const input = event.target.closest('[data-numeric-mode]');
     if (!input || !event.inputType?.startsWith('insert') || event.data == null) return;
-    const allowed = input.dataset.numericMode === 'decimal' ? /^[0-9.]+$/ : /^\d+$/;
+    const allowed = input.dataset.numericMode === 'decimal' ? /^[0-9.,]+$/ : /^\d+$/;
     if (!allowed.test(event.data)) event.preventDefault();
 }
 
@@ -3484,36 +4378,169 @@ function blockInvalidNumericPaste(event) {
     const input = event.target.closest('[data-numeric-mode]');
     if (!input) return;
     const pasted = event.clipboardData?.getData('text').trim() || '';
-    const allowed = input.dataset.numericMode === 'decimal' ? /^\d+(?:\.\d+)?$/ : /^\d+$/;
+    const allowed = input.dataset.numericMode === 'decimal' ? /^\d+(?:[.,]\d+)?$/ : /^\d+$/;
     const maximum = optionalNumber(input.dataset.numericMax);
-    if (!allowed.test(pasted) || (maximum != null && Number(pasted) > maximum)) {
+    if (!allowed.test(pasted) || (maximum != null && Number(pasted.replace(',', '.')) > maximum)) {
         event.preventDefault();
         toast(maximum == null ? 'Ese campo solo admite números.' : `Ese campo admite valores de 0 a ${maximum}.`, true);
     }
 }
 
-function openRestEditor(card) {
-    const exerciseId = Number(card.dataset.sessionExercise);
-    const exercise = state.sessionExercises.find(item => item.id === exerciseId);
-    if (!exercise) return;
-    state.restEditorExerciseId = exerciseId;
-    $('rest-exercise-name').textContent = card.dataset.exerciseName;
-    $('rest-minutes').value = Math.floor(sessionRestSeconds(exercise) / 60);
-    $('rest-seconds').value = sessionRestSeconds(exercise) % 60;
+
+const REST_WHEEL_ROW_HEIGHT=56;
+let restWheelValues=FitCoreRestWheel.options();
+let restWheelSelected=0;
+let restWheelScrollFrame=0;
+let restWheelContext=null;
+let restWheelPointer=null;
+let restWheelIgnoreClickUntil=0;
+
+function updateRestWheelSelection(seconds, shouldScroll=false) {
+    const list=$('rest-wheel-list');
+    if(!list)return;
+    const value=FitCoreRestWheel.nearest(seconds,restWheelValues);
+    restWheelSelected=value;
+    $('rest-selected-seconds').value=String(value);
+    list.querySelectorAll('[data-rest-wheel-value]').forEach(item=>{
+        const current=Number(item.dataset.restWheelValue)===value;
+        item.classList.toggle('is-selected',current);
+        item.setAttribute('aria-selected',String(current));
+    });
+    list.setAttribute('aria-valuetext',FitCoreRestWheel.label(value));
+    if(shouldScroll) {
+        const index=restWheelValues.indexOf(value);
+        list.scrollTo({top:index*REST_WHEEL_ROW_HEIGHT,behavior:'instant'});
+    }
+}
+function openRestWheelEditor({mode,seconds,exerciseName='',input=null}) {
+    restWheelContext={mode,input};
+    $('rest-context-label').textContent=mode==='session'?'ENTRENAMIENTO':'PLANES';
+    $('rest-exercise-name').textContent=exerciseName;
+    restWheelValues=FitCoreRestWheel.options(Math.max(0,Number(seconds)||0));
+    $('rest-wheel-list').innerHTML=restWheelValues.map(value=>
+        `<button type="button" role="option" tabindex="-1" class="rest-wheel-option"
+             data-rest-wheel-value="${value}" aria-selected="false">${FitCoreRestWheel.label(value)}</button>`
+    ).join('');
     $('rest-settings-dialog').showModal();
+    updateRestWheelSelection(seconds,true);
+    $('rest-wheel-list').focus({preventScroll:true});
+}
+function openRestEditor(card) {
+    const exerciseId=Number(card.dataset.sessionExercise);
+    const exercise=state.sessionExercises.find(item=>item.id===exerciseId);
+    if(!exercise)return;
+    state.restEditorExerciseId=exerciseId;
+    openRestWheelEditor({mode:'session',seconds:sessionRestSeconds(exercise),
+        exerciseName:card.dataset.exerciseName});
+}
+function openPlanRestEditor(row) {
+    const input=row?.querySelector('[data-exercise-rest]');
+    if(!input)return;
+    openRestWheelEditor({mode:'plan-row',seconds:Number(input.value),
+        exerciseName:row.querySelector('.plan-exercise-name')?.textContent||'',input});
+}
+function openPlanPickerRestEditor() {
+    const input=$('plan-picker-rest');
+    openRestWheelEditor({mode:'plan-picker',seconds:Number(input.value),
+        exerciseName:state.sessionPicker.exercise?.name||'Nuevo ejercicio',input});
+}
+function updateRestWheelFromScroll() {
+    if(restWheelScrollFrame)cancelAnimationFrame(restWheelScrollFrame);
+    restWheelScrollFrame=requestAnimationFrame(()=>{
+        restWheelScrollFrame=0;
+        const list=$('rest-wheel-list');
+        const index=Math.min(restWheelValues.length-1,
+            Math.max(0,Math.round(list.scrollTop/REST_WHEEL_ROW_HEIGHT)));
+        updateRestWheelSelection(restWheelValues[index]);
+    });
+}
+function startRestWheelPointerDrag(event) {
+    if(!['mouse','pen'].includes(event.pointerType)||event.button!==0)return;
+    const list=$('rest-wheel-list');
+    restWheelPointer={id:event.pointerId,startY:event.clientY,startTop:list.scrollTop,
+        lastY:event.clientY,lastAt:performance.now(),velocity:0,dragging:false};
+}
+function moveRestWheelPointerDrag(event) {
+    const drag=restWheelPointer;
+    if(!drag||drag.id!==event.pointerId)return;
+    const delta=event.clientY-drag.startY;
+    if(!drag.dragging&&Math.abs(delta)<5)return;
+    const list=$('rest-wheel-list');
+    if(!drag.dragging){
+        drag.dragging=true;
+        list.classList.add('is-dragging');
+        list.setPointerCapture(event.pointerId);
+    }
+    event.preventDefault();
+    const now=performance.now();
+    drag.velocity=(event.clientY-drag.lastY)/Math.max(1,now-drag.lastAt);
+    drag.lastY=event.clientY;drag.lastAt=now;
+    list.scrollTop=drag.startTop-delta;
+}
+function finishRestWheelPointerDrag(event) {
+    const drag=restWheelPointer;
+    if(!drag||drag.id!==event.pointerId)return;
+    restWheelPointer=null;
+    if(!drag.dragging)return;
+    const list=$('rest-wheel-list');
+    list.classList.remove('is-dragging');
+    if(list.hasPointerCapture(event.pointerId))list.releasePointerCapture(event.pointerId);
+    restWheelIgnoreClickUntil=performance.now()+300;
+    const momentum=event.type==='pointercancel'?0:Math.max(-280,Math.min(280,drag.velocity*160));
+    const max=(restWheelValues.length-1)*REST_WHEEL_ROW_HEIGHT;
+    const target=Math.max(0,Math.min(max,
+        Math.round((list.scrollTop-momentum)/REST_WHEEL_ROW_HEIGHT)*REST_WHEEL_ROW_HEIGHT));
+    updateRestWheelSelection(restWheelValues[Math.round(target/REST_WHEEL_ROW_HEIGHT)]);
+    const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    list.scrollTo({top:target,behavior:reducedMotion?'instant':'smooth'});
 }
 
+function handleRestWheelKeys(event) {
+    const list=$('rest-wheel-list');
+    const index=restWheelValues.indexOf(restWheelSelected);
+    let next=index;
+    if(event.key==='ArrowDown')next=index+1;
+    else if(event.key==='ArrowUp')next=index-1;
+    else if(event.key==='Home')next=0;
+    else if(event.key==='End')next=restWheelValues.length-1;
+    else if(event.key==='PageDown')next=index+5;
+    else if(event.key==='PageUp')next=index-5;
+    else return;
+    event.preventDefault();
+    next=Math.max(0,Math.min(restWheelValues.length-1,next));
+    updateRestWheelSelection(restWheelValues[next]);
+    list.scrollTo({top:next*REST_WHEEL_ROW_HEIGHT,behavior:'smooth'});
+}
 async function saveRestSettings(event) {
     event.preventDefault();
-    const minutes = Math.max(0, Number($('rest-minutes').value) || 0);
-    const seconds = Math.max(0, Number($('rest-seconds').value) || 0);
-    const restSeconds = Math.min(3600, minutes * 60 + seconds);
-    try {
-        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${state.restEditorExerciseId}/rest`, {method:'PATCH', body:JSON.stringify({restSeconds})});
+    const restSeconds=restWheelSelected;
+    if(!restWheelValues.includes(restSeconds))return;
+    const context=restWheelContext;
+    if(context?.mode==='plan-row'){
+        if(!context.input?.isConnected)return;
+        context.input.value=String(restSeconds);
         $('rest-settings-dialog').close();
+        syncPlanEditor();renderPlanDays();
+        return;
+    }
+    if(context?.mode==='plan-picker'){
+        if(!context.input?.isConnected)return;
+        context.input.value=String(restSeconds);
+        $('plan-picker-rest-button').textContent=FitCoreRestWheel.label(restSeconds);
+        $('rest-settings-dialog').close();
+        return;
+    }
+    if(context?.mode!=='session')return;
+    try {
+        await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${state.restEditorExerciseId}/rest`,
+            {method:'PATCH',body:JSON.stringify({restSeconds})});
+        $('rest-settings-dialog').close();
+        if(restSeconds===0 && state.restTimer.exerciseId===state.restEditorExerciseId)
+            stopRestTimer();
         await loadSessionExercises();
-        toast(`Descanso actualizado a ${formatDuration(restSeconds)}.`);
-    } catch (error) { toast(error.message, true); }
+        toast(restSeconds===0?'Temporizador apagado.':
+            'Descanso actualizado a '+FitCoreRestWheel.label(restSeconds)+'.');
+    }catch(error){toast(error.message,true);}
 }
 
 function openRpeEditor(button) {
@@ -3546,7 +4573,7 @@ function applyRpeValue() {
 
 function startRestTimer(exercise, exerciseName) {
     const duration = sessionRestSeconds(exercise);
-    if (duration <= 0) return toast('Descanso desactivado para este ejercicio.');
+    if (duration <= 0) return; // Apagado: no mostrar temporizador ni avisos.
     clearRestTimerInterval();
     Object.assign(state.restTimer, {exerciseId:exercise.id, exerciseName:exerciseName || 'Ejercicio', remaining:duration, total:duration, running:true});
     state.restTimer.interval = setInterval(() => {
@@ -3712,8 +4739,83 @@ async function deleteSession() {
     catch (error) { toast(error.message, true); }
 }
 
+function refreshExerciseProgressOptions() {
+    const families = $('exercise-progress-family');
+    if (!families) return;
+    const options=state.exercises.filter(e=>
+        state.variants.some(v=>v.exerciseCode===e.code && v.active!==false));
+    const previous=families.value;
+    families.innerHTML='<option value="">Elige un ejercicio</option>'+
+        options.map(e=>'<option value="'+escapeHtml(e.code)+'">'+escapeHtml(e.name)+'</option>').join('');
+    families.value=options.some(e=>e.code===previous)?previous:'';
+    refreshExerciseProgressVariants();
+}
+function refreshExerciseProgressVariants() {
+    const family=$('exercise-progress-family').value;
+    const variants=state.variants.filter(v=>v.exerciseCode===family && v.active!==false);
+    const select=$('exercise-progress-variant'),current=select.value;
+    select.innerHTML='<option value="">Elige una configuración</option>'+
+        variants.map(v=>'<option value="'+escapeHtml(v.code)+'">'+escapeHtml(v.name)+'</option>').join('');
+    select.value=variants.some(v=>v.code===current)?current:'';
+    if(!select.value && variants.length===1)select.value=variants[0].code;
+}
+async function loadExerciseProgress() {
+    const code=$('exercise-progress-variant').value;
+    const token=++state.exerciseProgressRequest;
+    if(!code){
+        state.exerciseProgress=null;
+        $('exercise-progress-metric').innerHTML='<option value="">Elige un indicador</option>';
+        $('exercise-progress-highlights').innerHTML='';
+        $('exercise-progress-chart').innerHTML='<p class="empty-state">Selecciona una configuración para consultar el historial.</p>';
+        return;
+    }
+    $('exercise-progress-chart').innerHTML='<p class="empty-state">Cargando historial…</p>';
+    try {
+        const result=await api('/api/users/'+state.auth.userId+
+            '/progress/exercise-variants/'+encodeURIComponent(code));
+        if(token!==state.exerciseProgressRequest)return;
+        state.exerciseProgress=result;
+        const metrics=FitCoreProgressUI.available(result.history);
+        const select=$('exercise-progress-metric'),current=select.value;
+        select.innerHTML=metrics.map(m=>'<option value="'+m.id+'">'+escapeHtml(m.label)+'</option>').join('');
+        select.value=metrics.some(m=>m.id===current)?current:(metrics[0]?.id||'');
+        renderExerciseProgress();
+    }catch(err){
+        if(token!==state.exerciseProgressRequest)return;
+        state.exerciseProgress=null;
+        $('exercise-progress-metric').innerHTML='';
+        $('exercise-progress-highlights').innerHTML='';
+        $('exercise-progress-chart').innerHTML='<p class="empty-state">'+
+            (err.status===404?'Todavía no existen series completadas para esta configuración.':
+                escapeHtml(err.message))+'</p>';
+    }
+}
+function renderExerciseProgress() {
+    const result=state.exerciseProgress;
+    if(!result)return;
+    const id=$('exercise-progress-metric').value;
+    const chart=FitCoreProgressUI.chartData(result.history,id);
+    const format=(v,unit)=>v==null?'—':Number(v).toLocaleString('es-ES',{maximumFractionDigits:2})+' '+unit;
+    const metric=chart?.spec;
+    const scores=[
+        ['Series completadas',result.completedSets],
+        ['Mejor '+(metric?.label||'registro'),
+            chart?.points.length ? format(metric.lowerBetter?
+                Math.min(...chart.points.map(p=>p.value)):
+                Math.max(...chart.points.map(p=>p.value)),metric.unit):'—'],
+        ['Variantes de registro',result.timedSets+' temporales · '+result.repetitionSets+' por reps']
+    ];
+    $('exercise-progress-highlights').innerHTML=scores.map(([title,value])=>
+        '<div class="exercise-progress-highlight"><small>'+escapeHtml(String(title))+
+        '</small><strong>'+escapeHtml(String(value))+'</strong></div>').join('');
+    $('exercise-progress-chart').innerHTML=chart?.svg ||
+        '<p class="empty-state">No hay series con este indicador para la configuración elegida.</p>';
+}
+
 async function loadProgressDashboard() {
     await Promise.allSettled([loadStats(), loadProgressHistory()]);
+    refreshExerciseProgressOptions();
+    if ($('exercise-progress-variant').value) await loadExerciseProgress();
 }
 
 async function loadStats() {
@@ -3778,6 +4880,51 @@ async function loadOverview() {
     await Promise.allSettled([loadActivePlan(true), loadStats()]);
 }
 
+function formatEndurancePace(secondsPerKm) {
+    if (!Number.isFinite(Number(secondsPerKm)) || secondsPerKm == null) return '—';
+    const n = Math.round(Number(secondsPerKm));
+    return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')} min/km`;
+}
+async function loadEnduranceActivities() {
+    if (!state.auth) return;
+    try {
+        const values=await api(`/api/users/${state.auth.userId}/endurance-activities`);
+        const list=$('endurance-list');
+        if(!values?.length){list.innerHTML='<p>Aún no hay actividades registradas.</p>';return;}
+        list.innerHTML=values.map(a=>`<article class='card' style='padding:14px;margin:10px 0'>
+            <strong>${escapeHtml(friendly(a.activityType))}</strong>
+            <small>${new Date(a.startedAt).toLocaleString('es-ES')}</small>
+            <p>${formatNumber(Number(a.distanceMeters)/1000)} km · ${formatDuration(a.movingSeconds)} ·
+            ${formatEndurancePace(a.averagePaceSecondsPerKm)} · ${formatNumber(a.averageSpeedKmh||0)} km/h</p>
+            <small>${a.averageHeartRate ? a.averageHeartRate+' ppm · ' : ''}
+            ${a.source==='MANUAL'?'Introducción manual':escapeHtml(a.source)}</small>
+        </article>`).join('');
+    } catch(error){$('endurance-list').textContent=error.message;}
+}
+async function saveEnduranceActivity(event) {
+    event.preventDefault();
+    if(!requireAuth())return;
+    const numeric=id=>$(id).value.trim()===''?null:Number($(id).value);
+    const moving=Math.round((numeric('endurance-moving')||0)*60);
+    const elapsed=Math.round((numeric('endurance-elapsed')??(moving/60))*60);
+    const distance=Math.round((numeric('endurance-km')||0)*100000)/100;
+    if(moving<1||elapsed<moving||distance<0)return toast('Revisa distancia y tiempos.',true);
+    const payload={
+        activityType:$('endurance-type').value,
+        startedAt:new Date($('endurance-start').value).toISOString(),
+        movingSeconds:moving,elapsedSeconds:elapsed,distanceMeters:distance,
+        averageHeartRate:numeric('endurance-hr'),
+        elevationGainMeters:numeric('endurance-elevation'),
+        averageCadence:numeric('endurance-cadence'),
+        notes:$('endurance-notes').value.trim()||null,
+        laps:[]
+    };
+    try {
+        await api(`/api/users/${state.auth.userId}/endurance-activities`,{method:'POST',body:JSON.stringify(payload)});
+        toast('Actividad registrada.');
+        await loadEnduranceActivities();
+    }catch(error){toast(error.message,true);}
+}
 async function bootstrapUserData() {
     await Promise.allSettled([searchCatalog(), loadOverview(), restoreSession(), loadRecommendations(), loadProgressHistory()]);
 }
@@ -3936,31 +5083,25 @@ function bindEvents() {
 
         });
 
-// Duplicar
-    $('plan-edit-duplicate').addEventListener(
-        'click',
-        duplicateSelectedPlanDay
-    );
+    $('plan-edit-day-dialog').querySelectorAll('[data-plan-edit-mode]').forEach(button=>{
+        button.addEventListener('click',()=>{
+            $('plan-edit-day-auto').checked=button.dataset.planEditMode==='auto';
+            updatePlanEditTypeMode();
+        });
+    });
 
-// Mover antes
-    $('plan-edit-move-up').addEventListener(
-        'click',
-        () => moveSelectedPlanDay(-1)
-    );
-
-// Mover después
-    $('plan-edit-move-down').addEventListener(
-        'click',
-        () => moveSelectedPlanDay(1)
-    );
-
-// Eliminar con confirmación
-    $('plan-edit-delete').addEventListener(
-        'click',
-        () => void deleteSelectedPlanDay()
-    );
-
-
+    $('plan-new-day-dialog').querySelectorAll('[data-plan-new-mode]').forEach(button=>{
+        button.addEventListener('click',()=>{
+            $('plan-new-day-auto').checked=button.dataset.planNewMode==='auto';
+            updatePlanNewDayTypeMode();
+        });
+    });
+    $('plan-new-day-auto').addEventListener('change',updatePlanNewDayTypeMode);
+    $('plan-edit-day-auto').addEventListener('change',updatePlanEditTypeMode);
+    $('plan-edit-day-dialog').querySelector('[data-plan-edit-duplicate]')
+        .addEventListener('click',duplicateDayFromSettings);
+    $('plan-edit-day-dialog').querySelector('[data-plan-edit-delete]')
+        .addEventListener('click',()=>void deleteDayFromSettings());
     $('plan-new-day-form').addEventListener(
         'submit',
         submitPlanNewDay
@@ -3981,8 +5122,14 @@ function bindEvents() {
         toast('Configuración del plan actualizada.');
     });
     $('plan-load').addEventListener('click', async () => {
-        await loadActivePlan();
-        $('plan-settings-dialog').close();
+        if(!state.activePlan)return toast('Todavía no hay un plan activo para recargar.',true);
+        const confirmed=await confirmAction(
+            'Recargar plan activo',
+            'Se descartarán los cambios del borrador que todavía no hayas guardado. ¿Continuar?'
+        );
+        if(!confirmed)return;
+        const loaded=await loadActivePlan();
+        if(loaded)$('plan-settings-dialog').close();
     });
 
 
@@ -4029,6 +5176,34 @@ function bindEvents() {
 
     $('plan-save').addEventListener('click', savePlan);
     $('plan-day-tabs').addEventListener('click', event => {
+        const action=event.target.closest('[data-day-menu-action]');
+        if(action){
+            const menu=$('plan-day-actions-menu');
+            const index=Number(menu.dataset.dayIndex);
+            menu.hidden=true;
+            document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
+            if(Number.isInteger(index)&&index>=0&&index<state.planDays.length){
+                if(action.dataset.dayMenuAction==='duplicate')duplicateSelectedPlanDay(index);
+                if(action.dataset.dayMenuAction==='delete')void deleteSelectedPlanDay(index);
+            }
+            return;
+        }
+        const trigger=event.target.closest('[data-plan-day-actions]');
+        if(trigger){
+            const menu=$('plan-day-actions-menu');
+            const index=Number(trigger.dataset.planDayActions);
+            const wasOpen=!menu.hidden&&menu.dataset.dayIndex===String(index);
+            document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
+            menu.hidden=wasOpen;
+            if(!wasOpen){
+                menu.dataset.dayIndex=String(index);
+                trigger.setAttribute('aria-expanded','true');
+                const rect=trigger.getBoundingClientRect();
+                menu.style.left=Math.max(12,Math.min(window.innerWidth-190,rect.right-180))+'px';
+                menu.style.top=Math.max(12,Math.min(window.innerHeight-100,rect.bottom+6))+'px';
+            }
+            return;
+        }
         const selected = event.target.closest('[data-select-plan-day]');
         if (selected) {
             syncPlanEditor();
@@ -4040,6 +5215,23 @@ function bindEvents() {
             openPlanNewDayDialog();
         }
     });
+    document.addEventListener('pointerdown',event=>{
+        const menu=$('plan-day-actions-menu');
+        if(!menu||menu.hidden||event.target.closest('#plan-day-actions-menu,[data-plan-day-actions]'))return;
+        menu.hidden=true;
+        document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
+    });
+    document.addEventListener('keydown',event=>{
+        if(event.key!=='Escape')return;
+        const menu=$('plan-day-actions-menu');
+        if(!menu||menu.hidden)return;
+        menu.hidden=true;
+        document.querySelectorAll('[data-plan-day-actions]').forEach(b=>b.setAttribute('aria-expanded','false'));
+    });
+    bindPlanDurationMask();
+    // Pointer capture prevents a held press from being cancelled if the mouse
+    // drifts off the narrow + / − button. Delegation also survives row changes.
+    FitCoreDurationInput.bindHoldButtons($('plan-days'),stepPlanDuration);
     $('plan-days').addEventListener('click', event => {
 
 
@@ -4059,6 +5251,10 @@ function bindEvents() {
         const menuToggle = event.target.closest('[data-plan-row-menu-toggle]');
         const menuAction = event.target.closest('[data-plan-exercise-action]');
 
+        if(event.target.closest('[data-edit-plan-rest]')){
+            openPlanRestEditor(event.target.closest('.exercise-editor'));
+            return;
+        }
         if (menuToggle) {
             togglePlanRowMenu(menuToggle);
             return;
@@ -4099,8 +5295,15 @@ function bindEvents() {
             const row = button.closest('.exercise-editor');
             const field = button.dataset.stepField;
             const input = row.querySelector(`[data-exercise-${field}]`);
-            const minimum = Number(input.min || 0);
-            input.value = Math.max(minimum, Number(input.value || 0) + Number(button.dataset.step));
+            if(field==='durationSeconds'){
+                // Mouse/touch are handled by pointerdown; only synthesized
+                // keyboard/assistive clicks should cause a second action here.
+                if(event.detail===0)stepPlanDuration(button);
+                return;
+            }else{
+                const minimum=Number(input.min||0);
+                input.value=Math.max(minimum,Number(input.value||0)+Number(button.dataset.step));
+            }
             syncPlanEditor();
             renderPlanDays();
         }
@@ -4110,10 +5313,28 @@ function bindEvents() {
             '[data-exercise-code], ' +
             '[data-exercise-sets], ' +
             '[data-exercise-reps], ' +
+            '[data-exercise-durationSeconds], ' +
             '[data-exercise-rest]'
         )) return;
         syncPlanEditor();
+        if(event.target.matches('[data-exercise-durationSeconds]') &&
+           !event.target.checkValidity()){
+            event.target.reportValidity();
+            return;
+        }
         renderPlanDays();
+    });
+
+    // Actualizar el resumen mientras se escribe sin reconstruir las filas
+    // (así no se pierde el foco ni la posición del cursor).
+    $('plan-days').addEventListener('input', event=>{
+        if(!event.target.matches('[data-exercise-sets], [data-exercise-reps], '+
+                '[data-exercise-durationSeconds], [data-exercise-rest]'))return;
+        syncPlanEditor();
+        if(!event.target.matches('[data-exercise-durationSeconds]')||
+           event.target.checkValidity())refreshPlanSessionSummary();
+        if(event.target.matches('[data-exercise-sets]'))
+            void renderPlanMusclePreview();
     });
 
     document.addEventListener('click', event => {
@@ -4178,6 +5399,22 @@ function bindEvents() {
         deleteSession
     );
 
+    $('catalog-prev').addEventListener('click', () => searchCatalog(state.catalogPage - 1));
+    $('catalog-next').addEventListener('click', () => searchCatalog(state.catalogPage + 1));
+    renderTrainingTypeOptions('session-manual-types','session-start-type');
+    document.querySelectorAll('[data-session-source]').forEach(button=>
+        button.addEventListener('click',()=>{
+            sessionSourceMode=button.dataset.sessionSource;
+            updateTrainingPreparation();
+        }));
+    document.querySelectorAll('[data-session-classification]').forEach(button=>
+        button.addEventListener('click',()=>{
+            sessionClassificationMode=button.dataset.sessionClassification;
+            updateTrainingPreparation();
+        }));
+    $('session-day').addEventListener('change',updateTrainingPreparation);
+    updateTrainingPreparation();
+    $('session-edit-auto').addEventListener('change',toggleSessionEditManualTypes);
     $('session-start').addEventListener('click',startSession); $('session-add-exercise').addEventListener('click',addSessionExercise); $('open-exercise-picker').addEventListener(
         'click',
         () => openExercisePicker('session')
@@ -4187,16 +5424,95 @@ function bindEvents() {
         const item = event.target.closest('[data-session-exercise-code]');
         if (!item) return;
         const exercise = state.exercises.find(candidate => candidate.code === item.dataset.sessionExerciseCode);
-        const configuration = state.sessionPicker.exercise?.code === exercise?.code
-            ? state.sessionPicker.configuration
-            : state.pickerMode === 'plan'
-                ? configurationFromVariant(defaultVariantForExercise(exercise))
-                : {};
+        if (!exercise) return;
+        const matchedVariant = state.variants.find(variant =>
+            variant.code === item.dataset.sessionVariantCode && variant.exerciseCode === exercise.code
+        );
+        const configuration = matchedVariant
+            ? configurationFromVariant(matchedVariant)
+            : state.sessionPicker.exercise?.code === exercise.code
+                ? state.sessionPicker.configuration
+                : state.pickerMode === 'plan'
+                    ? configurationFromVariant(defaultVariantForExercise(exercise))
+                    : {};
+        const queryPosition = requestedPickerPosition();
+        configuration._positionPreference = queryPosition !== 'UNSPECIFIED' ? queryPosition :
+            state.sessionPicker.exercise?.code === exercise.code
+                ? configuration._positionPreference || 'UNSPECIFIED' : 'UNSPECIFIED';
         state.sessionPicker = {exercise, configuration};
+        // Buscar una variante específica la preselecciona; nunca restringe
+        // las opciones que se pueden abrir después desde «Configurar».
+        state.pickerGroupCodes = null;
         renderSessionExerciseResults();
         renderSessionExerciseConfig();
     });
-    $('session-exercise-config').addEventListener('change',e=>{const field=e.target.closest('[data-session-variant-config]');if(!field)return;state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;state.sessionPicker.configuration.variantCode=null;renderSessionExerciseConfig();});
+    $('session-exercise-config').addEventListener('change',e=>{
+        const position=e.target.closest('[data-picker-position], [data-session-position]');
+        if (position) {
+            state.sessionPicker.configuration = selectPickerPosition(
+                state.sessionPicker.exercise, availablePickerVariants(state.sessionPicker.exercise),
+                state.sessionPicker.configuration, position.value);
+            renderSessionExerciseConfig();
+            return;
+        }
+        const field=e.target.closest('[data-session-variant-config]');
+        if(!field)return;
+        state.sessionPicker.configuration[field.dataset.sessionVariantConfig]=field.value;
+        state.sessionPicker.configuration.variantCode=null;
+        renderSessionExerciseConfig();
+    });
+
+    $('session-exercise-config').addEventListener('click', event => {
+        if (event.target.closest('[data-picker-toggle-config]')) openPickerVariantDialog();
+    });
+    document.querySelectorAll('[data-close-picker-variant]').forEach(button =>
+        button.addEventListener('click', closePickerVariantDialog));
+    $('picker-variant-dialog').addEventListener('close', () => {
+        state.pickerDraft = null;
+    });
+    $('picker-variant-dialog-body').addEventListener('change', event => {
+        const draft = state.pickerDraft;
+        if (!draft) return;
+        // Preservar el estado real del acordeón ANTES de actualizar cualquier
+        // campo (incluida «Posición corporal»). El rerender reemplaza el DOM.
+        draft.moreOpen = !!$('picker-variant-dialog-fields')
+            .querySelector('[data-picker-dialog-more]')?.open;
+        const position = event.target.closest('[data-picker-dialog-position]');
+        if (position) {
+            draft.configuration = selectPickerPosition(state.sessionPicker.exercise,
+                availablePickerVariants(state.sessionPicker.exercise), draft.configuration, position.value);
+            renderPickerVariantDialog();
+            return;
+        }
+        const field = event.target.closest('[data-picker-dialog-field]');
+        const exact = event.target.closest('[data-picker-dialog-variant-code]');
+        if (!field && !exact) return;
+        if (field) {
+            draft.configuration[field.dataset.pickerDialogField] = field.value;
+            draft.configuration.variantCode = null;
+        } else {
+            const variant = availablePickerVariants(state.sessionPicker.exercise)
+                .find(item => item.code === exact.value);
+            if (!variant) return;
+            const preference = draft.configuration._positionPreference || 'UNSPECIFIED';
+            draft.configuration = {...configurationFromVariant(variant), _positionPreference:preference};
+        }
+        renderPickerVariantDialog();
+        if (field) $('picker-variant-dialog-fields')
+            .querySelector('[data-picker-dialog-field="' + field.dataset.pickerDialogField + '"]')?.focus();
+    });
+    $('picker-variant-reset').addEventListener('click', () => {
+        if (!state.pickerDraft) return;
+        const variants = availablePickerVariants(state.sessionPicker.exercise);
+        const selected = variants.find(v => v.isDefault || v.defaultVariant || v.default) || variants[0];
+        if (!selected) return;
+        state.pickerDraft.configuration = {...configurationFromVariant(selected), _positionPreference:'UNSPECIFIED'};
+        renderPickerVariantDialog();
+    });
+    $('picker-variant-apply').addEventListener('click', applyPickerVariantDialog);
+
+
+
     $('plan-advanced-config-form').addEventListener('submit', savePlanAdvancedConfig);
     $('plan-advanced-config-body').addEventListener('change', event => {
         const field = event.target.closest('[data-plan-advanced-field]');
@@ -4216,19 +5532,90 @@ function bindEvents() {
     $('plan-advanced-config-dialog').addEventListener('close', () => {
         state.planAdvancedConfig = null;
     });
-    document.querySelectorAll('[data-close-picker]').forEach(button=>button.addEventListener('click',()=>$('exercise-picker-dialog').close())); document.querySelectorAll('[data-close-muscles]').forEach(button=>button.addEventListener('click',()=>$('session-muscle-dialog').close()));
+    document.querySelectorAll('[data-close-picker]').forEach(button=>button.addEventListener('click',()=>{ closePickerVariantDialog(); $('exercise-picker-dialog').close(); })); document.querySelectorAll('[data-close-muscles]').forEach(button=>button.addEventListener('click',()=>$('session-muscle-dialog').close()));
     document.querySelectorAll('[data-close-rest]').forEach(button=>button.addEventListener('click',()=>$('rest-settings-dialog').close())); document.querySelectorAll('[data-close-rpe]').forEach(button=>button.addEventListener('click',()=>$('rpe-dialog').close()));
-    $('session-exercises').addEventListener('click',async e=>{const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-edit-rest]'))openRestEditor(card);else if(e.target.closest('[data-rpe-picker]'))openRpeEditor(e.target.closest('[data-rpe-picker]'));else if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
+    $('session-exercises').addEventListener('click',async e=>{
+        if(e.target.closest('[data-recover-plan-exercises]')){
+            await recoverPlannedSessionExercises();
+            return;
+        }
+        const card=e.target.closest('.session-card');if(!card)return;const id=Number(card.dataset.sessionExercise);if(e.target.closest('[data-edit-rest]'))openRestEditor(card);else if(e.target.closest('[data-rpe-picker]'))openRpeEditor(e.target.closest('[data-rpe-picker]'));else if(e.target.closest('[data-add-set]'))await addSet(card);else if(e.target.closest('[data-save-set]')){const button=e.target.closest('[data-save-set]');await updateSet(card,button.closest('[data-set-row]'),button.dataset.saveSet);}else if(e.target.closest('[data-delete-set]')){try{await api(`/api/users/${state.auth.userId}/workout-session-exercises/${id}/sets/${e.target.closest('[data-delete-set]').dataset.deleteSet}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}else if(e.target.closest('[data-remove-session-exercise]')){try{await api(`/api/users/${state.auth.userId}/workout-sessions/${state.currentSession.id}/exercises/${id}`,{method:'DELETE'});await loadSessionExercises();}catch(error){toast(error.message,true);}}});
     $('session-exercises').addEventListener('change',async e=>{const completion=e.target.closest('[data-set-complete]');if(!completion)return;const row=completion.closest('[data-set-row]'),card=completion.closest('.session-card');await updateSet(card,row,row.dataset.setRow,completion.checked);});
+    // Teclado nativo del móvil: al tocar un valor se selecciona entero,
+    // como una calculadora. Enter avanza al próximo campo de la misma serie.
+    $('session-exercises').addEventListener('focusin',event=>{
+        const input=event.target.closest('[data-numeric-mode]');
+        if(!input)return;
+        input.classList.add('is-editing');
+        requestAnimationFrame(()=>{if(document.activeElement===input)input.select();});
+    });
+    $('session-exercises').addEventListener('focusout',event=>{
+        const input=event.target.closest('[data-numeric-mode]');
+        input?.classList.remove('is-editing');
+    });
+    $('session-exercises').addEventListener('keydown',event=>{
+        const input=event.target.closest('[data-numeric-mode]');
+        if(!input || event.key!=='Enter')return;
+        event.preventDefault();
+        const row=input.closest('tr');
+        const editable=[...(row?.querySelectorAll('[data-numeric-mode]:not([hidden])')||[])];
+        const next=editable[editable.indexOf(input)+1];
+        if(next)next.focus();else input.blur();
+    });
     $('session-exercises').addEventListener('keydown',blockInvalidNumericKey);
     $('session-exercises').addEventListener('beforeinput',blockInvalidNumericInsert);
     $('session-exercises').addEventListener('paste',blockInvalidNumericPaste);
     $('session-exercises').addEventListener('input',e=>syncRpeFromRir(e.target));
+    $('session-exercises').addEventListener('change',e=>{
+        const mode=e.target.closest('[data-set-load-mode]');
+        if(!mode)return;
+        const wrapper=mode.closest('.set-bodyweight-load');
+        const kg=wrapper?.querySelector('[data-set-extra-weight]');
+        const legacy=wrapper?.querySelector('[data-set-weight]');
+        if(kg){
+            kg.hidden=!['WEIGHTED','ASSISTED'].includes(mode.value);
+            if(kg.hidden)kg.value='';
+        }
+        if(legacy)legacy.hidden=mode.value!=='EXTERNAL_LOAD';
+    });
     $('rest-settings-form').addEventListener('submit',saveRestSettings);
-    document.querySelectorAll('[data-rest-preset]').forEach(button=>button.addEventListener('click',()=>{const total=Number(button.dataset.restPreset);$('rest-minutes').value=Math.floor(total/60);$('rest-seconds').value=total%60;}));
+    const pickerStepRoot=$('plan-picker-fields');
+    // Pointer-hold and keyboard click use the same bounded step operation.
+    const pickerGoalHold=FitCoreDurationInput.bindHoldButtons(pickerStepRoot,stepPlanPickerGoal,{
+        selector:'button[data-picker-step]'
+    });
+    $('exercise-picker-dialog').addEventListener('close',()=>pickerGoalHold.stop());
+    pickerStepRoot.addEventListener('click',event=>{
+        const button=event.target.closest('button[data-picker-step]');
+        if(button && event.detail===0)stepPlanPickerGoal(button);
+    });
+    $('plan-picker-rest-button').addEventListener('click',openPlanPickerRestEditor);
+    $('rest-wheel-list').addEventListener('pointerdown',startRestWheelPointerDrag);
+    $('rest-wheel-list').addEventListener('pointermove',moveRestWheelPointerDrag);
+    $('rest-wheel-list').addEventListener('pointerup',finishRestWheelPointerDrag);
+    $('rest-wheel-list').addEventListener('pointercancel',finishRestWheelPointerDrag);
+    $('rest-wheel-list').addEventListener('scroll',updateRestWheelFromScroll,{passive:true});
+    $('rest-wheel-list').addEventListener('keydown',handleRestWheelKeys);
+    $('rest-wheel-list').addEventListener('click',event=>{
+        if(performance.now()<restWheelIgnoreClickUntil){event.preventDefault();return;}
+        const item=event.target.closest('[data-rest-wheel-value]');
+        if(!item)return;
+        const value=Number(item.dataset.restWheelValue);
+        const index=restWheelValues.indexOf(value);
+        if(index<0)return;
+        updateRestWheelSelection(value);
+        $('rest-wheel-list').scrollTo({top:index*REST_WHEEL_ROW_HEIGHT,behavior:'smooth'});
+    });
     $('rpe-value').addEventListener('input',e=>updateRpePreview(e.target.value)); $('rpe-apply').addEventListener('click',applyRpeValue);
     $('rest-timer-toggle').addEventListener('click',toggleRestTimer); $('rest-timer-minus').addEventListener('click',()=>adjustRestTimer(-15)); $('rest-timer-plus').addEventListener('click',()=>adjustRestTimer(15)); $('rest-timer-skip').addEventListener('click',completeRestTimer);
     $('rest-finished-close').addEventListener('click',()=>{ $('rest-finished-dialog').close(); stopRestTimer(); });
+    $('endurance-form').addEventListener('submit',saveEnduranceActivity);
+    $('endurance-refresh').addEventListener('click',loadEnduranceActivities);
+    $('exercise-progress-family').addEventListener('change',()=>{
+        refreshExerciseProgressVariants();void loadExerciseProgress();
+    });
+    $('exercise-progress-variant').addEventListener('change',()=>void loadExerciseProgress());
+    $('exercise-progress-metric').addEventListener('change',renderExerciseProgress);
     $('stats-load').addEventListener('click',loadStats); $('goal-form').addEventListener('submit',saveGoal); $('progress-form').addEventListener('submit',saveProgress);
     $('recommendation-generate').addEventListener('click',generateRecommendation); $('recommendation-filter').addEventListener('change',loadRecommendations); $('recommendation-list').addEventListener('click',e=>{const button=e.target.closest('[data-decision]'),card=e.target.closest('[data-recommendation]');if(button&&card)decideRecommendation(card.dataset.recommendation,button.dataset.decision);});
     $('log-clear').addEventListener('click',()=>{state.logs=[];renderLogs();}); $('log-copy').addEventListener('click',async()=>{await navigator.clipboard.writeText(JSON.stringify(state.logs,null,2));toast('Registro copiado.');});
@@ -4253,8 +5640,9 @@ function bindEvents() {
 }
 
 async function init() {
+    $('endurance-start').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('plan-date').value=today(); $('session-date').value=today(); $('progress-date').value=today(); $('stats-from').value=daysAgo(29); $('stats-to').value=today(); $('goal-target-date').value=daysAgo(-90);
-    fillSelect($('catalog-equipment'),enums.equipment,'Todo'); fillSelect($('catalog-muscle'),enums.muscles,'Todos'); fillSelect($('session-exercise-equipment'),enums.equipment,'Todo el equipamiento'); fillSelect($('session-exercise-muscle'),enums.muscles,'Todos los músculos'); fillSelect($('goal-groups'),enums.muscles); bindEvents(); setAuth(state.auth); addPlanDay(); renderSession(); await Promise.all([loadSvg(),healthCheck()]);
+    fillSelect($('catalog-equipment'),enums.equipment,'Todo'); fillSelect($('catalog-muscle'),enums.muscles,'Todos'); fillSelect($('session-exercise-equipment'),enums.equipment,'Todo el equipamiento'); fillSelect($('session-exercise-muscle'),enums.muscles,'Todos los músculos'); fillSelect($('goal-groups'),enums.muscles); bindEvents(); initializeMuscleFilter(); setAuth(state.auth); addPlanDay(); renderSession(); await Promise.all([loadSvg(),healthCheck()]);
     navigate(location.hash.slice(1) && $(`view-${location.hash.slice(1)}`) ? location.hash.slice(1) : 'overview');
     if (state.auth) await bootstrapUserData();
 }

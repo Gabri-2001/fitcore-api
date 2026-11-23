@@ -5,6 +5,9 @@ import com.gabri.fitcoreapi.common.i18n.MessageResolver;
 import com.gabri.fitcoreapi.user.domain.User;
 import com.gabri.fitcoreapi.user.repository.UserRepository;
 import com.gabri.fitcoreapi.workout.domain.WorkoutDay;
+import com.gabri.fitcoreapi.workout.domain.WorkoutExercise;
+import com.gabri.fitcoreapi.workout.domain.WorkoutSessionExercise;
+import com.gabri.fitcoreapi.workout.domain.ExerciseSetLog;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSession;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionCategory;
 import com.gabri.fitcoreapi.workout.domain.WorkoutSessionIntensity;
@@ -19,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Instant;
 import java.util.List;
+import java.util.Comparator;
 
 @Service
 @Transactional
@@ -39,6 +43,27 @@ public class WorkoutSessionService {
         this.userRepository = userRepository;
         this.entityManager = entityManager;
         this.messageResolver = messageResolver;
+    }
+
+    public WorkoutSession createWorkoutSession(Long userId, Long workoutDayId,
+            LocalDate sessionDate, WorkoutSessionCategory category,
+            WorkoutSessionIntensity intensity, Integer durationMinutes, String notes,
+            BigDecimal calories, com.gabri.fitcoreapi.workout.domain.WorkoutDayType dayType,
+            boolean dayTypeManual) {
+        WorkoutSession session = createWorkoutSession(userId, workoutDayId, sessionDate,
+                category, intensity, durationMinutes, notes, calories);
+        if(dayTypeManual && dayType == null) {
+            throw new BusinessRuleException("Selecciona un tipo de entrenamiento manual");
+        }
+        if(dayType == com.gabri.fitcoreapi.workout.domain.WorkoutDayType.REST) {
+            throw new BusinessRuleException("Descanso no puede ser una sesión de entrenamiento");
+        }
+        if(dayType == null && !dayTypeManual && session.getWorkoutDay() != null) {
+            dayType = session.getWorkoutDay().getDayType();
+            if(dayType == com.gabri.fitcoreapi.workout.domain.WorkoutDayType.REST) dayType = null;
+        }
+        session.setTrainingDayClassification(dayType, dayTypeManual);
+        return workoutSessionRepository.save(session);
     }
 
     public WorkoutSession createWorkoutSession(
@@ -81,9 +106,62 @@ public class WorkoutSessionService {
             }
 
             workoutSession.setWorkoutDay(workoutDay);
+            populateFromWorkoutDay(workoutSession, workoutDay);
         }
 
         return workoutSessionRepository.save(workoutSession);
+    }
+
+    /**
+     * Each workout session keeps its own snapshot of the chosen plan day.
+     * Changing a plan later must never rewrite the sets or exercise list
+     * belonging to an existing session.
+     */
+    private void populateFromWorkoutDay(WorkoutSession session, WorkoutDay workoutDay) {
+        workoutDay.getWorkoutExercises().stream()
+                .sorted(Comparator.comparing(WorkoutExercise::getExerciseOrder))
+                .forEach(planned -> {
+                    WorkoutSessionExercise sessionExercise = new WorkoutSessionExercise(
+                            planned, planned.getExerciseVariant(), planned.getRestSeconds(),
+                            false, 0, 0, null, null, null, null
+                    );
+                    for (int number = 1; number <= planned.getSets(); number++) {
+                        ExerciseSetLog set = new ExerciseSetLog(
+                                sessionExercise, number, null, planned.getReps(),
+                                null, null, false, null
+                        );
+                        String loadMode = "BODYWEIGHT".equals(
+                                planned.getExerciseVariant().getResistanceSource())
+                                ? "BODYWEIGHT" : "EXTERNAL_LOAD";
+                        set.updateMetrics(planned.getTargetDurationSeconds(),
+                                planned.getTargetDistanceMeters(), null, null, loadMode);
+                        sessionExercise.addSetLog(set);
+                    }
+                    session.addSessionExercise(sessionExercise);
+                });
+    }
+
+    /**
+     * Explicit recovery for sessions started before automatic plan import.
+     * Never overwrites an exercise the user has already recorded.
+     */
+    public WorkoutSession importPlannedExercises(Long userId, Long sessionId) {
+        WorkoutSession session = getWorkoutSessionById(userId, sessionId);
+        if (!session.isEditable()) {
+            throw new BusinessRuleException("Solo se pueden cargar ejercicios en sesiones en curso");
+        }
+        if (session.getWorkoutDay() == null) {
+            throw new BusinessRuleException("Esta sesión no tiene un día del plan asociado");
+        }
+        if (!session.getSessionExercises().isEmpty()) {
+            throw new BusinessRuleException(
+                    "La sesión ya contiene ejercicios. No se importarán duplicados");
+        }
+        if (session.getWorkoutDay().getWorkoutExercises().isEmpty()) {
+            throw new BusinessRuleException("El día del plan seleccionado no contiene ejercicios");
+        }
+        populateFromWorkoutDay(session, session.getWorkoutDay());
+        return workoutSessionRepository.save(session);
     }
 
     @Transactional(readOnly = true)
@@ -123,6 +201,30 @@ public class WorkoutSessionService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         messageResolver.get("error.workoutSession.notFound", workoutSessionId)
                 ));
+    }
+
+    public WorkoutSession updateWorkoutSession(Long userId, Long workoutSessionId,
+            LocalDate sessionDate, WorkoutSessionCategory category, WorkoutSessionIntensity intensity,
+            Integer durationMinutes, String notes, BigDecimal estimatedCalories,
+            com.gabri.fitcoreapi.workout.domain.WorkoutDayType trainingType,
+            Boolean manualType) {
+        WorkoutSession session = updateWorkoutSession(userId, workoutSessionId,
+                sessionDate, category, intensity, durationMinutes, notes, estimatedCalories);
+        if(trainingType != null || manualType != null) {
+            boolean manual = manualType != null ? manualType : session.isTrainingDayTypeManual();
+            // Explicitly changing to automatic without a type clears any previous
+            // manual label until the current exercises support a new classification.
+            var type = Boolean.FALSE.equals(manualType) ? trainingType :
+                    trainingType != null ? trainingType : session.getTrainingDayType();
+            if(type == com.gabri.fitcoreapi.workout.domain.WorkoutDayType.REST) {
+                throw new BusinessRuleException("Descanso no puede ser una sesión de entrenamiento");
+            }
+            if(manual && type == null) {
+                throw new BusinessRuleException("Selecciona un tipo de entrenamiento manual");
+            }
+            session.setTrainingDayClassification(type, manual);
+        }
+        return session;
     }
 
     public WorkoutSession updateWorkoutSession(Long userId, Long workoutSessionId,

@@ -8,6 +8,8 @@ public record WorkoutExerciseResponse(
         Integer exerciseOrder,
         Integer sets,
         Integer reps,
+        Integer targetDurationSeconds,
+        java.math.BigDecimal targetDistanceMeters,
         Integer restSeconds,
         String exerciseVariantCode,
         String exerciseVariantName,
@@ -19,7 +21,8 @@ public record WorkoutExerciseResponse(
     public static WorkoutExerciseResponse from(WorkoutExercise value) {
         ExerciseVariant variant = value.getExerciseVariant();
         return new WorkoutExerciseResponse(
-                value.getId(), value.getExerciseOrder(), value.getSets(), value.getReps(), value.getRestSeconds(),
+                value.getId(), value.getExerciseOrder(), value.getSets(), value.getReps(),
+                value.getTargetDurationSeconds(), value.getTargetDistanceMeters(), value.getRestSeconds(),
                 variant.getCode(), variant.getName(), variant.getExercise().getCode(), variant.getImageUrl(),
                 variant.getThumbnailUrl(), variant.getImageAltText()
         );

@@ -100,7 +100,7 @@ public class WorkoutSessionExerciseService {
                 variant,
                 requestedRestSeconds != null
                         ? requestedRestSeconds
-                        : workoutExercise == null ? 90 : workoutExercise.getRestSeconds(),
+                        : workoutExercise == null ? 0 : workoutExercise.getRestSeconds(),
                 completed,
                 performedSets,
                 performedReps,

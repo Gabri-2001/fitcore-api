@@ -1,0 +1,230 @@
+{
+  "purpose": "Fixtures verified against FitCore seed migrations V3-V34; crosschecked by FlywayPostgresIntegrationTest",
+  "version": 1,
+  "variants": [
+    {
+      "code": "benchPressBarbellFlatMediumGrip",
+      "name": "Press banca plano con barra",
+      "family": "benchPress",
+      "group": "CHEST",
+      "pattern": "HORIZONTAL_PUSH"
+    },
+    {
+      "code": "benchPressBarbellInclineMediumGrip",
+      "name": "Press banca inclinado con barra",
+      "family": "benchPress",
+      "group": "CHEST",
+      "pattern": "HORIZONTAL_PUSH"
+    },
+    {
+      "code": "chestFlyPecDeckSeated",
+      "name": "Aperturas en pec deck",
+      "family": "chestFly",
+      "group": "CHEST",
+      "pattern": "HORIZONTAL_PUSH"
+    },
+    {
+      "code": "overheadPressDumbbellSeated",
+      "name": "Press de hombros sentado con mancuernas",
+      "family": "overheadPress",
+      "group": "SHOULDERS",
+      "pattern": "VERTICAL_PUSH"
+    },
+    {
+      "code": "lateralRaiseDumbbellStanding",
+      "name": "Elevaciones laterales con mancuernas",
+      "family": "lateralRaise",
+      "group": "SHOULDERS",
+      "pattern": "SHOULDER_ABDUCTION"
+    },
+    {
+      "code": "rearDeltFlyMachineSeated",
+      "name": "Aperturas de deltoide posterior en máquina",
+      "family": "rearDeltFly",
+      "group": "SHOULDERS",
+      "pattern": "SHOULDER_HORIZONTAL_ABDUCTION"
+    },
+    {
+      "code": "pullUpPronatedWideGrip",
+      "name": "Dominadas pronas",
+      "family": "pullUpChinUp",
+      "group": "BACK",
+      "pattern": "VERTICAL_PULL"
+    },
+    {
+      "code": "latPulldownPronatedWideGripToChest",
+      "name": "Jalón al pecho en polea",
+      "family": "latPulldown",
+      "group": "BACK",
+      "pattern": "VERTICAL_PULL"
+    },
+    {
+      "code": "seatedCableRowNeutralGrip",
+      "name": "Remo sentado en polea",
+      "family": "seatedRow",
+      "group": "BACK",
+      "pattern": "HORIZONTAL_PULL"
+    },
+    {
+      "code": "barbellRowPronatedMediumGrip",
+      "name": "Remo con barra",
+      "family": "barbellRow",
+      "group": "BACK",
+      "pattern": "HORIZONTAL_PULL"
+    },
+    {
+      "code": "bicepsCurlDumbbellStandingSupinated",
+      "name": "Curl de bíceps con mancuernas",
+      "family": "bicepsCurl",
+      "group": "BICEPS",
+      "pattern": "ELBOW_FLEXION"
+    },
+    {
+      "code": "bicepsCurlBarbellStanding",
+      "name": "Curl de bíceps con barra",
+      "family": "bicepsCurl",
+      "group": "BICEPS",
+      "pattern": "ELBOW_FLEXION"
+    },
+    {
+      "code": "hammerCurlDumbbellStanding",
+      "name": "Curl martillo con mancuernas",
+      "family": "hammerCurl",
+      "group": "BICEPS",
+      "pattern": "ELBOW_FLEXION"
+    },
+    {
+      "code": "tricepsPushdownCableRope",
+      "name": "Extensión de tríceps con cuerda",
+      "family": "tricepsPushdown",
+      "group": "TRICEPS",
+      "pattern": "ELBOW_EXTENSION"
+    },
+    {
+      "code": "overheadTricepsExtensionCableRope",
+      "name": "Extensión sobre la cabeza con cuerda",
+      "family": "overheadTricepsExtension",
+      "group": "TRICEPS",
+      "pattern": "ELBOW_EXTENSION"
+    },
+    {
+      "code": "backSquatBarbellMediumStance",
+      "name": "Sentadilla trasera con barra",
+      "family": "backSquat",
+      "group": "QUADRICEPS",
+      "pattern": "SQUAT"
+    },
+    {
+      "code": "frontSquatBarbellMediumStance",
+      "name": "Sentadilla frontal con barra",
+      "family": "frontSquat",
+      "group": "QUADRICEPS",
+      "pattern": "SQUAT"
+    },
+    {
+      "code": "legPressMachineMidFeet",
+      "name": "Prensa de piernas",
+      "family": "legPress",
+      "group": "QUADRICEPS",
+      "pattern": "SQUAT"
+    },
+    {
+      "code": "romanianDeadliftBarbell",
+      "name": "Peso muerto rumano",
+      "family": "romanianDeadlift",
+      "group": "HAMSTRINGS",
+      "pattern": "HIP_HINGE"
+    },
+    {
+      "code": "legCurlMachineSeated",
+      "name": "Curl femoral sentado",
+      "family": "legCurl",
+      "group": "HAMSTRINGS",
+      "pattern": "KNEE_FLEXION"
+    },
+    {
+      "code": "barbellHipThrust",
+      "name": "Hip thrust con barra",
+      "family": "hipThrust",
+      "group": "GLUTES",
+      "pattern": "HIP_EXTENSION"
+    },
+    {
+      "code": "standingCalfRaiseBodyweight",
+      "name": "Elevación de gemelos de pie",
+      "family": "standingCalfRaise",
+      "group": "CALVES",
+      "pattern": "ANKLE_PLANTAR_FLEXION"
+    },
+    {
+      "code": "crunchBodyweight",
+      "name": "Crunch",
+      "family": "crunch",
+      "group": "CORE",
+      "pattern": "TRUNK_FLEXION"
+    },
+    {
+      "code": "plankBodyweightFront",
+      "name": "Plancha frontal",
+      "family": "plank",
+      "group": "CORE",
+      "pattern": "ANTI_EXTENSION"
+    },
+    {
+      "code": "sidePlankBodyweightForearm",
+      "name": "Plancha lateral",
+      "family": "sidePlank",
+      "group": "CORE",
+      "pattern": "ANTI_LATERAL_FLEXION"
+    },
+    {
+      "code": "deadBugBodyweightAlternating",
+      "name": "Dead bug",
+      "family": "deadBug",
+      "group": "CORE",
+      "pattern": "ANTI_EXTENSION"
+    },
+    {
+      "code": "wallSitBodyweight",
+      "name": "Sentadilla isométrica en pared",
+      "family": "wallSit",
+      "group": "QUADRICEPS",
+      "pattern": "SQUAT"
+    },
+    {
+      "code": "burpeeBodyweightStandard",
+      "name": "Burpee",
+      "family": "burpee",
+      "group": "FULL_BODY",
+      "pattern": "FULL_BODY_CONDITIONING"
+    },
+    {
+      "code": "jumpingJackBodyweightStandard",
+      "name": "Jumping jacks",
+      "family": "jumpingJack",
+      "group": "FULL_BODY",
+      "pattern": "FULL_BODY_CONDITIONING"
+    },
+    {
+      "code": "copenhagenPlankShortLeverBench",
+      "name": "Plancha Copenhagen corta",
+      "family": "copenhagenPlank",
+      "group": "ADDUCTORS",
+      "pattern": "HIP_ADDUCTION"
+    },
+    {
+      "code": "hipAdductionMachineSeated",
+      "name": "Aducción de cadera en máquina",
+      "family": "hipAdduction",
+      "group": "ADDUCTORS",
+      "pattern": "HIP_ADDUCTION"
+    },
+    {
+      "code": "scapularPullUpPronated",
+      "name": "Dominadas escapulares",
+      "family": "scapularPullUp",
+      "group": "SCAPULAR",
+      "pattern": "SCAPULAR_RETRACTION_DEPRESSION"
+    }
+  ]
+}

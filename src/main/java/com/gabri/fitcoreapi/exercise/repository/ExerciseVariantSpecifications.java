@@ -40,7 +40,23 @@ public final class ExerciseVariantSpecifications {
             }
 
             if (equipment != null && !equipment.isEmpty()) {
-                predicates.add(root.get("equipment").in(equipment));
+                // "Sin equipamiento" = no material deportivo. Pared es válida,
+                // pero barra, paralelas, banco y anclajes no lo son.
+                var requested = new java.util.HashSet<>(equipment);
+                boolean noEquipment = requested.remove(Equipment.NONE);
+                var options = new java.util.ArrayList<Predicate>();
+                if (!requested.isEmpty()) {
+                    options.add(root.get("equipment").in(requested));
+                }
+                if (noEquipment) {
+                    options.add(criteriaBuilder.and(
+                            root.get("equipment").in(Equipment.BODYWEIGHT, Equipment.NONE),
+                            root.get("requiredFacility").in(
+                                    com.gabri.fitcoreapi.exercise.domain.RequiredFacility.NONE,
+                                    com.gabri.fitcoreapi.exercise.domain.RequiredFacility.WALL)
+                    ));
+                }
+                predicates.add(criteriaBuilder.or(options.toArray(Predicate[]::new)));
             }
 
             boolean filterMuscles = (muscleCodes != null && !muscleCodes.isEmpty())

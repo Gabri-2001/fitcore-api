@@ -12,6 +12,9 @@ public class CreateWorkoutSessionRequest {
 
     private Long workoutDayId;
 
+    private com.gabri.fitcoreapi.workout.domain.WorkoutDayType trainingDayType;
+    private Boolean trainingDayTypeManual;
+
     @NotNull(message = "{validation.workoutSession.sessionDate.required}")
     private LocalDate sessionDate;
 
@@ -29,6 +32,12 @@ public class CreateWorkoutSessionRequest {
 
     public CreateWorkoutSessionRequest() {
     }
+
+    public com.gabri.fitcoreapi.workout.domain.WorkoutDayType getTrainingDayType() {
+        return trainingDayType;
+    }
+
+    public boolean isTrainingDayTypeManual() { return Boolean.TRUE.equals(trainingDayTypeManual); }
 
     public Long getWorkoutDayId() {
         return workoutDayId;
