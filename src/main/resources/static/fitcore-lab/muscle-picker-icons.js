@@ -74,7 +74,7 @@
         ADDUCTORS:'./muscle-icon-adductors.svg?v=1',
         CALVES:'./muscle-icon-calves.svg?v=1',
         CORE:'./muscle-icon-core.svg?v=1',
-        NECK:'./muscle-icon-neck.svg?v=1',
+        NECK:'./muscle-icon-neck.svg?v=2',
         FULL_BODY:'./muscle-icon-full-body.svg?v=1',
         ALL:'./muscle-icon-all.svg?v=2'
     });
